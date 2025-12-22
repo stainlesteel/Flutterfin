@@ -39,7 +39,10 @@ dependencies:
   cached_network_image: 3.4.1
   chewie: 1.13.0
   video_player: 2.10.1
-  shared_preferences: 2.5.4
+  hive: 2.2.3
+  path_provider: 2.1.5
+  dio: ^5.0.0
+  flutter_secure_storage: 10.0.0
 
 dev_dependencies:
   flutter_test:
