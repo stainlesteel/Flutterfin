@@ -20,7 +20,7 @@ void main() async {
   final _fss = const FlutterSecureStorage();
 
   final libs = await getApplicationSupportDirectory(); // get support dir path
-  final String? _eKey = await _fss.read(key: 'encryptor'); // find encryptor
+  final _eKey = await _fss.read(key: 'encryptor'); // find encryptor
   final _hiveKey = Hive.generateSecureKey(); // hive secure key
 
   dynamic _cipher = _eKey ?? _hiveKey;
@@ -28,7 +28,7 @@ void main() async {
   if (_eKey == null) {
     await _fss.write(key : 'encryptor', value: base64Url.encode(_hiveKey));
   } else {
-    List<int> _cipher = base64Url.decode(_eKey);
+    _cipher = base64Url.decode(_eKey);
   }
 
   Hive.init(libs.path);
@@ -39,7 +39,14 @@ void main() async {
   ); // is fss key real? if yes use it, if not, use generated one and save it
 
   runApp(
-    MyApp(jellyfinBox: jellyBox),
+    MultiProvider( 
+     providers: [
+       ChangeNotifierProvider<JellyfinAPI>(
+         create: (_) => JellyfinAPI(jellyBox),
+       ),
+     ],
+     child: MyApp(jellyfinBox: jellyBox),
+    ),
   );
 }
 
@@ -55,14 +62,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       ),
-      home: MultiProvider(
-        providers: [
-          ChangeNotifierProvider<JellyfinAPI>(
-            create: (_) => JellyfinAPI(jellyfinBox),
-          ),
-        ],
-        child: MainRedirector(),
-      ),
+      home: MainRedirector(),
     );
   }
 }

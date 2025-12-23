@@ -2,24 +2,30 @@ import 'package:provider/provider.dart';
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
 import 'package:dio/dio.dart';
+import 'package:jellyfin_dart/jellyfin_dart.dart';
+import 'comps.dart';
 
 class JellyfinAPI extends ChangeNotifier {
   final Box box;
 
   JellyfinAPI(this.box);
 
-  Map<int, Map<String, dynamic>> serverList = {};
-  int? lastUsedServer;
+  Map<int, Map<String, dynamic>> serverList = {}; // server data list
+  int? lastUsedServer; // last used server
+  late JellyfinDart appClient; // jellyfin_dart client
 
   // boolean loading locks
   bool isVerifyingServer = false;
 
   Future<void> loadAppData() async {
-    Map<int, Map<String, dynamic>> _servers = await box.get('serverList');
-    if (_servers.isEmpty) {
+    Map<int, Map<String, dynamic>>? _servers = await (box.get('serverList') as Map).cast<int, Map<String, dynamic>>();
+    if (_servers == null) {
+      
+    } else if (_servers!.isEmpty) {
       
     } else {
-      _servers = serverList;
+      final _tmpMap = Map<int, Map<String, dynamic>>.from(_servers); 
+      serverList.addAll(_tmpMap);
     }
     print('$serverList');
 
@@ -50,8 +56,9 @@ class JellyfinAPI extends ChangeNotifier {
         return false;
       } 
       else {
+        await addServer(url, dio.data['Version'], dio.data['ServerName']);
+        notifyListeners();
         return true;
-        await Provider.of<JellyfinAPI>(context, listen: false).addServer(url, dio.data['Version'], dio.data['ServerName']);
       }
     } on DioException catch (e) {
       print('dio errror type in add server: ${e.type}');
@@ -60,6 +67,8 @@ class JellyfinAPI extends ChangeNotifier {
         text = 'Unknown error when trying to verify server.';
       } else if (e.type == DioExceptionType.connectionError) {
         text = 'Failed to connect to server.';
+      } else if (e.type == DioExceptionType.badResponse) {
+        text = 'Got bad response from server url.';
       }
       Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(
@@ -68,13 +77,6 @@ class JellyfinAPI extends ChangeNotifier {
         ),
       );
       return false;
-    } on TypeError catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text("Can connect to server but is not a Jellyfin Instance (couldn't get ServerName)."),
-          ),
-        );
-        return false;
     } finally {
       isVerifyingServer = false;
       notifyListeners();
@@ -87,20 +89,33 @@ class JellyfinAPI extends ChangeNotifier {
   }
 
   Future<void> addServer(String url, String verison, String name) async {
-    if (serverList.isEmpty) {
-        serverList[0]!['ServerURL'] = url;
-        serverList[0]!['Version'] = verison;
-        serverList[0]!['ServerName'] = name;
-    } else {    
-        serverList[serverList.length]!['ServerURL'] = url;
-        serverList[serverList.length]!['Version'] = verison;
-        serverList[serverList.length]!['ServerName'] = name;
-    }
+    int _index = serverList.isEmpty ? 0 : serverList.length;
+    // make map keys if they don't exist
+    serverList[_index] ??= {};
+    serverList[_index] ??= {};
+    serverList[_index] ??= {};
+
+    serverList[_index]!['ServerURL'] ??= {};
+    serverList[_index]!['Version'] ??= {};
+    serverList[_index]!['ServerName'] ??= {};
+
+    serverList[_index]!['ServerURL'] = '$url';
+    serverList[_index]!['Version'] = '$verison';
+    serverList[_index]!['ServerName'] = '$name';
     await updateServerList();
     notifyListeners();
   }
 
-  void makeClient(String url) {
+  Future<void> makeClient(int index) async {
+    Map<String, dynamic> _base = serverList[index]!;
 
+    appClient = JellyfinDart(
+      basePathOverride: _base['ServerURL']
+    );
+
+    appClient.setMediaBrowserAuth(
+      deviceId: randomString(),
+      version: _base['Version'],
+    );
   }
 }

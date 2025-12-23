@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:math';
 
 TextStyle getTextStyling(int index, BuildContext context) {
   if (index == 0) {
@@ -9,6 +10,8 @@ TextStyle getTextStyling(int index, BuildContext context) {
     return TextStyle(fontWeight: FontWeight.bold, fontSize: 30,);
   } else if (index == 3) {
     return TextStyle(fontSize: 20,);
+  } else if (index == 4) {
+    return TextStyle(fontWeight: FontWeight.bold);
   } else {
     return TextStyle();
   }
@@ -24,4 +27,8 @@ Widget popUpDiag({String title = '', List<Widget> content = const [], List<Widge
     ) : null,
     actions: actions.isNotEmpty ? actions : null,
   );
+}
+
+String randomString() {
+  return String.fromCharCodes(List.generate(8, (index) => Random().nextInt(33) + 89));
 }
