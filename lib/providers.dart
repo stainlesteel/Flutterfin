@@ -10,31 +10,17 @@ class JellyfinAPI extends ChangeNotifier {
 
   JellyfinAPI(this.box);
 
-  Map<int, Map<String, dynamic>> serverList = {}; // server data list
-  int? lastUsedServer; // last used server
+  dynamic serverList = {}; // server data list
   late JellyfinDart appClient; // jellyfin_dart client
 
   // boolean loading locks
   bool isVerifyingServer = false;
 
   Future<void> loadAppData() async {
-    Map<int, Map<String, dynamic>>? _servers = await (box.get('serverList') as Map).cast<int, Map<String, dynamic>>();
-    if (_servers == null) {
-      
-    } else if (_servers!.isEmpty) {
-      
-    } else {
-      final _tmpMap = Map<int, Map<String, dynamic>>.from(_servers); 
-      serverList.addAll(_tmpMap);
-    }
-    print('$serverList');
+    Map<int, Map<String, dynamic>> servers = await box.get('serverList', defaultValue: {},);
 
-    int? _lastServer = await box.get('lastUsedServer'); 
-    if (_lastServer == null) {
-      
-    } else {
-      _lastServer = lastUsedServer;
-    }
+    serverList.addAll(servers);
+
     notifyListeners();
   }
 
@@ -98,6 +84,7 @@ class JellyfinAPI extends ChangeNotifier {
     serverList[_index]!['ServerURL'] ??= {};
     serverList[_index]!['Version'] ??= {};
     serverList[_index]!['ServerName'] ??= {};
+    serverList[_index]!['LastUsed'] ??= {};
 
     serverList[_index]!['ServerURL'] = '$url';
     serverList[_index]!['Version'] = '$verison';

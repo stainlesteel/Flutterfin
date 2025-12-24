@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import 'providers.dart';
 import 'pages.dart';
@@ -13,6 +14,7 @@ import 'dart:convert';
   uses path_provider to get support dir path to give a location for hive,
   uses hive to open encrypted Box
   runs flutter app
+  force flutter error lines to a limit
  */
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -25,18 +27,29 @@ void main() async {
 
   dynamic _cipher = _eKey ?? _hiveKey;
 
+  late final jellyBox;
+
   if (_eKey == null) {
-    await _fss.write(key : 'encryptor', value: base64Url.encode(_hiveKey));
+    await _fss.write(key : 'encryptor', value: '${base64Url.encode(_hiveKey)}');
   } else {
     _cipher = base64Url.decode(_eKey);
   }
 
   Hive.init(libs.path);
 
-  final jellyBox = await Hive.openBox(
-    'jellyBox',
-    encryptionCipher: HiveAesCipher(_cipher),
-  ); // is fss key real? if yes use it, if not, use generated one and save it
+  while (true) {
+    try {
+      jellyBox = await Hive.openBox<Map<int, Map<String, dynamic>>>(
+        'jellyBox',
+        encryptionCipher: HiveAesCipher(_cipher),
+        crashRecovery: false,
+      ); // is fss key real? if yes use it, if not, use generated one and save it
+      break;
+    } catch (e) {
+      print('box is broken, deleting and looping...');
+      await Hive.deleteBoxFromDisk('jellyBox');
+    }
+  }
 
   runApp(
     MultiProvider( 
