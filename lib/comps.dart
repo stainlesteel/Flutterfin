@@ -32,3 +32,11 @@ Widget popUpDiag({String title = '', List<Widget> content = const [], List<Widge
 String randomString() {
   return String.fromCharCodes(List.generate(8, (index) => Random().nextInt(33) + 89));
 }
+
+void showScaffold(String text, BuildContext context) {
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      content: Text(text),
+    ),
+  );
+}

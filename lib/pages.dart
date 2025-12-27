@@ -78,19 +78,19 @@ class _StartingPageState extends State<StartingPage> {
                 padding: const EdgeInsets.all(6.7),
                 shrinkWrap: true,
                 children: [
-                  for (var e in ama.serverList.entries)
+                  for (var e in ama.serverList)
                     Card(
                       child: ListTile(
                         onTap: () async {
-                          await ama.makeClient(e.key);
+                          await ama.makeClient(e.id);
                           Navigator.push(
                             context,
-                            MaterialPageRoute(builder: (context) => LogInPage(index: e.key)),
+                            MaterialPageRoute(builder: (context) => LogInPage(index: e.id)),
                           );
                         },
-                        title: Text('${e.value['ServerName']}', style: getTextStyling(1 ,context)),
-                        subtitle: Text('${e.value['ServerURL']}', style: getTextStyling(4, context)),
-                        trailing: Text('${e.value['Version']}', style: getTextStyling(4, context)),
+                        title: Text('${e.serverName}', style: getTextStyling(1 ,context)),
+                        subtitle: Text('${e.serverURL}', style: getTextStyling(4, context)),
+                        trailing: Text('${e.version}', style: getTextStyling(4, context)),
                       )
                     )
                 ],             
@@ -105,7 +105,7 @@ class _StartingPageState extends State<StartingPage> {
 
 // start UserLogIn
 class LogInPage extends StatefulWidget {
-  final int index;
+  final int? index;
 
   const LogInPage({super.key, required this.index});
 
@@ -116,20 +116,141 @@ class LogInPage extends StatefulWidget {
 class _LogInPageState extends State<LogInPage> {
   @override
   Widget build(BuildContext context) {
-
     var ama = context.watch<JellyfinAPI>();
+
+    TextEditingController userCont = TextEditingController();
+    TextEditingController pwdCont = TextEditingController();
+
+    var _formKey = GlobalKey<FormState>();
+
+    @override
+    void initState() {
+      super.initState();
+    }
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('${widget.index}'),
+        title: Text('${ama.serverList[widget.index!].serverName}'),
         centerTitle: true,
       ),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: [],
+          children: [
+            Form(
+              key: _formKey,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text('Log In', style: getTextStyling(2 ,context)),
+                  SizedBox(height: 10),
+                  Container(
+                    width: MediaQuery.of(context).size.width - 100,
+                    child: Card.filled(
+                      child: Padding(
+                        padding: EdgeInsets.all(10.0),
+                        child: TextFormField(
+                          controller: userCont,
+                          validator: (String? value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Username cannot be empty.';
+                            }
+                            return null;
+                          },
+                          decoration: InputDecoration(
+                            labelText: 'Username',
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: 5),
+                  Container(
+                    width: MediaQuery.of(context).size.width - 100,
+                    child: Card.filled(
+                      child: Padding(
+                        padding: EdgeInsets.all(10.0),
+                        child: TextFormField(
+                          controller: pwdCont,
+                          validator: (String? value) {
+                            return null;
+                          },
+                          decoration: InputDecoration(
+                            labelText: 'Password',
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: 5),
+                  SizedBox(
+                    width: MediaQuery.of(context).size.width - 160,
+                    child: FilledButton(
+                      onPressed: () async {
+                        if (_formKey.currentState!.validate()) {
+                          final response = await ama.logInByName(userCont.text, pwdCont.text, context);
+                          if (response) {
+                            print('logged in!');
+                            await ama.goToHome(widget.index, context);
+                          } else {
+                            print('failure!');
+                          }
+                        }
+                      },
+                      child: Text('Log In'),
+                    ),
+                  ),
+                  SizedBox(height: 30),
+                  Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 50.0),
+                    child: Text('${ama.logInMsg ?? ''}'),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 }
+// end UserLogIn
+
+// start HomePage
+class HomePage extends StatefulWidget {
+  final int? index;
+
+  const HomePage({super.key, required this.index});
+
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  @override
+  Widget build(BuildContext context) {
+    var ama = context.watch<JellyfinAPI>();
+
+    @override
+    void initState() {
+      super.initState();
+    }
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Jellyfin'),
+        centerTitle: true,
+      ),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+//end HomePage

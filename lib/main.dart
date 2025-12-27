@@ -8,6 +8,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'dart:typed_data'; 
 import 'dart:convert';
+import 'objects.dart';
 
 /* 
   main(): uses FSS to get (or make) encryption key for hive,
@@ -27,7 +28,7 @@ void main() async {
 
   dynamic _cipher = _eKey ?? _hiveKey;
 
-  late final jellyBox;
+  late Box jellyBox;
 
   if (_eKey == null) {
     await _fss.write(key : 'encryptor', value: '${base64Url.encode(_hiveKey)}');
@@ -36,20 +37,13 @@ void main() async {
   }
 
   Hive.init(libs.path);
+  Hive.registerAdapter(ServerObjAdapter());
 
-  while (true) {
-    try {
-      jellyBox = await Hive.openBox<Map<int, Map<String, dynamic>>>(
-        'jellyBox',
-        encryptionCipher: HiveAesCipher(_cipher),
-        crashRecovery: false,
-      ); // is fss key real? if yes use it, if not, use generated one and save it
-      break;
-    } catch (e) {
-      print('box is broken, deleting and looping...');
-      await Hive.deleteBoxFromDisk('jellyBox');
-    }
-  }
+  jellyBox = await Hive.openBox(
+    'jellyBox',
+    encryptionCipher: HiveAesCipher(_cipher),
+    crashRecovery: false,
+  ); // is fss key real? if yes use it, if not, use generated one and save it
 
   runApp(
     MultiProvider( 
@@ -98,6 +92,9 @@ class _MainRedirectorState extends State<MainRedirector> {
   @override
   Widget build(BuildContext context) {
     var ama = context.watch<JellyfinAPI>();
+    if (ama.lastUsedServer != null) {
+      return HomePage(index: ama.lastUsedServer);
+    }
     return StartingPage();
   }
 }
