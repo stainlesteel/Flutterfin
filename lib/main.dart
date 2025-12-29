@@ -84,6 +84,7 @@ class MainRedirector extends StatefulWidget {
 
 class _MainRedirectorState extends State<MainRedirector> {
 
+  @override
   void initState() {
     super.initState();
     Provider.of<JellyfinAPI>(context, listen: false).loadAppData();
@@ -91,8 +92,18 @@ class _MainRedirectorState extends State<MainRedirector> {
 
   @override
   Widget build(BuildContext context) {
+
     var ama = context.watch<JellyfinAPI>();
+
+
     if (ama.lastUsedServer != null) {
+
+      var keyBase = ama.serverList[ama.lastUsedServer!].userMap!.keys!.toList();
+      var valueBase = ama.serverList[ama.lastUsedServer!].userMap!.values!.toList();
+
+      Provider.of<JellyfinAPI>(context, listen: false).makeClient(ama.lastUsedServer);
+      Provider.of<JellyfinAPI>(context, listen: false).logInByName(keyBase[ama.lastUser!], valueBase[ama.lastUser!], context);
+
       return HomePage(index: ama.lastUsedServer);
     }
     return StartingPage();

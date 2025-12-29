@@ -12,9 +12,13 @@ class JellyfinAPI extends ChangeNotifier {
 
   JellyfinAPI(this.box);
 
+  // app data that may or may not require interaction with the jellyfin server
   List<ServerObj> serverList = []; 
   int? lastUsedServer;
+  int? lastUser;
   late JellyfinDart appClient; // jellyfin_dart client
+  
+  // server data collected for later use
   String? logInMsg;
 
   // boolean loading locks
@@ -31,7 +35,13 @@ class JellyfinAPI extends ChangeNotifier {
     } else {
 
     }
-    print('$lastUsedServer');
+
+    int? _tmpUser = await box.get('lastUser');
+    if (_tmpUser != null) {
+      lastUser = _tmpUser;
+    } else {
+
+    }
 
     notifyListeners();
   }
@@ -84,7 +94,6 @@ class JellyfinAPI extends ChangeNotifier {
 
   Future<void> addServer(String url, String vers, String name) async {
     int _index = serverList.isEmpty ? 0 : serverList.length;
-    // make map keys if they don't exist
 
     serverList.add(ServerObj(id: _index));
     await box.put(_index, serverList[_index]);
@@ -106,7 +115,7 @@ class JellyfinAPI extends ChangeNotifier {
     );
 
     appClient.setMediaBrowserAuth(
-      deviceId: randomString(),
+      deviceId: ama.deviceId ?? randomString(),
       version: '${_base.version}',
     );
 
@@ -126,7 +135,7 @@ class JellyfinAPI extends ChangeNotifier {
       );
     } on DioException catch (e) {
       if (e.type == DioExceptionType.badResponse) {
-        showScaffold('HTTP 401: wrong username/password, couldnt log in.', context);
+        showScaffold('Server gave a bad response, either the Jellyfin instance is not available, or you entered the wrong username/password', context);
         return false;
       }
     }
@@ -140,6 +149,24 @@ class JellyfinAPI extends ChangeNotifier {
     }
   }
 
+  Future<void> saveUser(String user, String pwd, int? index) async {
+    serverList[index!].userMap = serverList[index!].userMap ?? {};
+
+    serverList[index!].userMap!['$user'] ??= '';
+    serverList[index!].userMap!['$user'] = '$pwd';
+
+    serverList[index!].save();
+    // ends saving actual user data
+    
+    // starts saving last user
+    lastUser = serverList[index!].userMap?.keys.toList().indexOf('$user');
+    print('$lastUser');
+    await box.put('lastUser', lastUser);
+
+    updateServerList();
+    notifyListeners();
+  }
+
   // this function updates lastUsedServer and pushes to homepage
   Future<void> goToHome(int? index, BuildContext context) async {
     lastUsedServer = index;
@@ -149,5 +176,13 @@ class JellyfinAPI extends ChangeNotifier {
       MaterialPageRoute(builder: (context) => HomePage(index: index)),
       (route) => false,
     );
+  }
+  
+  // auth required
+  Future<List<BaseItemDto>?> getUserViews() async {
+    final uAPI = appClient.getUserViewsApi();
+    final data = await uAPI.getUserViews();
+
+    return data.data?.items;
   }
 }

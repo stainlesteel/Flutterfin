@@ -16,10 +16,17 @@ class ServerObj extends HiveObject {
     @HiveField(3)
     String? version;
 
+    @HiveField(4)
+    Map<String, String>? userMap;
+
+    @HiveField(5)
+    String? deviceId;
+
     ServerObj({
       this.id,
       this.serverURL,
       this.serverName,
       this.version,
+      this.userMap,
     });
 }

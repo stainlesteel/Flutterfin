@@ -21,13 +21,14 @@ class ServerObjAdapter extends TypeAdapter<ServerObj> {
       serverURL: fields[1] as String?,
       serverName: fields[2] as String?,
       version: fields[3] as String?,
+      userMap: (fields[4] as Map?)?.cast<String, String>(),
     );
   }
 
   @override
   void write(BinaryWriter writer, ServerObj obj) {
     writer
-      ..writeByte(4)
+      ..writeByte(5)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -35,7 +36,9 @@ class ServerObjAdapter extends TypeAdapter<ServerObj> {
       ..writeByte(2)
       ..write(obj.serverName)
       ..writeByte(3)
-      ..write(obj.version);
+      ..write(obj.version)
+      ..writeByte(4)
+      ..write(obj.userMap);
   }
 
   @override
