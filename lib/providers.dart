@@ -20,6 +20,7 @@ class JellyfinAPI extends ChangeNotifier {
   
   // server data collected for later use
   String? logInMsg;
+  String? userID;
 
   // boolean loading locks
   bool isVerifyingServer = false;
@@ -115,7 +116,7 @@ class JellyfinAPI extends ChangeNotifier {
     );
 
     appClient.setMediaBrowserAuth(
-      deviceId: ama.deviceId ?? randomString(),
+      deviceId: serverList[index!].deviceId ?? randomString(),
       version: '${_base.version}',
     );
 
@@ -143,6 +144,7 @@ class JellyfinAPI extends ChangeNotifier {
     final token = response.data?.accessToken;
     if (token != null) {
       appClient.setToken(token);   
+      userID = response.data?.sessionInfo.userId;
       return true;
     } else {
       return false;
@@ -180,8 +182,9 @@ class JellyfinAPI extends ChangeNotifier {
   
   // auth required
   Future<List<BaseItemDto>?> getUserViews() async {
-    final uAPI = appClient.getUserViewsApi();
-    final data = await uAPI.getUserViews();
+    final uvAPI = appClient.getUserViewsApi();
+
+    final data = await uvAPI.getUserViews(userId: userID);
 
     return data.data?.items;
   }

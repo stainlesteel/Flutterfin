@@ -83,6 +83,7 @@ class MainRedirector extends StatefulWidget {
 }
 
 class _MainRedirectorState extends State<MainRedirector> {
+  late Future<List<dynamic>> _ifLoggedIn;
 
   @override
   void initState() {
@@ -97,14 +98,40 @@ class _MainRedirectorState extends State<MainRedirector> {
 
 
     if (ama.lastUsedServer != null) {
-
       var keyBase = ama.serverList[ama.lastUsedServer!].userMap!.keys!.toList();
       var valueBase = ama.serverList[ama.lastUsedServer!].userMap!.values!.toList();
 
-      Provider.of<JellyfinAPI>(context, listen: false).makeClient(ama.lastUsedServer);
-      Provider.of<JellyfinAPI>(context, listen: false).logInByName(keyBase[ama.lastUser!], valueBase[ama.lastUser!], context);
+      _ifLoggedIn = Future.wait([
+        Provider.of<JellyfinAPI>(context, listen: false).makeClient(ama.lastUsedServer),
+        Provider.of<JellyfinAPI>(context, listen: false).logInByName(keyBase[ama.lastUser!], valueBase[ama.lastUser!], context),
+      ]);
 
-      return HomePage(index: ama.lastUsedServer);
+      return FutureBuilder(
+        future: _ifLoggedIn,
+        builder: (context, snapshot) {
+         if (snapshot.connectionState == ConnectionState.waiting) {
+            return Scaffold(
+              appBar: AppBar(
+                title: Text('Jellyfin'),
+                centerTitle: true,
+              ),
+              body: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    CircularProgressIndicator(),
+                  ],
+                ),
+              ),
+            );
+          } else if (snapshot.hasError) {
+            return Text('error found while loading user data: ${snapshot.error}');
+          } else {
+            return HomePage(index: ama.lastUsedServer);
+          }  
+        },
+      );
+
     }
     return StartingPage();
   }
