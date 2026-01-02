@@ -180,12 +180,35 @@ class JellyfinAPI extends ChangeNotifier {
     );
   }
   
-  // auth required
-  Future<List<BaseItemDto>?> getUserViews() async {
+  // streams for homepage
+  Stream<List<BaseItemDto>?> userViewsStream() async* {
     final uvAPI = appClient.getUserViewsApi();
 
-    final data = await uvAPI.getUserViews(userId: userID);
+    while (true) {
+      final data = await uvAPI.getUserViews(userId: userID);
+      yield data.data?.items;
+      await Future.delayed(Duration(seconds: 9));
+    }
 
-    return data.data?.items;
+  }
+
+  Stream<List<BaseItemDto>?> getContinueWatching() async* {
+    final itAPI = appClient.getItemsApi();
+
+    while (true) {
+      final data = await itAPI.getResumeItems(userId: userID);
+      yield data.data?.items ?? [];
+      await Future.delayed(Duration(seconds: 9));
+    }
+  }
+
+  Stream<List<BaseItemDto>?> getNextUp() async* {
+    final itAPI = appClient.getItemsApi();
+
+    while (true) {
+      final data = await itAPI.getResumeItems(userId: userID);
+      yield data.data?.items ?? [];
+      await Future.delayed(Duration(seconds: 9));
+    }
   }
 }

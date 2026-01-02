@@ -296,63 +296,16 @@ class _HomePageState extends State<HomePage> {
       appBar: AppBar(
         title: Text('Jellyfin'),
         centerTitle: true,
-        leading: TextButton(
-          onPressed: () {
-            Navigator.pushAndRemoveUntil(
-              context,
-              MaterialPageRoute(builder: (context) => StartingPage()),
-              (route) => false,
-            );
-          },
-          child: Text('Back'),
-        ),
       ),
-      body: Center(
-        child: Column(
+      body: Column(
           children: [
             Text('welcome, ${base?[ama.lastUser!] ?? 'nobody'}', style: getTextStyling(2 ,context)),
             Text('My Media', style: getTextStyling(1, context)),
-            SizedBox(
-              height: 200,
-              child: FutureBuilder(
-                future: ama.getUserViews(),
-                builder: (context, snapshot) {
-                  if (snapshot.hasError) {
-                    return Text('Failed to download library playlist.');
-                  } else  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return CircularProgressIndicator();
-                  } else {
-                    final List<BaseItemDto>? data = snapshot.data;
-                    if (data != null) {
-                      return CarouselView(
-                        scrollDirection: Axis.horizontal,
-                        itemExtent: 300,
-                        shrinkExtent: 100,
-                        children: <Widget>[
-                          for (BaseItemDto view in data)
-                            Container(
-                              alignment: Alignment.center,
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(0.5),
-                                image: DecorationImage(
-                                  image: NetworkImage(
-                                    '${ama.serverList[ama.lastUsedServer!].serverURL}/Items/${view!.id!}/Images/Primary?tag=${view!.imageTags?['Primary']}',
-                                  ),
-                                  fit: BoxFit.cover,
-                                ),
-                              ),
-                            )
-                        ],
-                      );
-                    } else {
-                      return Text('could not download user views');
-                    }
-                  }
-                },
-              ),
-            ),
+            UserViews(context),            
+            SizedBox(height: 10),
+            Text('Continue Watching', style: getTextStyling(1, context)),
+            ContinueWatching(context),
           ] 
-        ),
       ),
     );
   }
