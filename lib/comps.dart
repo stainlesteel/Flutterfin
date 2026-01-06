@@ -3,6 +3,8 @@ import 'dart:math';
 import 'package:provider/provider.dart';
 import 'providers.dart';
 import 'package:jellyfin_dart/jellyfin_dart.dart';
+import 'pages.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 TextStyle getTextStyling(int index, BuildContext context) {
   if (index == 0) {
@@ -62,7 +64,7 @@ Widget UserViews(BuildContext context) {
              if (data != null) {
                return CarouselView(
                  scrollDirection: Axis.horizontal,
-                 itemExtent: 300,
+                 itemExtent: 230,
                  shrinkExtent: 100,
                  children: <Widget>[
                    for (BaseItemDto view in data)
@@ -116,8 +118,22 @@ Widget ContinueWatching(BuildContext context) {
           if (data != null) {
             return CarouselView(
               scrollDirection: Axis.horizontal,
-              itemExtent: 300,
+              itemExtent: 230,
               shrinkExtent: 100,
+              onTap: (index) {
+                if (data[index] == null) {
+                  
+                } else if (data[index].seriesName == null) {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => MoviePage(viewData: data[index]), 
+                    ),
+                  );
+                } else {
+
+                }
+              },
               children: <Widget>[
                 for (BaseItemDto view in data)
                   Column(
@@ -129,7 +145,7 @@ Widget ContinueWatching(BuildContext context) {
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(0.5),
                             image: DecorationImage(
-                              image: NetworkImage(
+                              image: CachedNetworkImageProvider(
                                 '${ama.serverList[ama.lastUsedServer!].serverURL}/Items/${view!.id!}/Images/Primary?tag=${view!.imageTags?['Primary']}',
                               ),
                               fit: BoxFit.cover,
@@ -148,7 +164,7 @@ Widget ContinueWatching(BuildContext context) {
                         ),
                         Padding(
                           padding: EdgeInsets.only(top: 5),
-                          child: Text('${view.name}'),
+                          child: Text('S${view.parentIndexNumber}:E${view.indexNumber}, ${view.name}'),
                         )
                       ]
                       else

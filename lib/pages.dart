@@ -117,14 +117,20 @@ class LogInPage extends StatefulWidget {
 }
 
 class _LogInPageState extends State<LogInPage> {
+
+  @override
+  void initState() {
+    super.initState();
+  }
+
+  TextEditingController userCont = TextEditingController();
+  TextEditingController pwdCont = TextEditingController();
+
+  var _formKey = GlobalKey<FormState>();
+
   @override
   Widget build(BuildContext context) {
     var ama = context.watch<JellyfinAPI>();
-
-    TextEditingController userCont = TextEditingController();
-    TextEditingController pwdCont = TextEditingController();
-
-    var _formKey = GlobalKey<FormState>();
 
     Widget _image = CachedNetworkImage(
        imageUrl: '${ama.serverList[widget.index!].serverURL}/Branding/SplashScreen',
@@ -135,14 +141,8 @@ class _LogInPageState extends State<LogInPage> {
       color: Colors.white,
     );
 
-
-
-    @override
-    void initState() {
-      super.initState();
-    }
-
     Widget _scaffold = Scaffold(
+        resizeToAvoidBottomInset: false,
         appBar: AppBar(
           title: Text(
             '${ama.serverList[widget.index!].serverName}',
@@ -156,88 +156,90 @@ class _LogInPageState extends State<LogInPage> {
         ),
         backgroundColor: Colors.transparent,
         body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Form(
-                key: _formKey,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text('Log In', style: getTextStyling(2 ,context)),
-                    SizedBox(height: 10),
-                    Container(
-                      width: MediaQuery.of(context).size.width - 100,
-                      child: Card.filled(
-                        child: Padding(
-                          padding: EdgeInsets.all(10.0),
-                          child: TextFormField(
-                            controller: userCont,
-                            validator: (String? value) {
-                              if (value == null || value.isEmpty) {
-                                return 'Username cannot be empty.';
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Form(
+                  key: _formKey,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text('Log In', style: getTextStyling(2 ,context)),
+                      SizedBox(height: 10),
+                      Container(
+                        width: MediaQuery.of(context).size.width - 100,
+                        child: Card.filled(
+                          child: Padding(
+                            padding: EdgeInsets.all(10.0),
+                            child: TextFormField(
+                              controller: userCont,
+                              validator: (String? value) {
+                                if (value == null || value.isEmpty) {
+                                  return 'Username cannot be empty.';
+                                }
+                                return null;
+                              },
+                              style: TextStyle(
+                                color: Colors.black,
+                              ),
+                              decoration: InputDecoration(
+                                labelText: 'Username',
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      SizedBox(height: 5),
+                      Container(
+                        width: MediaQuery.of(context).size.width - 100,
+                        child: Card.filled(
+                          child: Padding(
+                            padding: EdgeInsets.all(10.0),
+                            child: TextFormField(
+                              controller: pwdCont,
+                              validator: (String? value) {
+                                return null;
+                              },
+                              decoration: InputDecoration(
+                                labelText: 'Password',
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      SizedBox(height: 5),
+                      SizedBox(
+                        width: MediaQuery.of(context).size.width - 160,
+                        child: FilledButton(
+                          onPressed: () async {
+                            if (_formKey.currentState!.validate()) {
+                              final response = await ama.logInByName(userCont.text, pwdCont.text, context);
+                              if (response) {
+                                print('logged in!');
+                                await ama.saveUser(userCont.text, pwdCont.text, widget.index);
+                                await ama.goToHome(widget.index, context);
+                              } else {
+                                print('failure!');
                               }
-                              return null;
-                            },
-                            style: TextStyle(
-                              color: Colors.black,
-                            ),
-                            decoration: InputDecoration(
-                              labelText: 'Username',
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                    SizedBox(height: 5),
-                    Container(
-                      width: MediaQuery.of(context).size.width - 100,
-                      child: Card.filled(
-                        child: Padding(
-                          padding: EdgeInsets.all(10.0),
-                          child: TextFormField(
-                            controller: pwdCont,
-                            validator: (String? value) {
-                              return null;
-                            },
-                            decoration: InputDecoration(
-                              labelText: 'Password',
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                    SizedBox(height: 5),
-                    SizedBox(
-                      width: MediaQuery.of(context).size.width - 160,
-                      child: FilledButton(
-                        onPressed: () async {
-                          if (_formKey.currentState!.validate()) {
-                            final response = await ama.logInByName(userCont.text, pwdCont.text, context);
-                            if (response) {
-                              print('logged in!');
-                              await ama.saveUser(userCont.text, pwdCont.text, widget.index);
-                              await ama.goToHome(widget.index, context);
-                            } else {
-                              print('failure!');
                             }
-                          }
-                        },
-                        child: Text('Log In'),
+                          },
+                          child: Text('Log In'),
+                        ),
                       ),
-                    ),
-                    SizedBox(height: 30),
-                    Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 50.0),
-                      child: Padding(
-                        padding: EdgeInsets.all(6),
-                        child: Text('${ama.logInMsg ?? ''}'), 
+                      SizedBox(height: 30),
+                      Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 50.0),
+                        child: Padding(
+                          padding: EdgeInsets.all(6),
+                          child: Text('${ama.logInMsg ?? ''}'), 
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
     );
@@ -291,24 +293,93 @@ class _HomePageState extends State<HomePage> {
     var ama = context.watch<JellyfinAPI>();
     final base = ama.serverList[widget.index!].userMap?.keys.toList();
 
-
     return Scaffold(
       appBar: AppBar(
         title: Text('Jellyfin'),
         centerTitle: true,
       ),
-      body: Column(
-          children: [
-            Text('welcome, ${base?[ama.lastUser!] ?? 'nobody'}', style: getTextStyling(2 ,context)),
-            Text('My Media', style: getTextStyling(1, context)),
-            UserViews(context),            
-            SizedBox(height: 10),
-            Text('Continue Watching', style: getTextStyling(1, context)),
-            ContinueWatching(context),
-          ] 
-      ),
+      body: SingleChildScrollView(
+        child: Column(
+            children: [
+              Text('welcome, ${base?[ama.lastUser!] ?? 'nobody'}', style: getTextStyling(2 ,context)),
+              Text('My Media', style: getTextStyling(1, context)),
+              UserViews(context),            
+              SizedBox(height: 10),
+              Text('Continue Watching', style: getTextStyling(1, context)),
+              ContinueWatching(context),
+            ] 
+        ),
+      ), 
     );
   }
 }
 
 //end HomePage
+
+//start MoviePage
+class MoviePage extends StatefulWidget {
+  final BaseItemDto viewData;
+
+  const MoviePage({super.key, required this.viewData});
+
+  @override
+  State<MoviePage> createState() => _MoviePageState();
+}
+
+class _MoviePageState extends State<MoviePage> {
+  @override
+  void initState() {
+    super.initState();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    var ama = context.watch<JellyfinAPI>();
+    BaseItemDto viewData = widget.viewData;
+    print('${viewData!.imageTags}');
+
+    Widget _scaffold = Scaffold(
+      appBar: AppBar(
+      ),
+      body: Column(
+        children: [
+          BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+            child: Container(
+              width: MediaQuery.of(context).size.width,
+              height: 250,
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.8),
+              ),
+              child: IntrinsicHeight(
+                child: Row(
+                  children: [
+                    Flexible(
+                      fit: FlexFit.loose,
+                      child: Align(
+                        alignment: Alignment(-5, -0),
+                        child: FractionallySizedBox(
+                          heightFactor: 0.8,
+                          widthFactor: 1,
+                          child: Container(
+                              color: Colors.red,
+                              child: CachedNetworkImage(
+                                  imageUrl: '${ama.serverList[ama.lastUsedServer!].serverURL}/Items/${viewData!.id!}/Images/Primary?tag=${viewData!.imageTags?['Primary']}',
+                              )
+                            ), 
+                        ),
+                      ),
+                    ),
+                    Text('${viewData.name}', textAlign: TextAlign.left),
+                  ],
+                )
+              ),            
+            ),
+          ),
+        ], 
+      ),
+    );
+
+    return _scaffold;
+  }
+}
