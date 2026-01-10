@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import 'providers.dart';
 import 'pages.dart';
@@ -15,7 +14,6 @@ import 'objects.dart';
   uses path_provider to get support dir path to give a location for hive,
   uses hive to open encrypted Box
   runs flutter app
-  force flutter error lines to a limit
  */
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -125,14 +123,15 @@ class _MainRedirectorState extends State<MainRedirector> {
               ),
             );
           } else if (snapshot.hasError) {
-            return Text('error found while loading user data: ${snapshot.error}');
+            return StartingPage();
           } else {
             return HomePage(index: ama.lastUsedServer);
           }  
         },
       );
 
+    } else {
+      return StartingPage();
     }
-    return StartingPage();
   }
 }

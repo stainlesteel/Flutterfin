@@ -38,6 +38,34 @@ String randomString() {
   return String.fromCharCodes(List.generate(8, (index) => Random().nextInt(33) + 89));
 }
 
+String getTime(int val) {
+  int h = val ~/ 60;
+  int m = val % 60;
+
+  return '${h.toString().padLeft(2)}h ${m.toString().padLeft(2, "0")}m';
+}
+
+Widget detailCard({String? text = '', List<Widget>? children = null, required BuildContext context}) {
+  if (children != null) {
+    return Card(
+      child: Padding(
+        padding: EdgeInsets.all(5),
+        child: Row(
+          children: children,
+        ),
+      ),
+    );
+  } else {
+    return Card(
+      child: Padding(
+        padding: EdgeInsets.all(5),
+        child: Text(text!, style: getTextStyling(1, context)),
+      ),
+    );
+  }
+
+}
+
 void showScaffold(String text, BuildContext context) {
   ScaffoldMessenger.of(context).showSnackBar(
     SnackBar(
@@ -47,7 +75,6 @@ void showScaffold(String text, BuildContext context) {
 }
 
 // starts jellyfin api widgets
-
 Widget UserViews(BuildContext context) {
   JellyfinAPI ama = context.watch<JellyfinAPI>();
   return SizedBox(
@@ -120,11 +147,13 @@ Widget ContinueWatching(BuildContext context) {
               scrollDirection: Axis.horizontal,
               itemExtent: 230,
               shrinkExtent: 100,
-              onTap: (index) {
+              onTap: (index) async {
+                print('${data.length}');
+                print('${data[index]}');
                 if (data[index] == null) {
                   
                 } else if (data[index].seriesName == null) {
-                  Navigator.push(
+                  await Navigator.push(
                     context,
                     MaterialPageRoute(
                       builder: (context) => MoviePage(viewData: data[index]), 
@@ -185,3 +214,4 @@ Widget ContinueWatching(BuildContext context) {
     ),
   );
 }
+// end jellyfin api widgets

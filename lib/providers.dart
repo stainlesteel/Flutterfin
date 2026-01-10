@@ -136,7 +136,8 @@ class JellyfinAPI extends ChangeNotifier {
       );
     } on DioException catch (e) {
       if (e.type == DioExceptionType.badResponse) {
-        showScaffold('Server gave a bad response, either the Jellyfin instance is not available, or you entered the wrong username/password', context);
+        showScaffold('Tried to log in to previous/selected server but got a bad response, either the Jellyfin instance is not available, or you entered the wrong username/password', context);
+        throw DioException;
         return false;
       }
     }
@@ -150,6 +151,17 @@ class JellyfinAPI extends ChangeNotifier {
       return false;
     }
   }
+
+  Future<List<UserDto>?> getPublicUsers() async {
+    final UserApi uAPI = await appClient.getUserApi();
+    late final _data;
+    try {
+      _data = await uAPI.getPublicUsers();
+    } on DioException catch (e) {
+      print(e.response);
+    }
+    return _data?.data;
+  } 
 
   Future<void> saveUser(String user, String pwd, int? index) async {
     serverList[index!].userMap = serverList[index!].userMap ?? {};
@@ -196,7 +208,14 @@ class JellyfinAPI extends ChangeNotifier {
     final itAPI = appClient.getItemsApi();
 
     while (true) {
-      final data = await itAPI.getResumeItems(userId: userID);
+      final data = await itAPI.getResumeItems(
+        userId: userID,
+        fields: <ItemFields>[
+          ItemFields.overview, 
+          ItemFields.taglines,
+          ItemFields.tags,
+        ],
+      );
       yield data.data?.items ?? [];
       await Future.delayed(Duration(seconds: 9));
     }

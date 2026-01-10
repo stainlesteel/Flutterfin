@@ -368,6 +368,14 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
+  foldable_list_card:
+    dependency: "direct main"
+    description:
+      name: foldable_list_card
+      sha256: c8637ffec5c75d97fd92c3de2a304f7496d12397d96128aa53bb1b1eb5f03c66
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.0.4"
   frontend_server_client:
     dependency: transitive
     description:

@@ -227,7 +227,37 @@ class _LogInPageState extends State<LogInPage> {
                           child: Text('Log In'),
                         ),
                       ),
-                      SizedBox(height: 30),
+                      SizedBox(height: 5),
+                      SizedBox(
+                        width: MediaQuery.of(context).size.width - 160,
+                        child: FilledButton(
+                          onPressed: () async {
+                            final users = await ama.getPublicUsers();
+                            showDialog(
+                              context: context,
+                              builder: (BuildContext context) => popUpDiag(
+                                title: 'Available Users',
+                                content: <Widget>[
+                                  Text('Includes any users previously logged-in, and public users.'),
+                                  for (UserDto user in users ?? [])
+                                    Card(
+                                      child: ListTile(
+                                        leading: Text('${user.name}', style: getTextStyling(1, context))
+                                      )
+                                    )
+                                ],
+                              )
+                            );
+                          },
+                          child: Text('Available Users'),
+                          style: ButtonStyle(
+                            backgroundColor: WidgetStatePropertyAll<Color>(
+                              Theme.of(context).colorScheme.onPrimaryFixed,
+                            ),
+                          ),
+                        ),
+                      ),
+                      SizedBox(height: 20),
                       Padding(
                         padding: EdgeInsets.symmetric(horizontal: 50.0),
                         child: Padding(
@@ -296,10 +326,21 @@ class _HomePageState extends State<HomePage> {
     return Scaffold(
       appBar: AppBar(
         title: Text('Jellyfin'),
+        leading: TextButton(
+          child: Text('Back'),
+          onPressed: () {
+            Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(builder: (context) => StartingPage()),
+              (route) => false,
+            );
+          }
+        ), 
         centerTitle: true,
       ),
       body: SingleChildScrollView(
-        child: Column(
+        child: Center(
+          child: Column(
             children: [
               Text('welcome, ${base?[ama.lastUser!] ?? 'nobody'}', style: getTextStyling(2 ,context)),
               Text('My Media', style: getTextStyling(1, context)),
@@ -308,6 +349,7 @@ class _HomePageState extends State<HomePage> {
               Text('Continue Watching', style: getTextStyling(1, context)),
               ContinueWatching(context),
             ] 
+          ),
         ),
       ), 
     );
@@ -336,48 +378,101 @@ class _MoviePageState extends State<MoviePage> {
   Widget build(BuildContext context) {
     var ama = context.watch<JellyfinAPI>();
     BaseItemDto viewData = widget.viewData;
-    print('${viewData!.imageTags}');
+
+    double runTime = viewData.runTimeTicks! / 100000000;
 
     Widget _scaffold = Scaffold(
       appBar: AppBar(
       ),
-      body: Column(
-        children: [
-          BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-            child: Container(
-              width: MediaQuery.of(context).size.width,
-              height: 250,
-              decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.8),
+      body: Center(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Row(
+              children: [
+                SizedBox(width: 20),
+                Container(
+                  width: MediaQuery.sizeOf(context).width * 0.30,
+                  height: MediaQuery.sizeOf(context).height * 0.30,
+                  child: Image(
+                    image: CachedNetworkImageProvider('${ama.serverList[ama.lastUsedServer!].serverURL}/Items/${viewData!.id!}/Images/Primary?tag=${viewData!.imageTags?['Primary']}'),
+                  )
+                ),
+                SizedBox(width: 15),
+                Expanded(
+                  child: Text('${viewData.name}',style: TextStyle(fontWeight: FontWeight.bold, fontSize: 30)),
+                ),
+              ],
+            ),
+            if (viewData.taglines?.firstOrNull != null) ...[
+              Text(
+                '${viewData.taglines?.firstOrNull ?? "Can't find taglines"}', 
+                textAlign: TextAlign.center,
+                style: getTextStyling(1 ,context),
               ),
-              child: IntrinsicHeight(
+              SizedBox(height: 10),
+            ],
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  SizedBox(width: 15),
+                  detailCard(text: '${viewData.productionYear ?? ''}', context: context),
+                  SizedBox(width: 20),
+                  detailCard(text: '${getTime(runTime.round())}', context: context),
+                  if (viewData.officialRating != null) ...[
+                    SizedBox(width: 20),
+                    detailCard(text: '${viewData.officialRating ?? 'Rating Unavailable'}', context: context)
+                  ],
+                  if (viewData.criticRating != null) ...[
+                    SizedBox(width: 20),
+                    detailCard(
+                      children: [
+                        Icon(
+                          Icons.rate_review,
+                          color: Colors.red,
+                        ),
+                        SizedBox(width: 5),
+                        Text('${viewData.criticRating?.round() ?? 'Unavailable'}', style: getTextStyling(1, context)),
+                      ], 
+                      context: context
+                    ),
+                  ],
+                  SizedBox(width: 20),
+                  detailCard(
+                    children: [
+                      Icon(
+                        Icons.star,
+                        color: Colors.yellow,
+                      ),
+                      SizedBox(width: 5),
+                      Text('${viewData?.communityRating ?? 'Unavailable'}', style: getTextStyling(1, context)),
+                    ], 
+                    context: context
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(height: 15),
+            Text('${viewData?.overview ?? ''}', textAlign: TextAlign.center),
+            if (viewData?.tags != null) ...[
+              SizedBox(height: 15),
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
                 child: Row(
                   children: [
-                    Flexible(
-                      fit: FlexFit.loose,
-                      child: Align(
-                        alignment: Alignment(-5, -0),
-                        child: FractionallySizedBox(
-                          heightFactor: 0.8,
-                          widthFactor: 1,
-                          child: Container(
-                              color: Colors.red,
-                              child: CachedNetworkImage(
-                                  imageUrl: '${ama.serverList[ama.lastUsedServer!].serverURL}/Items/${viewData!.id!}/Images/Primary?tag=${viewData!.imageTags?['Primary']}',
-                              )
-                            ), 
-                        ),
-                      ),
-                    ),
-                    Text('${viewData.name}', textAlign: TextAlign.left),
+                    SizedBox(width: 12),
+                    Text('Tags:'),
+                    SizedBox(width: 5,),
+                    for (String tag in viewData.tags ?? [])
+                      detailCard(text: '$tag', context: context)
                   ],
-                )
-              ),            
-            ),
-          ),
-        ], 
-      ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ), 
     );
 
     return _scaffold;
