@@ -152,6 +152,31 @@ class JellyfinAPI extends ChangeNotifier {
     }
   }
 
+  Future<bool> logInByQuickConnect(QuickConnectDto dto, BuildContext context) async {
+    late final response;
+    final uAPI = appClient.getUserApi();
+    try {
+      response = await uAPI.authenticateWithQuickConnect(
+        quickConnectDto: dto,
+      );
+    } on DioException catch (e) {
+      if (e.type == DioExceptionType.badResponse) {
+        showScaffold('Tried to log in to previous/selected server but got a bad response, either the Jellyfin instance is not available, or you entered the wrong username/password', context);
+        throw DioException;
+        return false;
+      }
+    }
+    
+    final token = response.data?.accessToken;
+    if (token != null) {
+      appClient.setToken(token);   
+      userID = response.data?.sessionInfo.userId;
+      return true;
+    } else {
+      return false;
+    }
+  }
+
   Future<List<UserDto>?> getPublicUsers() async {
     final UserApi uAPI = await appClient.getUserApi();
     late final _data;

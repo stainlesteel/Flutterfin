@@ -128,8 +128,11 @@ class _LogInPageState extends State<LogInPage> {
 
   var _formKey = GlobalKey<FormState>();
 
+
   @override
   Widget build(BuildContext context) {
+    int buttonRowSubtract = 270;
+
     var ama = context.watch<JellyfinAPI>();
 
     Widget _image = CachedNetworkImage(
@@ -209,27 +212,46 @@ class _LogInPageState extends State<LogInPage> {
                         ),
                       ),
                       SizedBox(height: 5),
-                      SizedBox(
-                        width: MediaQuery.of(context).size.width - 160,
-                        child: FilledButton(
-                          onPressed: () async {
-                            if (_formKey.currentState!.validate()) {
-                              final response = await ama.logInByName(userCont.text, pwdCont.text, context);
-                              if (response) {
-                                print('logged in!');
-                                await ama.saveUser(userCont.text, pwdCont.text, widget.index);
-                                await ama.goToHome(widget.index, context);
-                              } else {
-                                print('failure!');
-                              }
-                            }
-                          },
-                          child: Text('Log In'),
-                        ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          SizedBox(
+                            width: MediaQuery.of(context).size.width - buttonRowSubtract,
+                            child: FilledButton(
+                              onPressed: () async {
+                                if (_formKey.currentState!.validate()) {
+                                  final response = await ama.logInByName(userCont.text, pwdCont.text, context);
+                                  if (response) {
+                                    print('logged in!');
+                                    await ama.saveUser(userCont.text, pwdCont.text, widget.index);
+                                    await ama.goToHome(widget.index, context);
+                                  } else {
+                                    print('failure!');
+                                  }
+                                }
+                              },
+                              child: Text('Log In'),
+                            ),
+                          ),
+                          SizedBox(width: 8),
+                          SizedBox(
+                            width: MediaQuery.of(context).size.width - buttonRowSubtract,
+                            child: FilledButton(
+                              onPressed: () async {
+                              },
+                              child: Text('Quick Connect'),
+                              style: ButtonStyle(
+                                backgroundColor: WidgetStatePropertyAll<Color>(
+                                  Theme.of(context).colorScheme.onTertiaryFixed,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                       SizedBox(height: 5),
                       SizedBox(
-                        width: MediaQuery.of(context).size.width - 160,
+                        width: MediaQuery.of(context).size.width - 120,
                         child: FilledButton(
                           onPressed: () async {
                             final users = await ama.getPublicUsers();
@@ -238,13 +260,40 @@ class _LogInPageState extends State<LogInPage> {
                               builder: (BuildContext context) => popUpDiag(
                                 title: 'Available Users',
                                 content: <Widget>[
-                                  Text('Includes any users previously logged-in, and public users.'),
+                                  Text('Includes users the server allows to see on the Log-In page.'),
+                                  SizedBox(height: 5),
                                   for (UserDto user in users ?? [])
                                     Card(
                                       child: ListTile(
-                                        leading: Text('${user.name}', style: getTextStyling(1, context))
+                                        title: Text('${user.name ?? ''}', style: getTextStyling(1, context)),
+                                        subtitle: Text('${user.hasPassword! ? 'Requires Password' : 'No Password'}'),
+                                        onTap: () async {
+                                          if (user.hasPassword! == true) {
+                                            setState(() {
+                                              userCont.text = user.name!;
+                                            });
+                                            Navigator.pop(context);
+                                          } else {
+                                            final response = await ama.logInByName(user.name!, pwdCont.text, context);
+                                            if (response) {
+                                              print('logged in!');
+                                              await ama.saveUser(user.name!, pwdCont.text, widget.index);
+                                              await ama.goToHome(widget.index, context);
+                                            } else {
+                                              print('failure!');
+                                            }
+                                          }
+                                        },
                                       )
                                     )
+                                ],
+                                actions: <Widget>[
+                                  TextButton(
+                                    onPressed: () {
+                                      Navigator.pop(context);
+                                    },
+                                    child: Text('Cancel')
+                                  ),
                                 ],
                               )
                             );
