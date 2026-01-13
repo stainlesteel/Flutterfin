@@ -238,6 +238,39 @@ class _LogInPageState extends State<LogInPage> {
                             width: MediaQuery.of(context).size.width - buttonRowSubtract,
                             child: FilledButton(
                               onPressed: () async {
+                                final res = await ama.makeQCRequest(context);
+                                if (res == null) {
+                                  
+                                } else {
+                                  showDialog(
+                                    context: context,
+                                    builder: (BuildContext context) {
+                                      return popUpDiag(
+                                        title: 'Quick Connect',
+                                        content: <Widget>[
+                                          Text('Code is: ${res.code}'),
+                                          StreamBuilder(
+                                            stream: ama.getQCState(res.secret!),
+                                            builder: (BuildContext context, AsyncSnapshot<QuickConnectResult> snap) async {
+                                              if (snap.data != null) {
+                                                final response = await ama.logInByQC(res.secret!, context);
+                                                if (response) {
+                                                  print('logged in!');
+                                                  await ama.saveUser(userCont.text, pwdCont.text, widget.index);
+                                                  await ama.goToHome(widget.index, context);
+                                                } else {
+                                                  print('failure!');
+                                                }
+                                              } else {
+                                                return Text('Waiting...');
+                                              }
+                                            },
+                                          ),
+                                        ],
+                                      );
+                                    }
+                                  );
+                                }
                               },
                               child: Text('Quick Connect'),
                               style: ButtonStyle(

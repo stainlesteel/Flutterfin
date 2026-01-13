@@ -152,12 +152,46 @@ class JellyfinAPI extends ChangeNotifier {
     }
   }
 
-  Future<bool> logInByQuickConnect(QuickConnectDto dto, BuildContext context) async {
+  // start: functions related to quick connect
+  
+  // make request for quick connect to server
+  Future<QuickConnectResult?> makeQCRequest(BuildContext context) async {
+    late final result;
+    final qc = appClient.getQuickConnectApi();
+
+    try {
+      result = await qc.initiateQuickConnect();
+    } on DioException catch (e) {
+      showScaffold('Quick Connect is disabled by this server.', context);
+    }
+
+    return result?.data;
+  }
+
+  // check if user has accepted quick connect state
+  Stream<QuickConnectResult?> getQCState(String secret) async* {
+    final qc = appClient.getQuickConnectApi();
+    late final data;
+
+    while (true) {
+      try {
+        data = await qc.getQuickConnectState(secret: secret);
+        yield data?.data;
+        break;
+      } catch (e) {
+        yield null;
+      }
+
+      await Future.delayed(Duration(seconds: 4));
+    }
+  }
+
+  Future<bool> logInByQC(String res_secret, BuildContext context) async {
     late final response;
     final uAPI = appClient.getUserApi();
     try {
       response = await uAPI.authenticateWithQuickConnect(
-        quickConnectDto: dto,
+        quickConnectDto: QuickConnectDto(secret: res_secret),
       );
     } on DioException catch (e) {
       if (e.type == DioExceptionType.badResponse) {
@@ -176,6 +210,8 @@ class JellyfinAPI extends ChangeNotifier {
       return false;
     }
   }
+
+  // end: functions related to quick connect
 
   Future<List<UserDto>?> getPublicUsers() async {
     final UserApi uAPI = await appClient.getUserApi();

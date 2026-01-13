@@ -129,7 +129,6 @@ class _MainRedirectorState extends State<MainRedirector> {
           }  
         },
       );
-
     } else {
       return StartingPage();
     }
