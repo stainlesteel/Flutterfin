@@ -63,6 +63,7 @@ class JellyfinAPI extends ChangeNotifier {
       else {
         await addServer(url, dio.data['Version'], dio.data['ServerName']);
         notifyListeners();
+        Navigator.pop(context);
         return true;
       }
     } on DioException catch (e) {
@@ -77,6 +78,10 @@ class JellyfinAPI extends ChangeNotifier {
       }
       Navigator.pop(context);
       showScaffold(text, context);
+      return false;
+    } catch (e) {
+      Navigator.pop(context);
+      showScaffold('Unknown error when trying to verify server.', context);
       return false;
     } finally {
       isVerifyingServer = false;
@@ -115,8 +120,13 @@ class JellyfinAPI extends ChangeNotifier {
       basePathOverride: _base.serverURL,
     );
 
+    String randrStr = randomString();
+    if (serverList[index!].deviceId == null) {
+      serverList[index!].deviceId = randrStr;
+    }
+
     appClient.setMediaBrowserAuth(
-      deviceId: serverList[index!].deviceId ?? randomString(),
+      deviceId: serverList[index!].deviceId ?? randrStr,
       version: '${_base.version}',
     );
 
@@ -126,7 +136,7 @@ class JellyfinAPI extends ChangeNotifier {
 
   Future<bool> logInByName(String user, String pwd, BuildContext context) async {
     late final response;
-    final uAPI = appClient.getUserApi();
+    var uAPI = appClient.getUserApi();
     try {
       response = await uAPI.authenticateUserByName(
         authenticateUserByName: AuthenticateUserByName(
@@ -171,18 +181,20 @@ class JellyfinAPI extends ChangeNotifier {
   // check if user has accepted quick connect state
   Stream<QuickConnectResult?> getQCState(String secret) async* {
     final qc = appClient.getQuickConnectApi();
-    late final data;
 
     while (true) {
       try {
-        data = await qc.getQuickConnectState(secret: secret);
-        yield data?.data;
-        break;
+        final data = await qc.getQuickConnectState(secret: secret);
+        if (data.data?.authenticated == false) {
+          await Future.delayed(Duration(seconds: 5));
+        } else {
+          yield data.data;
+          break;
+        }
       } catch (e) {
-        yield null;
+        await Future.delayed(Duration(seconds: 5));
       }
 
-      await Future.delayed(Duration(seconds: 4));
     }
   }
 
@@ -242,6 +254,24 @@ class JellyfinAPI extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<UserDto?> getCurrentUser() async {
+    final uAPI = await appClient.getUserApi();
+    final data = await uAPI.getCurrentUser();
+
+    return data?.data;
+  }
+
+  // gets device info
+  Future<DeviceInfoDto?> getDeviceData() async {
+    final dAPI = await appClient.getDevicesApi();
+    print('${serverList[lastUsedServer!].deviceId}');
+    final data = await dAPI.getDeviceInfo(
+      id: serverList[lastUsedServer!].deviceId!,
+    );
+
+    return data?.data;
+  }
+
   // this function updates lastUsedServer and pushes to homepage
   Future<void> goToHome(int? index, BuildContext context) async {
     lastUsedServer = index;
@@ -255,18 +285,17 @@ class JellyfinAPI extends ChangeNotifier {
   
   // streams for homepage
   Stream<List<BaseItemDto>?> userViewsStream() async* {
-    final uvAPI = appClient.getUserViewsApi();
+    UserViewsApi uvAPI = appClient.getUserViewsApi();
 
     while (true) {
       final data = await uvAPI.getUserViews(userId: userID);
       yield data.data?.items;
       await Future.delayed(Duration(seconds: 9));
     }
-
   }
 
   Stream<List<BaseItemDto>?> getContinueWatching() async* {
-    final itAPI = appClient.getItemsApi();
+    ItemsApi itAPI = appClient.getItemsApi();
 
     while (true) {
       final data = await itAPI.getResumeItems(
@@ -283,7 +312,7 @@ class JellyfinAPI extends ChangeNotifier {
   }
 
   Stream<List<BaseItemDto>?> getNextUp() async* {
-    final itAPI = appClient.getItemsApi();
+    ItemsApi itAPI = appClient.getItemsApi();
 
     while (true) {
       final data = await itAPI.getResumeItems(userId: userID);
@@ -291,4 +320,22 @@ class JellyfinAPI extends ChangeNotifier {
       await Future.delayed(Duration(seconds: 9));
     }
   }
+
+  Future<PlaybackInfoResponse?> getPlayBackData(String id, DeviceProfile prof) async {
+    MediaInfoApi _api = await appClient.getMediaInfoApi();
+    Response<PlaybackInfoResponse> _data = await _api.getPostedPlaybackInfo(
+      itemId: id,
+      userId: userID,
+      maxStreamingBitrate: prof.maxStreamingBitrate,
+    );
+
+    return _data?.data;
+  }
+
+  String? getStreamUrl(MediaSourceInfo data) {
+    if (data.supportsDirectPlay! == false || data.transcodingUrl != null) {
+      return '${serverList[lastUsedServer!].serverURL}';
+    }
+  }
+
 }

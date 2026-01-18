@@ -249,27 +249,33 @@ class _LogInPageState extends State<LogInPage> {
                                         title: 'Quick Connect',
                                         content: <Widget>[
                                           Text('Code is: ${res.code}'),
-                                          StreamBuilder(
-                                            stream: ama.getQCState(res.secret!),
-                                            builder: (BuildContext context, AsyncSnapshot<QuickConnectResult> snap) async {
-                                              if (snap.data != null) {
-                                                final response = await ama.logInByQC(res.secret!, context);
-                                                if (response) {
-                                                  print('logged in!');
-                                                  await ama.saveUser(userCont.text, pwdCont.text, widget.index);
-                                                  await ama.goToHome(widget.index, context);
-                                                } else {
-                                                  print('failure!');
-                                                }
-                                              } else {
-                                                return Text('Waiting...');
-                                              }
-                                            },
-                                          ),
                                         ],
                                       );
                                     }
                                   );
+
+                                  late final sSub;
+
+                                  sSub = ama.getQCState(res.secret!).listen(
+                                    (data) async {
+                                      print('$data');
+                                      if (data?.authenticated == true) {
+                                        sSub.cancel();
+                                        final response = await ama.logInByQC(data!.secret!, context);
+                                        if (response == true) {
+                                          print('logged in!');
+                                          final username = await ama.getCurrentUser();
+                                          await ama.saveUser(username!.name!, data!.secret!, widget.index);
+                                          await ama.goToHome(widget.index, context);
+                                        } else {
+                                          print('failure!');
+                                        }
+                                      }
+                                    },
+                                    onError: (error) => print('$error'),
+                                    onDone: () => print('done'),
+                                  );
+
                                 }
                               },
                               child: Text('Quick Connect'),
@@ -426,6 +432,8 @@ class _HomePageState extends State<HomePage> {
             children: [
               Text('welcome, ${base?[ama.lastUser!] ?? 'nobody'}', style: getTextStyling(2 ,context)),
               Text('My Media', style: getTextStyling(1, context)),
+              SizedBox(height: 10),
+              SizedBox(height: 10),
               UserViews(context),            
               SizedBox(height: 10),
               Text('Continue Watching', style: getTextStyling(1, context)),
@@ -486,6 +494,28 @@ class _MoviePageState extends State<MoviePage> {
                 ),
               ],
             ),
+            SizedBox(height: 7),
+            Row(
+              children: [
+                FilledButton(
+                  onPressed: () async {
+                    final _prof = await ama.getDeviceData();
+
+                    final _data = await ama.getPlayBackData(
+                      viewData.id!,
+                      _prof!.capabilities!.deviceProfile!,
+                    );
+                    showScaffold(
+                      '${_data?.mediaSources?.first}',
+                      context
+                    );
+                  },
+                  child: Text('Play'),
+                ),
+              ],
+            ),
+            Divider(),
+            SizedBox(height: 7),
             if (viewData.taglines?.firstOrNull != null) ...[
               Text(
                 '${viewData.taglines?.firstOrNull ?? "Can't find taglines"}', 

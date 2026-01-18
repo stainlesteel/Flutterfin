@@ -5,6 +5,7 @@ import 'providers.dart';
 import 'package:jellyfin_dart/jellyfin_dart.dart';
 import 'pages.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'dart:developer' as dev;
 
 TextStyle getTextStyling(int index, BuildContext context) {
   if (index == 0) {
@@ -83,7 +84,8 @@ Widget UserViews(BuildContext context) {
          stream: ama.userViewsStream(),
          builder: (context, snapshot) {
            if (snapshot.hasError) {
-             return Text('Failed to download library playlist.');
+             dev.log('${snapshot.error}');
+             return Text('\$');
            } else  if (snapshot.connectionState == ConnectionState.waiting) {
              return CircularProgressIndicator();
            } else {

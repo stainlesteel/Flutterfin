@@ -101,7 +101,10 @@ class _MainRedirectorState extends State<MainRedirector> {
 
       _ifLoggedIn = Future.wait([
         Provider.of<JellyfinAPI>(context, listen: false).makeClient(ama.lastUsedServer),
-        Provider.of<JellyfinAPI>(context, listen: false).logInByName(keyBase[ama.lastUser!], valueBase[ama.lastUser!], context),
+        if (ama?.serverList[ama.lastUsedServer!].lastLogIsQC == true)
+          Provider.of<JellyfinAPI>(context, listen: false).logInByQC(keyBase[ama.lastUser!], context)
+        else
+          Provider.of<JellyfinAPI>(context, listen: false).logInByName(keyBase[ama.lastUser!], valueBase[ama.lastUser!], context)
       ]);
 
       return FutureBuilder(
