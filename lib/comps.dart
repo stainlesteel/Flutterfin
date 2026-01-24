@@ -6,6 +6,7 @@ import 'package:jellyfin_dart/jellyfin_dart.dart';
 import 'pages.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'dart:developer' as dev;
+import 'package:connectivity_plus/connectivity_plus.dart';
 
 TextStyle getTextStyling(int index, BuildContext context) {
   if (index == 0) {
@@ -64,8 +65,19 @@ Widget detailCard({String? text = '', List<Widget>? children = null, required Bu
       ),
     );
   }
-
 }
+
+/*
+  0: unlimited data (wifi, ethernet)
+  1: limited data (mobile)
+  2: no data (none)
+*/
+Future<ConnectivityResult> checkNetwork() async {
+  final List<ConnectivityResult> result = await (Connectivity().checkConnectivity());
+
+  print("$result");
+  return result[0];
+} 
 
 void showScaffold(String text, BuildContext context) {
   ScaffoldMessenger.of(context).showSnackBar(
@@ -85,7 +97,7 @@ Widget UserViews(BuildContext context) {
          builder: (context, snapshot) {
            if (snapshot.hasError) {
              dev.log('${snapshot.error}');
-             return Text('\$');
+             return Text('Failed to download libraries.');
            } else  if (snapshot.connectionState == ConnectionState.waiting) {
              return CircularProgressIndicator();
            } else {
@@ -158,7 +170,14 @@ Widget ContinueWatching(BuildContext context) {
                   await Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => MoviePage(viewData: data[index]), 
+                      builder: (context) => VideoPage(viewData: data[index], index: 0), 
+                    ),
+                  );
+                } else if (data[index].seriesName != null) {
+                  await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => VideoPage(viewData: data[index], index: 1), 
                     ),
                   );
                 } else {

@@ -8,6 +8,8 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'dart:typed_data'; 
 import 'dart:convert';
 import 'objects.dart';
+import 'comps.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 
 /* 
   main(): uses FSS to get (or make) encryption key for hive,
@@ -94,46 +96,58 @@ class _MainRedirectorState extends State<MainRedirector> {
 
     var ama = context.watch<JellyfinAPI>();
 
+    Widget waitingWidget = Scaffold(
+      appBar: AppBar(
+        title: Text('Jellyfin'),
+        centerTitle: true,
+      ),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(),
+          ],
+        ),
+      ),
+    );
 
-    if (ama.lastUsedServer != null) {
-      var keyBase = ama.serverList[ama.lastUsedServer!].userMap!.keys!.toList();
-      var valueBase = ama.serverList[ama.lastUsedServer!].userMap!.values!.toList();
+    // checks for network availbility 
+    return FutureBuilder<ConnectivityResult>(
+      future: checkNetwork(),
+      builder: (context, snapshot) {
+        // checks if network state is not none
+        if (snapshot.data != ConnectivityResult.none) {
+          if (ama.lastUsedServer != null) {
+            var keyBase = ama.serverList[ama.lastUsedServer!].userMap!.keys!.toList();
+            var valueBase = ama.serverList[ama.lastUsedServer!].userMap!.values!.toList();
 
-      _ifLoggedIn = Future.wait([
-        Provider.of<JellyfinAPI>(context, listen: false).makeClient(ama.lastUsedServer),
-        if (ama?.serverList[ama.lastUsedServer!].lastLogIsQC == true)
-          Provider.of<JellyfinAPI>(context, listen: false).logInByQC(keyBase[ama.lastUser!], context)
-        else
-          Provider.of<JellyfinAPI>(context, listen: false).logInByName(keyBase[ama.lastUser!], valueBase[ama.lastUser!], context)
-      ]);
+            _ifLoggedIn = Future.wait([
+              Provider.of<JellyfinAPI>(context, listen: false).makeClient(ama.lastUsedServer),
+              if (ama?.serverList[ama.lastUsedServer!].lastLogIsQC == true)
+                Provider.of<JellyfinAPI>(context, listen: false).logInByQC(keyBase[ama.lastUser!], context)
+              else
+                Provider.of<JellyfinAPI>(context, listen: false).logInByName(keyBase[ama.lastUser!], valueBase[ama.lastUser!], context)
+            ]);
 
-      return FutureBuilder(
-        future: _ifLoggedIn,
-        builder: (context, snapshot) {
-         if (snapshot.connectionState == ConnectionState.waiting) {
-            return Scaffold(
-              appBar: AppBar(
-                title: Text('Jellyfin'),
-                centerTitle: true,
-              ),
-              body: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    CircularProgressIndicator(),
-                  ],
-                ),
-              ),
+            return FutureBuilder(
+              future: _ifLoggedIn,
+              builder: (context, snapshot) {
+               if (snapshot.connectionState == ConnectionState.waiting) {
+                  return waitingWidget;
+                } else if (snapshot.hasError) {
+                  return StartingPage();
+                } else {
+                  return HomePage(index: ama.lastUsedServer);
+                }  
+              },
             );
-          } else if (snapshot.hasError) {
-            return StartingPage();
           } else {
-            return HomePage(index: ama.lastUsedServer);
-          }  
-        },
-      );
-    } else {
-      return StartingPage();
-    }
+            return StartingPage();
+          }
+        } else {
+          return NoNetworkPage();
+        }
+      }
+    );
   }
 }

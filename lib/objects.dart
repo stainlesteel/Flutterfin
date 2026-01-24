@@ -1,3 +1,5 @@
+// contains hive objects and data enums
+
 import 'package:hive/hive.dart';
 import 'package:jellyfin_dart/jellyfin_dart.dart';
 

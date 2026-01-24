@@ -6,6 +6,7 @@ import 'main.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:jellyfin_dart/jellyfin_dart.dart';
 import 'dart:ui';
+import 'package:connectivity_plus/connectivity_plus.dart';
 
 // start default page (no server found)
 class StartingPage extends StatefulWidget {
@@ -105,6 +106,79 @@ class _StartingPageState extends State<StartingPage> {
   }
 }
 // end StartingPage
+
+// start NoNetworkPage
+class NoNetworkPage extends StatefulWidget {
+  const NoNetworkPage({super.key});
+
+  @override
+  State<NoNetworkPage> createState() => _NoNetworkPageState();
+}
+
+class _NoNetworkPageState extends State<NoNetworkPage> {
+  @override
+  Widget build(BuildContext context) {
+
+    var ama = context.watch<JellyfinAPI>();
+
+    return Scaffold(
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.wifi_off,
+              size: 50,
+              semanticLabel: 'no network available',
+            ),
+            Text('No Network Available', style: getTextStyling(2, context)),
+            Text('Please try connecting to WiFi/Mobile Data/Ethernet', style: getTextStyling(4, context)),
+            SizedBox(height: 20),
+            FloatingActionButton.extended(
+              onPressed: () async {
+                final networkData = await checkNetwork();
+
+                if (networkData == ConnectivityResult.none) {
+                  
+                } else {
+                  late var _widgetPage;
+
+                   if (ama.lastUsedServer != null) {
+                     var keyBase = ama.serverList[ama.lastUsedServer!].userMap!.keys!.toList();
+                     var valueBase = ama.serverList[ama.lastUsedServer!].userMap!.values!.toList();
+
+                     try {
+                       Future.wait([
+                         Provider.of<JellyfinAPI>(context, listen: false).makeClient(ama.lastUsedServer),
+                         if (ama?.serverList[ama.lastUsedServer!].lastLogIsQC == true)
+                           Provider.of<JellyfinAPI>(context, listen: false).logInByQC(keyBase[ama.lastUser!], context)
+                         else
+                           Provider.of<JellyfinAPI>(context, listen: false).logInByName(keyBase[ama.lastUser!], valueBase[ama.lastUser!], context)
+                       ]);
+                       _widgetPage = HomePage(index: ama.lastUsedServer);
+                     } catch (e) {
+                       _widgetPage = StartingPage();
+                     }
+                  } else {
+                    _widgetPage = StartingPage();
+                  }
+
+                  Navigator.pushAndRemoveUntil(
+                    context,
+                    MaterialPageRoute(builder: (context) => _widgetPage),
+                    (route) => false,
+                  );
+                }
+              },
+              icon: Icon(Icons.autorenew),
+              label: Text('Retry')
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
 
 // start UserLogIn
 class LogInPage extends StatefulWidget {
@@ -448,17 +522,18 @@ class _HomePageState extends State<HomePage> {
 
 //end HomePage
 
-//start MoviePage
-class MoviePage extends StatefulWidget {
+//start VideoPage
+class VideoPage extends StatefulWidget {
   final BaseItemDto viewData;
+  final int index; // 0: movie, 1: video
 
-  const MoviePage({super.key, required this.viewData});
+  const VideoPage({super.key, required this.viewData, required this.index});
 
   @override
-  State<MoviePage> createState() => _MoviePageState();
+  State<VideoPage> createState() => _VideoPageState();
 }
 
-class _MoviePageState extends State<MoviePage> {
+class _VideoPageState extends State<VideoPage> {
   @override
   void initState() {
     super.initState();
@@ -489,25 +564,32 @@ class _MoviePageState extends State<MoviePage> {
                   )
                 ),
                 SizedBox(width: 15),
-                Expanded(
-                  child: Text('${viewData.name}',style: TextStyle(fontWeight: FontWeight.bold, fontSize: 30)),
+                Flexible(
+                  child: Column(
+                    children: [
+                      if (viewData.seriesName != null) ...[
+                        Text('${viewData.seriesName}',style: TextStyle(fontWeight: FontWeight.bold, fontSize: 30)),
+                        Text('S${viewData.parentIndexNumber}:E${viewData.indexNumber}, ${viewData.name}',style: TextStyle(fontWeight: FontWeight.bold, fontSize: 25)),
+                      ] 
+                      else ...[
+                        Text('${viewData.name}',style: TextStyle(fontWeight: FontWeight.bold, fontSize: 30)),
+                      ]
+                    ],
+                  ),
                 ),
               ],
             ),
-            SizedBox(height: 7),
+            if (widget.index == 0)
+              SizedBox(height: 5),
             Row(
               children: [
                 FilledButton(
                   onPressed: () async {
-                    final _prof = await ama.getDeviceData();
-
                     final _data = await ama.getPlayBackData(
                       viewData.id!,
-                      _prof!.capabilities!.deviceProfile!,
                     );
-                    showScaffold(
-                      '${_data?.mediaSources?.first}',
-                      context
+                    print(
+                      '${_data?.mediaSources?.first?.mediaStreams}',
                     );
                   },
                   child: Text('Play'),
@@ -516,7 +598,7 @@ class _MoviePageState extends State<MoviePage> {
             ),
             Divider(),
             SizedBox(height: 7),
-            if (viewData.taglines?.firstOrNull != null) ...[
+            if (viewData.taglines?.isNotEmpty ?? false) ...[
               Text(
                 '${viewData.taglines?.firstOrNull ?? "Can't find taglines"}', 
                 textAlign: TextAlign.center,
@@ -567,7 +649,7 @@ class _MoviePageState extends State<MoviePage> {
             ),
             SizedBox(height: 15),
             Text('${viewData?.overview ?? ''}', textAlign: TextAlign.center),
-            if (viewData?.tags != null) ...[
+            if (viewData?.tags?.isNotEmpty ?? false) ...[
               SizedBox(height: 15),
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,

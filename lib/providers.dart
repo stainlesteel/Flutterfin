@@ -117,6 +117,12 @@ class JellyfinAPI extends ChangeNotifier {
     ServerObj _base = serverList[index!]!;
 
     appClient = JellyfinDart(
+      dio: Dio(
+        BaseOptions(
+          responseType: ResponseType.plain,
+          baseUrl: _base.serverURL!,
+        ),
+      ),
       basePathOverride: _base.serverURL,
     );
 
@@ -145,11 +151,21 @@ class JellyfinAPI extends ChangeNotifier {
         ),
       );
     } on DioException catch (e) {
-      if (e.type == DioExceptionType.badResponse) {
-        showScaffold('Tried to log in to previous/selected server but got a bad response, either the Jellyfin instance is not available, or you entered the wrong username/password', context);
-        throw DioException;
+      print('${e.response?.statusCode}');
+      if (e.response?.statusCode == 500) {
+        showScaffold(
+          "Connection Failure: We're unable to connect to the selected server right now. Please ensure it is running and try again.", 
+          context
+        );
+        return false;
+      } else if (e.type == DioExceptionType.badResponse) {
+        showScaffold(
+          'Tried to log in to previous/selected server but got a bad response, either the Jellyfin instance is not available, or you entered the wrong username/password',
+          context
+        );
         return false;
       }
+      throw DioException;
     }
     
     final token = response.data?.accessToken;
@@ -261,17 +277,6 @@ class JellyfinAPI extends ChangeNotifier {
     return data?.data;
   }
 
-  // gets device info
-  Future<DeviceInfoDto?> getDeviceData() async {
-    final dAPI = await appClient.getDevicesApi();
-    print('${serverList[lastUsedServer!].deviceId}');
-    final data = await dAPI.getDeviceInfo(
-      id: serverList[lastUsedServer!].deviceId!,
-    );
-
-    return data?.data;
-  }
-
   // this function updates lastUsedServer and pushes to homepage
   Future<void> goToHome(int? index, BuildContext context) async {
     lastUsedServer = index;
@@ -311,23 +316,13 @@ class JellyfinAPI extends ChangeNotifier {
     }
   }
 
-  Stream<List<BaseItemDto>?> getNextUp() async* {
-    ItemsApi itAPI = appClient.getItemsApi();
-
-    while (true) {
-      final data = await itAPI.getResumeItems(userId: userID);
-      yield data.data?.items ?? [];
-      await Future.delayed(Duration(seconds: 9));
-    }
-  }
-
-  Future<PlaybackInfoResponse?> getPlayBackData(String id, DeviceProfile prof) async {
+  Future<PlaybackInfoResponse?> getPlayBackData(String id) async {
     MediaInfoApi _api = await appClient.getMediaInfoApi();
     Response<PlaybackInfoResponse> _data = await _api.getPostedPlaybackInfo(
       itemId: id,
       userId: userID,
-      maxStreamingBitrate: prof.maxStreamingBitrate,
     );
+    print('${_data?.data}');
 
     return _data?.data;
   }
@@ -337,5 +332,11 @@ class JellyfinAPI extends ChangeNotifier {
       return '${serverList[lastUsedServer!].serverURL}';
     }
   }
+
+}
+
+class SettingsProvider extends ChangeNotifier {
+  Map<String, bool> codecSettings = {
+  };
 
 }
