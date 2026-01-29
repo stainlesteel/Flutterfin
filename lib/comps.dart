@@ -170,14 +170,14 @@ Widget ContinueWatching(BuildContext context) {
                   await Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => VideoPage(viewData: data[index], index: 0), 
+                      builder: (context) => ItemPage(viewData: data[index], index: 0), 
                     ),
                   );
                 } else if (data[index].seriesName != null) {
                   await Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => VideoPage(viewData: data[index], index: 1), 
+                      builder: (context) => ItemPage(viewData: data[index], index: 1), 
                     ),
                   );
                 } else {

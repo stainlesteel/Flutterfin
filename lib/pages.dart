@@ -7,6 +7,9 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:jellyfin_dart/jellyfin_dart.dart';
 import 'dart:ui';
 import 'package:connectivity_plus/connectivity_plus.dart';
+// media kit
+import 'package:media_kit/media_kit.dart';
+import 'package:media_kit_video/media_kit_video.dart';
 
 // start default page (no server found)
 class StartingPage extends StatefulWidget {
@@ -522,18 +525,18 @@ class _HomePageState extends State<HomePage> {
 
 //end HomePage
 
-//start VideoPage
-class VideoPage extends StatefulWidget {
+//start ItemPage
+class ItemPage extends StatefulWidget {
   final BaseItemDto viewData;
   final int index; // 0: movie, 1: video
 
-  const VideoPage({super.key, required this.viewData, required this.index});
+  const ItemPage({super.key, required this.viewData, required this.index});
 
   @override
-  State<VideoPage> createState() => _VideoPageState();
+  State<ItemPage> createState() => _ItemPageState();
 }
 
-class _VideoPageState extends State<VideoPage> {
+class _ItemPageState extends State<ItemPage> {
   @override
   void initState() {
     super.initState();
@@ -550,120 +553,192 @@ class _VideoPageState extends State<VideoPage> {
       appBar: AppBar(
       ),
       body: Center(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Row(
-              children: [
-                SizedBox(width: 20),
-                Container(
-                  width: MediaQuery.sizeOf(context).width * 0.30,
-                  height: MediaQuery.sizeOf(context).height * 0.30,
-                  child: Image(
-                    image: CachedNetworkImageProvider('${ama.serverList[ama.lastUsedServer!].serverURL}/Items/${viewData!.id!}/Images/Primary?tag=${viewData!.imageTags?['Primary']}'),
-                  )
-                ),
-                SizedBox(width: 15),
-                Flexible(
-                  child: Column(
-                    children: [
-                      if (viewData.seriesName != null) ...[
-                        Text('${viewData.seriesName}',style: TextStyle(fontWeight: FontWeight.bold, fontSize: 30)),
-                        Text('S${viewData.parentIndexNumber}:E${viewData.indexNumber}, ${viewData.name}',style: TextStyle(fontWeight: FontWeight.bold, fontSize: 25)),
-                      ] 
-                      else ...[
-                        Text('${viewData.name}',style: TextStyle(fontWeight: FontWeight.bold, fontSize: 30)),
-                      ]
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            if (widget.index == 0)
-              SizedBox(height: 5),
-            Row(
-              children: [
-                FilledButton(
-                  onPressed: () async {
-                    final _data = await ama.getPlayBackData(
-                      viewData.id!,
-                    );
-                    print(
-                      '${_data?.mediaSources?.first?.mediaStreams}',
-                    );
-                  },
-                  child: Text('Play'),
-                ),
-              ],
-            ),
-            Divider(),
-            SizedBox(height: 7),
-            if (viewData.taglines?.isNotEmpty ?? false) ...[
-              Text(
-                '${viewData.taglines?.firstOrNull ?? "Can't find taglines"}', 
-                textAlign: TextAlign.center,
-                style: getTextStyling(1 ,context),
-              ),
-              SizedBox(height: 10),
-            ],
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
+        child: SingleChildScrollView(
+          scrollDirection: Axis.vertical,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Row(
                 children: [
+                  SizedBox(width: 20),
+                  Container(
+                    width: MediaQuery.sizeOf(context).width * 0.30,
+                    height: MediaQuery.sizeOf(context).height * 0.30,
+                    child: Image(
+                      image: CachedNetworkImageProvider('${ama.serverList[ama.lastUsedServer!].serverURL}/Items/${viewData!.id!}/Images/Primary?tag=${viewData!.imageTags?['Primary']}'),
+                    )
+                  ),
                   SizedBox(width: 15),
-                  detailCard(text: '${viewData.productionYear ?? ''}', context: context),
-                  SizedBox(width: 20),
-                  detailCard(text: '${getTime(runTime.round())}', context: context),
-                  if (viewData.officialRating != null) ...[
-                    SizedBox(width: 20),
-                    detailCard(text: '${viewData.officialRating ?? 'Rating Unavailable'}', context: context)
-                  ],
-                  if (viewData.criticRating != null) ...[
-                    SizedBox(width: 20),
-                    detailCard(
+                  Flexible(
+                    child: Column(
                       children: [
-                        Icon(
-                          Icons.rate_review,
-                          color: Colors.red,
-                        ),
-                        SizedBox(width: 5),
-                        Text('${viewData.criticRating?.round() ?? 'Unavailable'}', style: getTextStyling(1, context)),
-                      ], 
-                      context: context
+                        if (viewData.seriesName != null) ...[
+                          Text('${viewData.seriesName}',style: TextStyle(fontWeight: FontWeight.bold, fontSize: 30)),
+                          Text('S${viewData.parentIndexNumber}:E${viewData.indexNumber}, ${viewData.name}',style: TextStyle(fontWeight: FontWeight.bold, fontSize: 25)),
+                        ] 
+                        else ...[
+                          Text('${viewData.name}',style: TextStyle(fontWeight: FontWeight.bold, fontSize: 30)),
+                        ]
+                      ],
                     ),
-                  ],
-                  SizedBox(width: 20),
-                  detailCard(
-                    children: [
-                      Icon(
-                        Icons.star,
-                        color: Colors.yellow,
-                      ),
-                      SizedBox(width: 5),
-                      Text('${viewData?.communityRating ?? 'Unavailable'}', style: getTextStyling(1, context)),
-                    ], 
-                    context: context
                   ),
                 ],
               ),
-            ),
-            SizedBox(height: 15),
-            Text('${viewData?.overview ?? ''}', textAlign: TextAlign.center),
-            if (viewData?.tags?.isNotEmpty ?? false) ...[
-              SizedBox(height: 15),
+              if (widget.index == 0)
+                SizedBox(height: 5),
+              Row(
+                children: [
+                  FilledButton(
+                    onPressed: () async {
+                      final url = ama.getStreamUrl(viewData.id!);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => VideoPlayerPage(viewData: viewData, index: 0),
+                        )
+                      );
+                    },
+                    child: Text('Play'),
+                  ),
+                ],
+              ),
+              Divider(),
+              SizedBox(height: 7),
+              if (viewData.taglines?.isNotEmpty ?? false) ...[
+                Text(
+                  '${viewData.taglines?.firstOrNull ?? "Can't find taglines"}', 
+                  textAlign: TextAlign.center,
+                  style: getTextStyling(1 ,context),
+                ),
+                SizedBox(height: 10),
+              ],
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 child: Row(
                   children: [
-                    SizedBox(width: 12),
-                    Text('Tags:'),
-                    SizedBox(width: 5,),
-                    for (String tag in viewData.tags ?? [])
-                      detailCard(text: '$tag', context: context)
+                    SizedBox(width: 15),
+                    detailCard(text: '${viewData.productionYear ?? ''}', context: context),
+                    SizedBox(width: 20),
+                    detailCard(text: '${getTime(runTime.round())}', context: context),
+                    if (viewData.officialRating != null) ...[
+                      SizedBox(width: 20),
+                      detailCard(text: '${viewData.officialRating ?? 'Rating Unavailable'}', context: context)
+                    ],
+                    if (viewData.criticRating != null) ...[
+                      SizedBox(width: 20),
+                      detailCard(
+                        children: [
+                          Icon(
+                            Icons.rate_review,
+                            color: Colors.red,
+                          ),
+                          SizedBox(width: 5),
+                          Text('${viewData.criticRating?.round() ?? 'Unavailable'}', style: getTextStyling(1, context)),
+                        ], 
+                        context: context
+                      ),
+                    ],
+                    SizedBox(width: 20),
+                    detailCard(
+                      children: [
+                        Icon(
+                          Icons.star,
+                          color: Colors.yellow,
+                        ),
+                        SizedBox(width: 5),
+                        Text('${viewData?.communityRating ?? 'Unavailable'}', style: getTextStyling(1, context)),
+                      ], 
+                      context: context
+                    ),
                   ],
                 ),
               ),
+              SizedBox(height: 15),
+              Text('${viewData?.overview ?? ''}', textAlign: TextAlign.center),
+              if (viewData?.tags?.isNotEmpty ?? false) ...[
+                SizedBox(height: 15),
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      SizedBox(width: 12),
+                      Text('Tags:'),
+                      SizedBox(width: 5,),
+                      for (String tag in viewData.tags ?? [])
+                        detailCard(text: '$tag', context: context)
+                    ],
+                  ),
+                ),
+              ],
             ],
+          ),
+        ),
+      ), 
+    );
+
+    return _scaffold;
+  }
+}
+// end ItemPage
+
+// start VideoPlayerPage
+class VideoPlayerPage extends StatefulWidget {
+  final BaseItemDto viewData;
+  final int index; // 0: movie, 1: video
+
+  const VideoPlayerPage({super.key, required this.viewData, required this.index});
+
+  @override
+  State<VideoPlayerPage> createState() => _VideoPlayerPageState();
+}
+
+class _VideoPlayerPageState extends State<VideoPlayerPage> {
+  late PlayerManager player;
+
+  @override
+  void initState() {
+    super.initState();
+    MediaKit.ensureInitialized();
+
+    player = PlayerManager();
+    starter();
+  }
+
+  Future<void> starter() async {
+    final url = Provider.of<JellyfinAPI>(context, listen: false).getStreamUrl(widget.viewData!.id!);
+    print('${widget.viewData.mediaStreams?.firstOrNull}');
+    await player.addMovie(url!);
+    await player.playData();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    var ama = context.watch<JellyfinAPI>();
+    BaseItemDto viewData = widget.viewData;
+    VideoController videoConts = VideoController(player.player);
+
+    Widget _scaffold = Scaffold(
+      body: Center(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            SizedBox(
+              width: MediaQuery.of(context).size.width,
+              height: MediaQuery.of(context).size.width * 9 / 16,
+              child: Video(
+                controller: videoConts,
+                controls: MaterialVideoControls,
+              ),
+            ),
+            TextButton(
+              onPressed: () {
+                print('listeening');
+                player.player.stream.log.listen((event) {
+                  print('media_kit: ${event.level}, ${event.prefix}:${event.text}');
+                });
+              },
+              child: Text('Listen'),
+            ),
           ],
         ),
       ), 
@@ -672,3 +747,4 @@ class _VideoPageState extends State<VideoPage> {
     return _scaffold;
   }
 }
+// end VideoPlayerPage

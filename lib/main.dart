@@ -138,6 +138,11 @@ class _MainRedirectorState extends State<MainRedirector> {
                   return StartingPage();
                 } else {
                   return HomePage(index: ama.lastUsedServer);
+                  Navigator.pushAndRemoveUntil(
+                    context,
+                    MaterialPageRoute(builder: (context) => HomePage(index: ama.lastUsedServer)),
+                    (route) => false,
+                  );
                 }  
               },
             );

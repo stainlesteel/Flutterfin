@@ -6,6 +6,9 @@ import 'package:jellyfin_dart/jellyfin_dart.dart';
 import 'comps.dart';
 import 'objects.dart';
 import 'pages.dart';
+// media kit
+import 'package:media_kit/media_kit.dart';
+import 'package:media_kit_video/media_kit_video.dart';
 
 class JellyfinAPI extends ChangeNotifier {
   final Box box;
@@ -327,16 +330,69 @@ class JellyfinAPI extends ChangeNotifier {
     return _data?.data;
   }
 
-  String? getStreamUrl(MediaSourceInfo data) {
-    if (data.supportsDirectPlay! == false || data.transcodingUrl != null) {
-      return '${serverList[lastUsedServer!].serverURL}';
-    }
+  String? getStreamUrl(String itemId) {
+    return '${serverList[lastUsedServer!].serverURL}/Videos/${itemId}/stream';
+  }
+
+  Future<BaseItemDtoQueryResult?> getShowEpisodes({required String seriesId, int? season = null}) async {
+    final tvAPI = await appClient.getTvShowsApi();
+    final _data = await tvAPI.getEpisodes(
+      seriesId: seriesId,
+      userId: userID,
+      season: season,
+    );
+
+    return _data?.data;
   }
 
 }
 
-class SettingsProvider extends ChangeNotifier {
-  Map<String, bool> codecSettings = {
-  };
+// wrapper class for MediaKit
+class PlayerManager {
+  late var playMedia;
 
+  final Player player = Player(
+    configuration: PlayerConfiguration(
+      title: 'Jellyfin',
+      logLevel: MPVLogLevel.v,
+    ),
+  );
+
+  // wrapper functions below
+  Future<void> disposePlayer() async {
+    await player.dispose();
+  }
+
+  Future<void> addMovie(String url) async {
+    playMedia = Media(
+      url,
+    );
+    await player.open(playMedia);
+  }
+
+  Future<void> addShow(BaseItemDto? dto, BuildContext context) async {
+    dynamic showData = await Provider.of<JellyfinAPI>(context, listen: false).getShowEpisodes(
+      seriesId: dto!.seriesId!,
+      season: dto?.parentIndexNumber,
+    );
+
+    List<String> episodeUrls = [];
+
+    for (BaseItemDto? item in showData! ?? {}) {
+      String? url = Provider.of<JellyfinAPI>(context, listen: false).getStreamUrl(item!.id!);
+      episodeUrls.add(url!);
+    }
+
+    playMedia = Playlist(
+      [
+        for (String url in episodeUrls)
+          Media(url)
+      ],
+    );
+    await player.open(playMedia);
+  }
+
+  Future<void> playData() async {
+    await player.play();
+  }
 }
