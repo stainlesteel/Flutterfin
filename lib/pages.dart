@@ -706,7 +706,7 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
 
   Future<void> starter() async {
     final url = Provider.of<JellyfinAPI>(context, listen: false).getStreamUrl(widget.viewData!.id!);
-    print('${widget.viewData.mediaStreams?.firstOrNull}');
+    print('Stream Url: $url');
     await player.addMovie(url!);
     await player.playData();
   }
@@ -723,21 +723,26 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             SizedBox(
-              width: MediaQuery.of(context).size.width,
-              height: MediaQuery.of(context).size.width * 9 / 16,
-              child: Video(
-                controller: videoConts,
-                controls: MaterialVideoControls,
+              height: MediaQuery.sizeOf(context).height,
+              child: MaterialVideoControlsTheme(
+                normal: MaterialVideoControlsThemeData(
+                  topButtonBar: [
+                    IconButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                      },
+                      icon: Icon(
+                        Icons.arrow_back,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ],
+                ),
+                fullscreen: MaterialVideoControlsThemeData(),
+                child: Video(
+                  controller: videoConts,
+                ),
               ),
-            ),
-            TextButton(
-              onPressed: () {
-                print('listeening');
-                player.player.stream.log.listen((event) {
-                  print('media_kit: ${event.level}, ${event.prefix}:${event.text}');
-                });
-              },
-              child: Text('Listen'),
             ),
           ],
         ),

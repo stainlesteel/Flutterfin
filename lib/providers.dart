@@ -60,7 +60,15 @@ class JellyfinAPI extends ChangeNotifier {
       if (dio.data['ServerName'] == null) {
         return false;
       } else if (conType.contains('text/html')) {
-        showScaffold("Can connect to server but can't access it's ServerName.\nIf the URL is working for you, check if you're getting redirected to the correct URL by the server.", context);
+        showDialog(
+          context: context,
+          builder: (context) =>  popUpDiag(
+            title: "Server Verify Error", 
+            content: [
+              Text("Can connect to server but can't access it's ServerName.\nIf the URL is working for you, check if you're getting redirected to the correct URL by the server."),
+            ],
+          ),
+        );
         return false;
       } 
       else {
@@ -78,13 +86,14 @@ class JellyfinAPI extends ChangeNotifier {
         text = 'Failed to connect to server.';
       } else if (e.type == DioExceptionType.badResponse) {
         text = 'Got bad response from server url.';
+      } else {
+        text = 'Unknown Error.';
       }
       Navigator.pop(context);
-      showScaffold(text, context);
-      return false;
-    } catch (e) {
-      Navigator.pop(context);
-      showScaffold('Unknown error when trying to verify server.', context);
+      showDialog(
+        context: context,
+        builder: (context) => popUpDiag(title: 'Server Verify Error', content: [Text('$text')])
+      );
       return false;
     } finally {
       isVerifyingServer = false;
@@ -154,20 +163,23 @@ class JellyfinAPI extends ChangeNotifier {
         ),
       );
     } on DioException catch (e) {
-      print('${e.response?.statusCode}');
-      if (e.response?.statusCode == 500) {
-        showScaffold(
-          "Connection Failure: We're unable to connect to the selected server right now. Please ensure it is running and try again.", 
-          context
-        );
-        return false;
-      } else if (e.type == DioExceptionType.badResponse) {
-        showScaffold(
-          'Tried to log in to previous/selected server but got a bad response, either the Jellyfin instance is not available, or you entered the wrong username/password',
-          context
-        );
-        return false;
+      late String text;
+      print('Login Status Code: ${e.response?.statusCode}');
+      if (e.type == DioExceptionType.badResponse) {
+        LogInErrorDiag(context);
+      } else if (e.response!.statusCode == 500) {
+        ServerConnectErrorDiag(context);
       }
+
+      return false;
+
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(
+          builder: (context) => StartingPage(),
+        ),
+        (route) => false,
+      );
       throw DioException;
     }
     
@@ -191,7 +203,16 @@ class JellyfinAPI extends ChangeNotifier {
     try {
       result = await qc.initiateQuickConnect();
     } on DioException catch (e) {
-      showScaffold('Quick Connect is disabled by this server.', context);
+      showDialog(
+        context: context,
+        builder: (context) => popUpDiag(
+          title: 'Quick Connect Error',
+          content: [
+            Text('Quick Connect is disabled by this server.')
+          ],
+        ),
+      );
+      
     }
 
     return result?.data;
@@ -225,11 +246,23 @@ class JellyfinAPI extends ChangeNotifier {
         quickConnectDto: QuickConnectDto(secret: res_secret),
       );
     } on DioException catch (e) {
+      late String text;
+      print('Login Status Code: ${e.response?.statusCode}');
       if (e.type == DioExceptionType.badResponse) {
-        showScaffold('Tried to log in to previous/selected server but got a bad response, either the Jellyfin instance is not available, or you entered the wrong username/password', context);
-        throw DioException;
-        return false;
+        LogInErrorDiag(context);
+      } else if (e.response!.statusCode == 500) {
+        ServerConnectErrorDiag(context);
       }
+
+      return false;
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(
+          builder: (context) => StartingPage(),
+        ),
+        (route) => false,
+      );
+      throw DioException;
     }
     
     final token = response.data?.accessToken;
@@ -294,28 +327,52 @@ class JellyfinAPI extends ChangeNotifier {
   // streams for homepage
   Stream<List<BaseItemDto>?> userViewsStream() async* {
     UserViewsApi uvAPI = appClient.getUserViewsApi();
+    int timeOutLimit = 3;
+    int attempts = 0;
 
     while (true) {
-      final data = await uvAPI.getUserViews(userId: userID);
-      yield data.data?.items;
-      await Future.delayed(Duration(seconds: 9));
+      try {
+        final data = await uvAPI.getUserViews(userId: userID);
+        yield data.data?.items;
+        await Future.delayed(Duration(seconds: 9));
+      } on DioException catch (e) {
+        if (attempts == timeOutLimit) {
+          yield null;
+        } else {
+          attempts++;
+          print('userViewsStream attempts: $attempts');
+          await Future.delayed(Duration(seconds: 2));
+        }
+      }
     }
   }
 
   Stream<List<BaseItemDto>?> getContinueWatching() async* {
     ItemsApi itAPI = appClient.getItemsApi();
+    int timeOutLimit = 3;
+    int attempts = 0;
 
     while (true) {
-      final data = await itAPI.getResumeItems(
-        userId: userID,
-        fields: <ItemFields>[
-          ItemFields.overview, 
-          ItemFields.taglines,
-          ItemFields.tags,
-        ],
-      );
-      yield data.data?.items ?? [];
-      await Future.delayed(Duration(seconds: 9));
+      try {
+        final data = await itAPI.getResumeItems(
+          userId: userID,
+          fields: <ItemFields>[
+            ItemFields.overview, 
+            ItemFields.taglines,
+            ItemFields.tags,
+          ],
+        );
+        yield data.data?.items ?? [];
+        await Future.delayed(Duration(seconds: 9));
+      } on DioException catch (e) {
+        if (attempts == timeOutLimit) {
+          yield null;
+        } else {
+          attempts++;
+          print('userViewsStream attempts: $attempts');
+          await Future.delayed(Duration(seconds: 2));
+        }
+      }
     }
   }
 
@@ -331,7 +388,7 @@ class JellyfinAPI extends ChangeNotifier {
   }
 
   String? getStreamUrl(String itemId) {
-    return '${serverList[lastUsedServer!].serverURL}/Videos/${itemId}/stream';
+    return '${serverList[lastUsedServer!].serverURL}/Videos/${itemId}/stream?Static=true';
   }
 
   Future<BaseItemDtoQueryResult?> getShowEpisodes({required String seriesId, int? season = null}) async {
@@ -393,6 +450,7 @@ class PlayerManager {
   }
 
   Future<void> playData() async {
+    Future.delayed(Duration(seconds: 1),);
     await player.play();
   }
 }

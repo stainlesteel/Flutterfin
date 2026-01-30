@@ -36,6 +36,50 @@ Widget popUpDiag({String title = '', List<Widget> content = const [], List<Widge
   );
 }
 
+void ServerConnectErrorDiag(BuildContext context) {
+  showDialog(
+    context: context,
+    builder: (context) => popUpDiag(
+      title: "Connection Error",
+      content: [
+        Text(
+          "We're unable to connect to the selected server right now. Please ensure it is running and try again.", 
+        ),
+      ],
+      actions: [
+        TextButton(
+          onPressed: () {
+            Navigator.pop(context);
+          },
+          child: Text('Ok'),
+        ),
+      ],
+    ),
+  );
+}
+
+void LogInErrorDiag(BuildContext context) {
+  showDialog(
+    context: context,
+    builder: (context) => popUpDiag(
+      title: "Log In Error",
+      content: [
+        Text(
+          "Unable to login to the server with these credentials, please ensure they are correct and try again.", 
+        ),
+      ],
+      actions: [
+        TextButton(
+          onPressed: () {
+            Navigator.pop(context);
+          },
+          child: Text('Ok'),
+        ),
+      ],
+    ),
+  );
+}
+
 String randomString() {
   return String.fromCharCodes(List.generate(8, (index) => Random().nextInt(33) + 89));
 }
@@ -75,7 +119,7 @@ Widget detailCard({String? text = '', List<Widget>? children = null, required Bu
 Future<ConnectivityResult> checkNetwork() async {
   final List<ConnectivityResult> result = await (Connectivity().checkConnectivity());
 
-  print("$result");
+  print("Network Connectivity State: ${result[0]}");
   return result[0];
 } 
 
@@ -95,7 +139,7 @@ Widget UserViews(BuildContext context) {
        child: StreamBuilder(
          stream: ama.userViewsStream(),
          builder: (context, snapshot) {
-           if (snapshot.hasError) {
+           if (snapshot.data == null) {
              dev.log('${snapshot.error}');
              return Text('Failed to download libraries.');
            } else  if (snapshot.connectionState == ConnectionState.waiting) {
@@ -150,7 +194,7 @@ Widget ContinueWatching(BuildContext context) {
     child: StreamBuilder(
       stream: ama.getContinueWatching(),
       builder: (context, snapshot) {
-        if (snapshot.hasError) {
+        if (snapshot.data == null) {
           return Text('Failed to download library playlist.');
         } else  if (snapshot.connectionState == ConnectionState.waiting) {
           return CircularProgressIndicator();

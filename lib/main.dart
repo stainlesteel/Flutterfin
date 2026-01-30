@@ -11,6 +11,7 @@ import 'objects.dart';
 import 'comps.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 
+
 /* 
   main(): uses FSS to get (or make) encryption key for hive,
   uses path_provider to get support dir path to give a location for hive,
@@ -138,11 +139,6 @@ class _MainRedirectorState extends State<MainRedirector> {
                   return StartingPage();
                 } else {
                   return HomePage(index: ama.lastUsedServer);
-                  Navigator.pushAndRemoveUntil(
-                    context,
-                    MaterialPageRoute(builder: (context) => HomePage(index: ama.lastUsedServer)),
-                    (route) => false,
-                  );
                 }  
               },
             );
