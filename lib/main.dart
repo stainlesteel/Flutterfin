@@ -10,7 +10,7 @@ import 'dart:convert';
 import 'objects.dart';
 import 'comps.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
-
+import 'package:dio/dio.dart';
 
 /* 
   main(): uses FSS to get (or make) encryption key for hive,
@@ -24,8 +24,8 @@ void main() async {
   final _fss = const FlutterSecureStorage();
 
   final libs = await getApplicationSupportDirectory(); // get support dir path
-  final _eKey = await _fss.read(key: 'encryptor'); // find encryptor
-  final _hiveKey = Hive.generateSecureKey(); // hive secure key
+  String? _eKey = await _fss.read(key: 'encryptor'); // find encryptor
+  dynamic _hiveKey = Hive.generateSecureKey(); // hive secure key
 
   dynamic _cipher = _eKey ?? _hiveKey;
 
@@ -45,6 +45,11 @@ void main() async {
     encryptionCipher: HiveAesCipher(_cipher),
     crashRecovery: false,
   ); // is fss key real? if yes use it, if not, use generated one and save it
+
+  // nuke everything
+  _eKey = null;
+  _hiveKey = null;
+  _cipher = null;
 
   runApp(
     MultiProvider( 
@@ -129,6 +134,7 @@ class _MainRedirectorState extends State<MainRedirector> {
               else
                 Provider.of<JellyfinAPI>(context, listen: false).logInByName(keyBase[ama.lastUser!], valueBase[ama.lastUser!], context)
             ]);
+
 
             return FutureBuilder(
               future: _ifLoggedIn,

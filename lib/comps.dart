@@ -58,6 +58,28 @@ void ServerConnectErrorDiag(BuildContext context) {
   );
 }
 
+void SimpleErrorDiag({required String title, required String desc, required BuildContext context}) {
+  showDialog(
+    context: context,
+    builder: (context) => popUpDiag(
+      title: "$title",
+      content: [
+        Text(
+          "$title", 
+        ),
+      ],
+      actions: [
+        TextButton(
+          onPressed: () {
+            Navigator.pop(context);
+          },
+          child: Text('Ok'),
+        ),
+      ],
+    ),
+  );
+}
+
 void LogInErrorDiag(BuildContext context) {
   showDialog(
     context: context,
@@ -127,6 +149,16 @@ void showScaffold(String text, BuildContext context) {
   ScaffoldMessenger.of(context).showSnackBar(
     SnackBar(
       content: Text(text),
+    ),
+  );
+}
+
+Widget PlayerText(String text) {
+  return Text(
+    text, 
+    style: TextStyle(
+      color: Colors.white,
+      fontWeight: FontWeight.bold,
     ),
   );
 }

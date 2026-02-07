@@ -101,6 +101,29 @@ class JellyfinAPI extends ChangeNotifier {
     }
   }
 
+  Stream<DioException?> pingServerStream(BuildContext context) async* {
+    while (true) {
+      final exception = await pingServer(context);
+      await Future.delayed(Duration(seconds: 2));
+      if (exception != null) {
+        yield exception;
+      } else {
+        yield null;
+      }
+      await Future.delayed(Duration(seconds: 10));
+    }
+  }
+
+  // intended only for a stream and if user is already logged in
+  Future<DioException?> pingServer(BuildContext context) async {
+    try {
+      final dio = await Dio().get('${serverList[lastUsedServer!].serverURL}');
+      return null;
+    } on DioException catch (e) {
+      return e;
+    }
+  }
+
   Future<void> updateServerList() async {
     int _tmpInt = 0;
     for (ServerObj objs in serverList) {
@@ -163,24 +186,26 @@ class JellyfinAPI extends ChangeNotifier {
         ),
       );
     } on DioException catch (e) {
-      late String text;
       print('Login Status Code: ${e.response?.statusCode}');
+      
+      List<String> text = [];
+
+      await Future.delayed(Duration(seconds: 1));
+
       if (e.type == DioExceptionType.badResponse) {
         LogInErrorDiag(context);
       } else if (e.response!.statusCode == 500) {
         ServerConnectErrorDiag(context);
+      } else if (e.response!.statusCode == 503) {
+        text = ["Server is Down", "Server is currently down and is under maintenance or got into an error. Check the URL in your browser for more info."];
+        SimpleErrorDiag(
+          title: text[0], 
+          desc: text[1], 
+          context: context
+        );
       }
-
-      return false;
-
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(
-          builder: (context) => StartingPage(),
-        ),
-        (route) => false,
-      );
       throw DioException;
+      return false;
     }
     
     final token = response.data?.accessToken;
@@ -391,15 +416,44 @@ class JellyfinAPI extends ChangeNotifier {
     return '${serverList[lastUsedServer!].serverURL}/Videos/${itemId}/stream?Static=true';
   }
 
-  Future<BaseItemDtoQueryResult?> getShowEpisodes({required String seriesId, int? season = null}) async {
-    final tvAPI = await appClient.getTvShowsApi();
-    final _data = await tvAPI.getEpisodes(
-      seriesId: seriesId,
-      userId: userID,
-      season: season,
-    );
+  Future<List<BaseItemDto>?> getShowEpisodes({required String seriesId, int? season = null, BuildContext? context = null}) async {
+    if (context == null) {
+      print('getShowEpisodes(): Your Code Sucks! Add context to getShowEpisodes()');
+      return null;
+    } else {
+      final tvAPI = await appClient.getTvShowsApi();
+      late final _data;
 
-    return _data?.data;
+      try {
+        _data = await tvAPI.getEpisodes(
+          seriesId: seriesId,
+          userId: userID,
+          season: season,
+        );
+        return _data?.data?.items;
+      } on DioException catch (e) {
+        List<String> text = [];
+        if (e.response?.statusCode == 500) {
+          text = [
+            "Could not fetch episodes", 
+            "Could not connect to the Jellyfin Server as the current user cannot be used to get Show Data.\nPlease check the Jellyfin URL to see if you can log in or not."
+          ];
+        } else {
+          text = [
+            "Unknown Error",
+            "Unknown Error"
+          ];    
+        }
+        SimpleErrorDiag(
+          title: text[0],
+          desc: text[1],
+          context: context,
+        );
+      }
+      
+      return null;
+
+    }
   }
 
 }
@@ -431,26 +485,58 @@ class PlayerManager {
     dynamic showData = await Provider.of<JellyfinAPI>(context, listen: false).getShowEpisodes(
       seriesId: dto!.seriesId!,
       season: dto?.parentIndexNumber,
+      context: context,
     );
 
-    List<String> episodeUrls = [];
+    if (showData == null) {
+      Navigator.pop(context);
+    } else {
+      List<Map<String, dynamic>> episodeData = [];
 
-    for (BaseItemDto? item in showData! ?? {}) {
-      String? url = Provider.of<JellyfinAPI>(context, listen: false).getStreamUrl(item!.id!);
-      episodeUrls.add(url!);
+      for (BaseItemDto? item in showData! ?? {}) {
+        String? url = Provider.of<JellyfinAPI>(context, listen: false).getStreamUrl(item!.id!);
+
+        episodeData.add({'url': '$url', 'name': '${item.name}'});
+      }
+
+      playMedia = Playlist(
+        [
+          for (Map<String, dynamic> item in episodeData)
+            Media(
+              item['url'],
+              extras: {
+                'name': '${item['name']}',
+              },
+            )
+        ],
+        index: dto.indexNumber!,
+      );
+
+      await player.open(playMedia);
     }
 
-    playMedia = Playlist(
-      [
-        for (String url in episodeUrls)
-          Media(url)
-      ],
-    );
-    await player.open(playMedia);
   }
 
-  Future<void> playData() async {
+  Future<void> playMovie() async {
     Future.delayed(Duration(seconds: 1),);
     await player.play();
+  }
+
+  Future<void> playShow() async {
+    Future.delayed(Duration(seconds: 1),);
+    await player.play();
+  }
+
+  Future<void> pause() async {
+    Future.delayed(Duration(seconds: 1),);
+    await player.pause();
+  }
+
+  Stream<Media> getMediaObject() async* {
+    while (true) {
+      final data = player.state.playlist.medias[player.state.playlist.index];
+      yield data;
+      await Future.delayed(Duration(seconds: 5));
+    }
   }
 }

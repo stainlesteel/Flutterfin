@@ -446,9 +446,8 @@ class _LogInPageState extends State<LogInPage> {
         ),
         Positioned.fill(
           child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 1, sigmaY: 1),
+            filter: ImageFilter.blur(sigmaX: 6, sigmaY: 6),
             child: Container(
-              color: Colors.black.withOpacity(0.65),
             ),
           ),
         ),
@@ -590,11 +589,14 @@ class _ItemPageState extends State<ItemPage> {
                 children: [
                   FilledButton(
                     onPressed: () async {
-                      final url = ama.getStreamUrl(viewData.id!);
+                      int index = 0;
+                      if (viewData.seriesName != null) {
+                        index = 1;
+                      }
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => VideoPlayerPage(viewData: viewData, index: 0),
+                          builder: (context) => VideoPlayerPage(viewData: viewData, index: index),
                         )
                       );
                     },
@@ -704,11 +706,21 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
     starter();
   }
 
+  @override
+  void dispose() {
+    super.dispose();
+  }
+
   Future<void> starter() async {
     final url = Provider.of<JellyfinAPI>(context, listen: false).getStreamUrl(widget.viewData!.id!);
     print('Stream Url: $url');
-    await player.addMovie(url!);
-    await player.playData();
+    if (widget.index == 0) {
+      await player.addMovie(url!);
+      await player.playMovie();
+    } else {
+      await player.addShow(widget.viewData, context);
+      await player.playShow();
+    }
   }
 
   @override
@@ -728,7 +740,10 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
                 normal: MaterialVideoControlsThemeData(
                   topButtonBar: [
                     IconButton(
-                      onPressed: () {
+                      onPressed: () async {
+                        await player.pause();
+                        await player.disposePlayer();
+                        await Future.delayed(Duration(seconds: 1));
                         Navigator.pop(context);
                       },
                       icon: Icon(
@@ -736,6 +751,20 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
                         color: Colors.white,
                       ),
                     ),
+                    /*
+                    if (widget.viewData.seriesName != null)
+                    else
+                      PlayerText('${widget.viewData.name}')
+                    */
+                  ],
+                  bottomButtonBar: [
+                    MaterialPlayOrPauseButton(), // play pause
+                    MaterialSkipPreviousButton(), // skip left
+                    IconButton( // skip next
+                      icon: Icon(Icons.skip_next),
+                      onPressed: () {},
+                    ),
+                    MaterialPositionIndicator(), // position indicator
                   ],
                 ),
                 fullscreen: MaterialVideoControlsThemeData(),
