@@ -723,11 +723,83 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
     }
   }
 
+  ValueNotifier<String> playerTitle = ValueNotifier<String>('');
+
   @override
   Widget build(BuildContext context) {
     var ama = context.watch<JellyfinAPI>();
-    BaseItemDto viewData = widget.viewData;
     VideoController videoConts = VideoController(player.player);
+
+    int episodeIndex = widget.viewData.indexNumber ?? 0; // the number for skip buttons to use as the base (skip previous: skipInt - 1) (skip next: skipInt + 1)
+    // if null, video is probably a movie, in that case, this isn't going to be used
+
+    if (widget.viewData.seriesName != null) {
+      playerTitle.value = '${widget.viewData.seriesName} - ${widget.viewData.name}';
+    } else {
+      playerTitle.value = '${widget.viewData.name}';
+    }
+
+    // player theme for both normal and fullscreen
+    MaterialVideoControlsThemeData themeData = MaterialVideoControlsThemeData(
+      topButtonBar: [
+        IconButton(
+          onPressed: () async {
+            await player.pause();
+            await player.disposePlayer();
+            await Future.delayed(Duration(seconds: 1));
+            Navigator.pop(context);
+          },
+          icon: Icon(
+            Icons.arrow_back,
+            color: Colors.white,
+          ),
+        ),
+        ValueListenableBuilder(
+          valueListenable: playerTitle,
+          builder: (context, value, child) {
+            return Text(
+              value,
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            );
+          }
+        ),
+      ],
+      bottomButtonBar: [
+        MaterialPlayOrPauseButton(), // play pause
+        if (widget.viewData.seriesName != null) ...[
+            IconButton( // skip previous
+              icon: Icon(
+                Icons.skip_previous,
+                color: Colors.white,
+              ),
+              onPressed: () async {
+                episodeIndex--;
+                await player.skipPrevious();
+                await Future.delayed(Duration(seconds: 1));
+
+                playerTitle.value = '${widget.viewData.seriesName} - ${player.player.state.playlist.medias![episodeIndex].extras!['name']}';
+              },
+            ),
+            IconButton( // skip next
+              icon: Icon(
+                Icons.skip_next,
+                color: Colors.white,
+              ),
+              onPressed: () async {
+                episodeIndex++;
+                await player.skipNext();
+                await Future.delayed(Duration(seconds: 1));
+
+                playerTitle.value = '${widget.viewData.seriesName} - ${player.player.state.playlist.medias![episodeIndex].extras!['name']}';
+              },
+            ),
+          ],
+        MaterialPositionIndicator(), // position indicator
+      ],
+    );
 
     Widget _scaffold = Scaffold(
       body: Center(
@@ -737,37 +809,8 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
             SizedBox(
               height: MediaQuery.sizeOf(context).height,
               child: MaterialVideoControlsTheme(
-                normal: MaterialVideoControlsThemeData(
-                  topButtonBar: [
-                    IconButton(
-                      onPressed: () async {
-                        await player.pause();
-                        await player.disposePlayer();
-                        await Future.delayed(Duration(seconds: 1));
-                        Navigator.pop(context);
-                      },
-                      icon: Icon(
-                        Icons.arrow_back,
-                        color: Colors.white,
-                      ),
-                    ),
-                    /*
-                    if (widget.viewData.seriesName != null)
-                    else
-                      PlayerText('${widget.viewData.name}')
-                    */
-                  ],
-                  bottomButtonBar: [
-                    MaterialPlayOrPauseButton(), // play pause
-                    MaterialSkipPreviousButton(), // skip left
-                    IconButton( // skip next
-                      icon: Icon(Icons.skip_next),
-                      onPressed: () {},
-                    ),
-                    MaterialPositionIndicator(), // position indicator
-                  ],
-                ),
-                fullscreen: MaterialVideoControlsThemeData(),
+                normal: themeData,
+                fullscreen: themeData,
                 child: Video(
                   controller: videoConts,
                 ),

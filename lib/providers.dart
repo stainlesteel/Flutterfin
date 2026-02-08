@@ -532,11 +532,13 @@ class PlayerManager {
     await player.pause();
   }
 
-  Stream<Media> getMediaObject() async* {
-    while (true) {
-      final data = player.state.playlist.medias[player.state.playlist.index];
-      yield data;
-      await Future.delayed(Duration(seconds: 5));
-    }
+  Future<void> skipNext() async {
+    Future.delayed(Duration(seconds: 1));
+    await player.next();
+  }
+
+  Future<void> skipPrevious() async {
+    Future.delayed(Duration(seconds: 1));
+    await player.previous();
   }
 }
