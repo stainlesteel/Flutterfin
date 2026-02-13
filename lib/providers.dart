@@ -362,6 +362,7 @@ class JellyfinAPI extends ChangeNotifier {
         await Future.delayed(Duration(seconds: 9));
       } on DioException catch (e) {
         if (attempts == timeOutLimit) {
+          attempts = 0;
           yield null;
         } else {
           attempts++;
@@ -391,6 +392,7 @@ class JellyfinAPI extends ChangeNotifier {
         await Future.delayed(Duration(seconds: 9));
       } on DioException catch (e) {
         if (attempts == timeOutLimit) {
+          attempts = 0;
           yield null;
         } else {
           attempts++;
@@ -456,6 +458,64 @@ class JellyfinAPI extends ChangeNotifier {
     }
   }
 
+  // start playback report section
+
+  Future<void> startPlayback(BaseItemDto dto) async {
+    final psAPI = await appClient.getPlaystateApi();
+
+    final playbackStart = await psAPI.reportPlaybackStart(
+      playbackStartInfo: PlaybackStartInfo(
+        item: dto,
+        itemId: dto.id,
+      ),
+    );
+
+    print('Started PlayBack Session! ITEM ID: ${dto.id}');
+  }
+
+  Future<void> stopPlayback(BaseItemDto dto) async {
+    final psAPI = await appClient.getPlaystateApi();
+
+    final playbackStop = await psAPI.reportPlaybackStopped(
+      playbackStopInfo: PlaybackStopInfo(
+        item: dto,
+        itemId: dto.id,
+      ),
+    );
+
+    print('Stopped PlayBack Session! ITEM ID: ${dto.id}');
+  }
+
+  Future<void> reportPlayback(BaseItemDto dto, Duration time) async {
+    final psAPI = await appClient.getPlaystateApi();
+    final timeTicks = time.inTicks;
+
+    final playbackReport = await psAPI.reportPlaybackProgress(
+      playbackProgressInfo: PlaybackProgressInfo(
+        item: dto,
+        itemId: dto.id,
+        positionTicks: timeTicks,
+      )
+    );
+
+    print('Reported PlayBack Session! ITEM ID: ${dto.id}, POSITION TICKS: $timeTicks');
+  }
+
+  // stop playback report section
+
+  Future<List<SessionInfoDto>?> getSessionInfo() async {
+    final sAPI = await appClient.getSessionApi();
+    final _data = await sAPI.getSessions(
+      deviceId: serverList[lastUsedServer!].deviceId,
+    );
+
+    return _data?.data;
+  }
+
+}
+
+extension Ticks on Duration {
+  int get inTicks => inMicroseconds * 10;
 }
 
 // wrapper class for MediaKit
@@ -469,6 +529,14 @@ class PlayerManager {
     ),
   );
 
+  /* showEpisodeData structure:
+      {
+        'BaseList': List<BaseItemDto>,
+        'subtitleList': List<????>,
+      }
+   */
+  Map<String, dynamic> showEpisodeData = {};
+
   // wrapper functions below
   Future<void> disposePlayer() async {
     await player.dispose();
@@ -481,12 +549,17 @@ class PlayerManager {
     await player.open(playMedia);
   }
 
-  Future<void> addShow(BaseItemDto? dto, BuildContext context) async {
-    dynamic showData = await Provider.of<JellyfinAPI>(context, listen: false).getShowEpisodes(
-      seriesId: dto!.seriesId!,
-      season: dto?.parentIndexNumber,
-      context: context,
-    );
+  Future<void> addShow(BaseItemDto dto, BuildContext context) async {
+    late List<BaseItemDto>? showData;
+    try {
+      showData = await Provider.of<JellyfinAPI>(context, listen: false).getShowEpisodes(
+        seriesId: dto!.seriesId!,
+        season: dto?.parentIndexNumber,
+        context: context,
+      );
+    } catch (e) {
+      showData == null;
+    }
 
     if (showData == null) {
       Navigator.pop(context);
@@ -499,6 +572,11 @@ class PlayerManager {
         episodeData.add({'url': '$url', 'name': '${item.name}'});
       }
 
+      // add baseitemdto list to class-wide showEpisodeData list
+      showEpisodeData['BaseList'] ??= [];
+      showEpisodeData['BaseList'] = showData!;
+      print('$showEpisodeData');
+
       playMedia = Playlist(
         [
           for (Map<String, dynamic> item in episodeData)
@@ -509,7 +587,7 @@ class PlayerManager {
               },
             )
         ],
-        index: dto.indexNumber!,
+        index: dto!.indexNumber!,
       );
 
       await player.open(playMedia);
@@ -540,5 +618,17 @@ class PlayerManager {
   Future<void> skipPrevious() async {
     Future.delayed(Duration(seconds: 1));
     await player.previous();
+  }
+
+  Stream<void> reportPlaybackStream(BuildContext context) async* {
+    JellyfinAPI ama = context.read<JellyfinAPI>();
+
+    while (true) {
+      Duration duration = player.state.position;
+      ama.reportPlayback(
+        showEpisodeData['BaseList'][player.state.playlist.index],
+        duration,
+      );
+    }
   }
 }

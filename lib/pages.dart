@@ -11,6 +11,8 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 
+String appTitle = 'Flutterfin';
+
 // start default page (no server found)
 class StartingPage extends StatefulWidget {
   const StartingPage({super.key});
@@ -27,8 +29,21 @@ class _StartingPageState extends State<StartingPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Flutterfin'),
+        title: Text('$appTitle'),
         centerTitle: true,
+        actions: [
+          IconButton(
+            icon: Icon(Icons.question_mark),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => AboutPage(),
+                ),
+              );
+            },
+          ),
+        ],
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () async {
@@ -182,6 +197,47 @@ class _NoNetworkPageState extends State<NoNetworkPage> {
     );
   }
 }
+// end NoNetworkPage
+
+// start AboutPage
+class AboutPage extends StatefulWidget {
+  const AboutPage({super.key});
+
+  @override
+  State<AboutPage> createState() => _AboutPageState();
+}
+
+class _AboutPageState extends State<AboutPage> {
+  @override
+  void initState() {
+    super.initState();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    var ama = context.watch<JellyfinAPI>();
+
+    Widget _scaffold = Scaffold(
+      appBar: AppBar(
+        title: Text('About $appTitle'),
+        centerTitle: true,
+      ),
+      body: Center(
+        child: SingleChildScrollView(
+          scrollDirection: Axis.vertical,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+            ],
+          ),
+        ),
+      ), 
+    );
+
+    return _scaffold;
+  }
+}
+// end AboutPage
 
 // start UserLogIn
 class LogInPage extends StatefulWidget {
@@ -208,7 +264,6 @@ class _LogInPageState extends State<LogInPage> {
 
   @override
   Widget build(BuildContext context) {
-    int buttonRowSubtract = 270;
 
     var ama = context.watch<JellyfinAPI>();
 
@@ -289,81 +344,94 @@ class _LogInPageState extends State<LogInPage> {
                         ),
                       ),
                       SizedBox(height: 5),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          SizedBox(
-                            width: MediaQuery.of(context).size.width - buttonRowSubtract,
-                            child: FilledButton(
-                              onPressed: () async {
-                                if (_formKey.currentState!.validate()) {
-                                  final response = await ama.logInByName(userCont.text, pwdCont.text, context);
-                                  if (response) {
-                                    print('logged in!');
-                                    await ama.saveUser(userCont.text, pwdCont.text, widget.index);
-                                    await ama.goToHome(widget.index, context);
-                                  } else {
-                                    print('failure!');
-                                  }
-                                }
-                              },
-                              child: Text('Log In'),
-                            ),
-                          ),
-                          SizedBox(width: 8),
-                          SizedBox(
-                            width: MediaQuery.of(context).size.width - buttonRowSubtract,
-                            child: FilledButton(
-                              onPressed: () async {
-                                final res = await ama.makeQCRequest(context);
-                                if (res == null) {
-                                  
-                                } else {
-                                  showDialog(
-                                    context: context,
-                                    builder: (BuildContext context) {
-                                      return popUpDiag(
-                                        title: 'Quick Connect',
-                                        content: <Widget>[
-                                          Text('Code is: ${res.code}'),
-                                        ],
-                                      );
-                                    }
-                                  );
+                      OrientationBuilder(
+                        builder: (context, unusedValue) {
+                          final orientation = MediaQuery.of(context).orientation;
 
-                                  late final sSub;
+                          int buttonRowSubtract = (orientation == Orientation.portrait) ? 269 : 450;
 
-                                  sSub = ama.getQCState(res.secret!).listen(
-                                    (data) async {
-                                      print('$data');
-                                      if (data?.authenticated == true) {
-                                        sSub.cancel();
-                                        final response = await ama.logInByQC(data!.secret!, context);
-                                        if (response == true) {
-                                          print('logged in!');
-                                          final username = await ama.getCurrentUser();
-                                          await ama.saveUser(username!.name!, data!.secret!, widget.index);
-                                          await ama.goToHome(widget.index, context);
-                                        } else {
-                                          print('failure!');
-                                        }
+                          return Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              SizedBox(
+                                width: MediaQuery.of(context).size.width - buttonRowSubtract,
+                                child: FilledButton(
+                                  onPressed: () async {
+                                    if (_formKey.currentState!.validate()) {
+                                      final response = await ama.logInByName(userCont.text, pwdCont.text, context);
+                                      if (response) {
+                                        print('logged in!');
+                                        await ama.saveUser(userCont.text, pwdCont.text, widget.index);
+                                        await ama.goToHome(widget.index, context);
+                                      } else {
+                                        print('failure!');
                                       }
-                                    },
-                                    onError: (error) => print('$error'),
-                                    onDone: () => print('done'),
-                                  );
-
-                                }
-                              },
-                              child: Text('Quick Connect'),
-                              style: ButtonStyle(
-                                backgroundColor: WidgetStatePropertyAll<Color>(
-                                  Theme.of(context).colorScheme.onTertiaryFixed,
+                                    }
+                                  },
+                                  child: Text('Log In'),
                                 ),
                               ),
-                            ),
-                          ),
-                        ],
+                              SizedBox(width: 8),
+                              SizedBox(
+                                width: MediaQuery.of(context).size.width - buttonRowSubtract,
+                                child: FilledButton(
+                                  onPressed: () async {
+                                    final res = await ama.makeQCRequest(context);
+                                    if (res == null) {
+                                      
+                                    } else {
+                                      showDialog(
+                                        context: context,
+                                        builder: (BuildContext context) {
+                                          return popUpDiag(
+                                            title: 'Quick Connect',
+                                            content: <Widget>[
+                                              Text(
+                                                'Code is: ${res.code}',
+                                                style: TextStyle(
+                                                  color: Colors.black,
+                                                ),
+                                              ),
+                                            ],
+                                          );
+                                        }
+                                      );
+
+                                      late final sSub;
+
+                                      sSub = ama.getQCState(res.secret!).listen(
+                                        (data) async {
+                                          print('$data');
+                                          if (data?.authenticated == true) {
+                                            sSub.cancel();
+                                            final response = await ama.logInByQC(data!.secret!, context);
+                                            if (response == true) {
+                                              print('logged in!');
+                                              final username = await ama.getCurrentUser();
+                                              await ama.saveUser(username!.name!, data!.secret!, widget.index);
+                                              await ama.goToHome(widget.index, context);
+                                            } else {
+                                              print('failure!');
+                                            }
+                                          }
+                                        },
+                                        onError: (error) => print('$error'),
+                                        onDone: () => print('done'),
+                                      );
+
+                                    }
+                                  },
+                                  child: Text('Quick Connect'),
+                                  style: ButtonStyle(
+                                    backgroundColor: WidgetStatePropertyAll<Color>(
+                                      Theme.of(context).colorScheme.onTertiaryFixed,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          );
+                        }
                       ),
                       SizedBox(height: 5),
                       SizedBox(
@@ -446,8 +514,9 @@ class _LogInPageState extends State<LogInPage> {
         ),
         Positioned.fill(
           child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 6, sigmaY: 6),
+            filter: ImageFilter.blur(sigmaX: 1, sigmaY: 1),
             child: Container(
+              color: Colors.black.withOpacity(0.56),
             ),
           ),
         ),
@@ -695,7 +764,8 @@ class VideoPlayerPage extends StatefulWidget {
 }
 
 class _VideoPlayerPageState extends State<VideoPlayerPage> {
-  late PlayerManager player;
+  late var player;
+  late dynamic playbackReport;
 
   @override
   void initState() {
@@ -704,12 +774,19 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
 
     player = PlayerManager();
     starter();
+
+    playbackReport = player.reportPlaybackStream(context).listen(
+      (event) {
+        print('reported Playback Session!');
+      },
+    );
   }
 
   @override
   void dispose() {
     super.dispose();
   }
+
 
   Future<void> starter() async {
     final url = Provider.of<JellyfinAPI>(context, listen: false).getStreamUrl(widget.viewData!.id!);
@@ -721,6 +798,7 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
       await player.addShow(widget.viewData, context);
       await player.playShow();
     }
+    await Provider.of<JellyfinAPI>(context, listen: false).startPlayback(widget.viewData);
   }
 
   ValueNotifier<String> playerTitle = ValueNotifier<String>('');
@@ -732,6 +810,44 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
 
     int episodeIndex = widget.viewData.indexNumber ?? 0; // the number for skip buttons to use as the base (skip previous: skipInt - 1) (skip next: skipInt + 1)
     // if null, video is probably a movie, in that case, this isn't going to be used
+    
+
+    List<Widget> skipButtonList = [
+      IconButton( // skip previous
+        icon: Icon(
+          Icons.skip_previous,
+          color: Colors.white,
+        ),
+        onPressed: () async {
+          try {
+            episodeIndex--;
+            await player.skipPrevious();
+            await Future.delayed(Duration(seconds: 1));
+
+            playerTitle.value = '${widget.viewData.seriesName} - ${player.player.state.playlist.medias![episodeIndex].extras!['name']}';
+          } on RangeError catch (e) {
+            print('VideoPlayerPage: Episode limit reached!');
+          }
+        },
+      ),
+      IconButton( // skip next
+        icon: Icon(
+          Icons.skip_next,
+          color: Colors.white,
+        ),
+        onPressed: () async {
+          try {
+            episodeIndex++;
+            await player.skipNext();
+            await Future.delayed(Duration(seconds: 1));
+
+            playerTitle.value = '${widget.viewData.seriesName} - ${player.player.state.playlist.medias![episodeIndex].extras!['name']}';
+          } on RangeError catch (e) {
+            print('VideoPlayerPage: Episode limit reached!');
+          }
+        },
+      ),
+    ];
 
     if (widget.viewData.seriesName != null) {
       playerTitle.value = '${widget.viewData.seriesName} - ${widget.viewData.name}';
@@ -746,6 +862,9 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
           onPressed: () async {
             await player.pause();
             await player.disposePlayer();
+
+            await ama.stopPlayback(widget.viewData);
+
             await Future.delayed(Duration(seconds: 1));
             Navigator.pop(context);
           },
@@ -767,37 +886,27 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
           }
         ),
       ],
+      primaryButtonBar: [
+        if (widget.viewData.seriesName != null)
+          skipButtonList[0],
+        SizedBox(width: 100),
+        MaterialPlayOrPauseButton(),
+        SizedBox(width: 100),
+        if (widget.viewData.seriesName != null)
+          skipButtonList[1],
+      ],
       bottomButtonBar: [
         MaterialPlayOrPauseButton(), // play pause
-        if (widget.viewData.seriesName != null) ...[
-            IconButton( // skip previous
-              icon: Icon(
-                Icons.skip_previous,
-                color: Colors.white,
-              ),
-              onPressed: () async {
-                episodeIndex--;
-                await player.skipPrevious();
-                await Future.delayed(Duration(seconds: 1));
-
-                playerTitle.value = '${widget.viewData.seriesName} - ${player.player.state.playlist.medias![episodeIndex].extras!['name']}';
-              },
-            ),
-            IconButton( // skip next
-              icon: Icon(
-                Icons.skip_next,
-                color: Colors.white,
-              ),
-              onPressed: () async {
-                episodeIndex++;
-                await player.skipNext();
-                await Future.delayed(Duration(seconds: 1));
-
-                playerTitle.value = '${widget.viewData.seriesName} - ${player.player.state.playlist.medias![episodeIndex].extras!['name']}';
-              },
-            ),
-          ],
+        if (widget.viewData.seriesName != null)
+          ...skipButtonList,
         MaterialPositionIndicator(), // position indicator
+        TextButton(
+          onPressed: () async {
+            final data = await ama.getSessionInfo();
+            print('$data');
+          },
+          child: Text('der riese'),
+        ),
       ],
     );
 

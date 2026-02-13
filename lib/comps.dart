@@ -27,7 +27,12 @@ TextStyle getTextStyling(int index, BuildContext context) {
 
 Widget popUpDiag({String title = '', List<Widget> content = const [], List<Widget> actions = const []}) {
   return AlertDialog(
-    title: Text(title),
+    title: Text(
+      title,
+      style: TextStyle(
+        color: Colors.black,
+      ),
+    ),
     content: content.isNotEmpty ? Column(
       mainAxisSize: MainAxisSize.min,
       children: content,
@@ -106,11 +111,10 @@ String randomString() {
   return String.fromCharCodes(List.generate(8, (index) => Random().nextInt(33) + 89));
 }
 
-String getTime(int val) {
-  int h = val ~/ 60;
-  int m = val % 60;
+String getTime(int ticks) {
+  Duration duration = Duration(microseconds: ticks * 10);
 
-  return '${h.toString().padLeft(2)}h ${m.toString().padLeft(2, "0")}m';
+  return '${duration.inHours % 24}h ${duration.inMinutes % 60}m';
 }
 
 Widget detailCard({String? text = '', List<Widget>? children = null, required BuildContext context}) {
