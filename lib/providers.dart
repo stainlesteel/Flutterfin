@@ -529,23 +529,27 @@ class PlayerManager {
     ),
   );
 
-  /* showEpisodeData structure:
+  /* mediaData structure:
       {
-        'BaseList': List<BaseItemDto>,
+        'BaseList': List<BaseItemDto>?,
         'subtitleList': List<????>,
       }
    */
-  Map<String, dynamic> showEpisodeData = {};
+  Map<String, dynamic> mediaData = {};
 
   // wrapper functions below
   Future<void> disposePlayer() async {
     await player.dispose();
   }
 
-  Future<void> addMovie(String url) async {
+  Future<void> addMovie(String url, BaseItemDto dto) async {
     playMedia = Media(
       url,
     );
+
+    mediaData['BaseList'] ??= [dto];
+    print('mediaData: $mediaData');
+
     await player.open(playMedia);
   }
 
@@ -572,10 +576,10 @@ class PlayerManager {
         episodeData.add({'url': '$url', 'name': '${item.name}'});
       }
 
-      // add baseitemdto list to class-wide showEpisodeData list
-      showEpisodeData['BaseList'] ??= [];
-      showEpisodeData['BaseList'] = showData!;
-      print('$showEpisodeData');
+      // add baseitemdto list to class-wide mediaData list
+      mediaData['BaseList'] ??= [];
+      mediaData['BaseList'] = showData!;
+      print('mediaData: $mediaData');
 
       playMedia = Playlist(
         [
@@ -587,7 +591,7 @@ class PlayerManager {
               },
             )
         ],
-        index: dto!.indexNumber!,
+        index: dto!.indexNumber! - 1,
       );
 
       await player.open(playMedia);
@@ -595,12 +599,7 @@ class PlayerManager {
 
   }
 
-  Future<void> playMovie() async {
-    Future.delayed(Duration(seconds: 1),);
-    await player.play();
-  }
-
-  Future<void> playShow() async {
+  Future<void> play() async {
     Future.delayed(Duration(seconds: 1),);
     await player.play();
   }
@@ -622,13 +621,22 @@ class PlayerManager {
 
   Stream<void> reportPlaybackStream(BuildContext context) async* {
     JellyfinAPI ama = context.read<JellyfinAPI>();
+    int _index = player.state.playlist.index;
 
     while (true) {
-      Duration duration = player.state.position;
-      ama.reportPlayback(
-        showEpisodeData['BaseList'][player.state.playlist.index],
-        duration,
-      );
+      if (player.state.playing == false) {
+        
+      } else {
+        Duration duration = player.state.position;
+        if (player.state.playlist.index -1 == null) {
+          _index = 0;
+        }
+        ama.reportPlayback(
+          mediaData['BaseList'][_index],
+          duration,
+        );
+      }
+      await Future.delayed(Duration(seconds: 5));
     }
   }
 }

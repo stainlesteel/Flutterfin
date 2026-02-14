@@ -513,11 +513,8 @@ class _LogInPageState extends State<LogInPage> {
           child: _image,         
         ),
         Positioned.fill(
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 1, sigmaY: 1),
-            child: Container(
-              color: Colors.black.withOpacity(0.56),
-            ),
+          child: Container(
+            color: Colors.black.withOpacity(0.7),
           ),
         ),
         Theme(
@@ -775,11 +772,6 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
     player = PlayerManager();
     starter();
 
-    playbackReport = player.reportPlaybackStream(context).listen(
-      (event) {
-        print('reported Playback Session!');
-      },
-    );
   }
 
   @override
@@ -792,13 +784,26 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
     final url = Provider.of<JellyfinAPI>(context, listen: false).getStreamUrl(widget.viewData!.id!);
     print('Stream Url: $url');
     if (widget.index == 0) {
-      await player.addMovie(url!);
-      await player.playMovie();
+      await player.addMovie(url!, widget.viewData);
     } else {
       await player.addShow(widget.viewData, context);
-      await player.playShow();
     }
+
+    await player.play();
+
+    if (widget.viewData.userData!.playbackPositionTicks != null) {
+      await player.player.seek(
+        Duration(seconds: widget.viewData.userData!.playbackPositionTicks! ~/ 100000),
+      );
+    }
+
     await Provider.of<JellyfinAPI>(context, listen: false).startPlayback(widget.viewData);
+
+    playbackReport = player.reportPlaybackStream(context).listen(
+      (event) {
+        print('reported Playback Session!');
+      },
+    );
   }
 
   ValueNotifier<String> playerTitle = ValueNotifier<String>('');
@@ -822,6 +827,10 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
           try {
             episodeIndex--;
             await player.skipPrevious();
+
+            await ama.stopPlayback(player.mediaData['BaseList'][episodeIndex]);
+            await ama.startPlayback(player.mediaData['BaseList'][episodeIndex]);
+
             await Future.delayed(Duration(seconds: 1));
 
             playerTitle.value = '${widget.viewData.seriesName} - ${player.player.state.playlist.medias![episodeIndex].extras!['name']}';
@@ -839,6 +848,10 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
           try {
             episodeIndex++;
             await player.skipNext();
+
+            await ama.stopPlayback(player.mediaData['BaseList'][episodeIndex]);
+            await ama.startPlayback(player.mediaData['BaseList'][episodeIndex]);
+
             await Future.delayed(Duration(seconds: 1));
 
             playerTitle.value = '${widget.viewData.seriesName} - ${player.player.state.playlist.medias![episodeIndex].extras!['name']}';
@@ -863,9 +876,17 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
             await player.pause();
             await player.disposePlayer();
 
-            await ama.stopPlayback(widget.viewData);
+            if (widget.viewData.parentIndexNumber != null) {
+              await ama.stopPlayback(player.mediaData['BaseList'][episodeIndex]);
+            } else {
+              await ama.stopPlayback(widget.viewData);
+            }
 
-            await Future.delayed(Duration(seconds: 1));
+            await ama.stopPlayback(widget.viewData);
+            playbackReport.cancel();
+            player = null;
+
+            await Future.delayed(Duration(milliseconds: 100));
             Navigator.pop(context);
           },
           icon: Icon(
