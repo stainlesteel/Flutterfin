@@ -5,7 +5,7 @@ import 'pages.dart';
 import 'package:hive/hive.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'dart:typed_data'; 
+import 'dart:typed_data';
 import 'dart:convert';
 import 'objects.dart';
 import 'comps.dart';
@@ -32,7 +32,7 @@ void main() async {
   late Box jellyBox;
 
   if (_eKey == null) {
-    await _fss.write(key : 'encryptor', value: '${base64Url.encode(_hiveKey)}');
+    await _fss.write(key: 'encryptor', value: '${base64Url.encode(_hiveKey)}');
   } else {
     _cipher = base64Url.decode(_eKey);
   }
@@ -43,7 +43,7 @@ void main() async {
   jellyBox = await Hive.openBox(
     'jellyBox',
     encryptionCipher: HiveAesCipher(_cipher),
-    crashRecovery: false,
+    crashRecovery: true,
   ); // is fss key real? if yes use it, if not, use generated one and save it
 
   // nuke everything
@@ -52,13 +52,14 @@ void main() async {
   _cipher = null;
 
   runApp(
-    MultiProvider( 
-     providers: [
-       ChangeNotifierProvider<JellyfinAPI>(
-         create: (_) => JellyfinAPI(jellyBox),
-       ),
-     ],
-     child: MyApp(jellyfinBox: jellyBox),
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider<JellyfinAPI>(
+          create: (_) => JellyfinAPI(jellyBox),
+        ),
+        ChangeNotifierProvider<PlayerManager>(create: (_) => PlayerManager()),
+      ],
+      child: MyApp(jellyfinBox: jellyBox),
     ),
   );
 }
@@ -99,53 +100,58 @@ class _MainRedirectorState extends State<MainRedirector> {
 
   @override
   Widget build(BuildContext context) {
-
     var ama = context.watch<JellyfinAPI>();
 
     Widget waitingWidget = Scaffold(
-      appBar: AppBar(
-        title: Text('Jellyfin'),
-        centerTitle: true,
-      ),
+      appBar: AppBar(title: Text('Jellyfin'), centerTitle: true),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            CircularProgressIndicator(),
-          ],
+          children: [CircularProgressIndicator()],
         ),
       ),
     );
 
-    // checks for network availbility 
+    // checks for network availbility
     return FutureBuilder<ConnectivityResult>(
       future: checkNetwork(),
       builder: (context, snapshot) {
         // checks if network state is not none
         if (snapshot.data != ConnectivityResult.none) {
           if (ama.lastUsedServer != null) {
-            var keyBase = ama.serverList[ama.lastUsedServer!].userMap!.keys!.toList();
-            var valueBase = ama.serverList[ama.lastUsedServer!].userMap!.values!.toList();
+            var keyBase = ama.serverList[ama.lastUsedServer!].userMap!.keys!
+                .toList();
+            var valueBase = ama.serverList[ama.lastUsedServer!].userMap!.values!
+                .toList();
 
             _ifLoggedIn = Future.wait([
-              Provider.of<JellyfinAPI>(context, listen: false).makeClient(ama.lastUsedServer),
+              Provider.of<JellyfinAPI>(
+                context,
+                listen: false,
+              ).makeClient(ama.lastUsedServer),
               if (ama?.serverList[ama.lastUsedServer!].lastLogIsQC == true)
-                Provider.of<JellyfinAPI>(context, listen: false).logInByQC(keyBase[ama.lastUser!], context)
+                Provider.of<JellyfinAPI>(
+                  context,
+                  listen: false,
+                ).logInByQC(keyBase[ama.lastUser!], context)
               else
-                Provider.of<JellyfinAPI>(context, listen: false).logInByName(keyBase[ama.lastUser!], valueBase[ama.lastUser!], context)
+                Provider.of<JellyfinAPI>(context, listen: false).logInByName(
+                  keyBase[ama.lastUser!],
+                  valueBase[ama.lastUser!],
+                  context,
+                ),
             ]);
-
 
             return FutureBuilder(
               future: _ifLoggedIn,
               builder: (context, snapshot) {
-               if (snapshot.connectionState == ConnectionState.waiting) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
                   return waitingWidget;
                 } else if (snapshot.hasError) {
                   return StartingPage();
                 } else {
                   return HomePage(index: ama.lastUsedServer);
-                }  
+                }
               },
             );
           } else {
@@ -154,7 +160,7 @@ class _MainRedirectorState extends State<MainRedirector> {
         } else {
           return NoNetworkPage();
         }
-      }
+      },
     );
   }
 }

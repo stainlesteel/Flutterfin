@@ -16,11 +16,11 @@ class JellyfinAPI extends ChangeNotifier {
   JellyfinAPI(this.box);
 
   // app data that may or may not require interaction with the jellyfin server
-  List<ServerObj> serverList = []; 
+  List<ServerObj> serverList = [];
   int? lastUsedServer;
   int? lastUser;
   late JellyfinDart appClient; // jellyfin_dart client
-  
+
   // server data collected for later use
   String? logInMsg;
   String? userID;
@@ -36,16 +36,12 @@ class JellyfinAPI extends ChangeNotifier {
     int? _tmpIndex = await box.get('lastUsedServer');
     if (_tmpIndex != null) {
       lastUsedServer = _tmpIndex;
-    } else {
-
-    }
+    } else {}
 
     int? _tmpUser = await box.get('lastUser');
     if (_tmpUser != null) {
       lastUser = _tmpUser;
-    } else {
-
-    }
+    } else {}
 
     notifyListeners();
   }
@@ -62,16 +58,17 @@ class JellyfinAPI extends ChangeNotifier {
       } else if (conType.contains('text/html')) {
         showDialog(
           context: context,
-          builder: (context) =>  popUpDiag(
-            title: "Server Verify Error", 
+          builder: (context) => popUpDiag(
+            title: "Server Verify Error",
             content: [
-              Text("Can connect to server but can't access it's ServerName.\nIf the URL is working for you, check if you're getting redirected to the correct URL by the server."),
+              Text(
+                "Can connect to server but can't access it's ServerName.\nIf the URL is working for you, check if you're getting redirected to the correct URL by the server.",
+              ),
             ],
           ),
         );
         return false;
-      } 
-      else {
+      } else {
         await addServer(url, dio.data['Version'], dio.data['ServerName']);
         notifyListeners();
         Navigator.pop(context);
@@ -92,7 +89,8 @@ class JellyfinAPI extends ChangeNotifier {
       Navigator.pop(context);
       showDialog(
         context: context,
-        builder: (context) => popUpDiag(title: 'Server Verify Error', content: [Text('$text')])
+        builder: (context) =>
+            popUpDiag(title: 'Server Verify Error', content: [Text('$text')]),
       );
       return false;
     } finally {
@@ -138,10 +136,10 @@ class JellyfinAPI extends ChangeNotifier {
 
     serverList.add(ServerObj(id: _index));
     await box.put(_index, serverList[_index]);
-    
-    serverList[_index].serverURL = url; 
-    serverList[_index].version = vers; 
-    serverList[_index].serverName = name; 
+
+    serverList[_index].serverURL = url;
+    serverList[_index].version = vers;
+    serverList[_index].serverName = name;
 
     await serverList[_index].save();
 
@@ -175,42 +173,42 @@ class JellyfinAPI extends ChangeNotifier {
     logInMsg = branding.data?.loginDisclaimer;
   }
 
-  Future<bool> logInByName(String user, String pwd, BuildContext context) async {
+  Future<bool> logInByName(
+    String user,
+    String pwd,
+    BuildContext context,
+  ) async {
     late final response;
     var uAPI = appClient.getUserApi();
     try {
       response = await uAPI.authenticateUserByName(
-        authenticateUserByName: AuthenticateUserByName(
-          username: user,
-          pw: pwd,
-        ),
+        authenticateUserByName: AuthenticateUserByName(username: user, pw: pwd),
       );
     } on DioException catch (e) {
       print('Login Status Code: ${e.response?.statusCode}');
-      
+
       List<String> text = [];
 
       await Future.delayed(Duration(seconds: 1));
 
-      if (e.type == DioExceptionType.badResponse) {
-        LogInErrorDiag(context);
-      } else if (e.response!.statusCode == 500) {
+      if (e.response!.statusCode == 500) {
         ServerConnectErrorDiag(context);
       } else if (e.response!.statusCode == 503) {
-        text = ["Server is Down", "Server is currently down and is under maintenance or got into an error. Check the URL in your browser for more info."];
-        SimpleErrorDiag(
-          title: text[0], 
-          desc: text[1], 
-          context: context
-        );
+        text = [
+          "Server is Down",
+          "Server is currently down and is under maintenance or got into an error. Check the URL in your browser for more info.",
+        ];
+        SimpleErrorDiag(title: text[0], desc: text[1], context: context);
+      } else if (e.type == DioExceptionType.badResponse) {
+        LogInErrorDiag(context);
       }
-      throw DioException;
+      throw DioException; // if this isn't here, the app will load the homepage even if user isn't logged in
       return false;
     }
-    
+
     final token = response.data?.accessToken;
     if (token != null) {
-      appClient.setToken(token);   
+      appClient.setToken(token);
       userID = response.data?.sessionInfo.userId;
       return true;
     } else {
@@ -219,7 +217,7 @@ class JellyfinAPI extends ChangeNotifier {
   }
 
   // start: functions related to quick connect
-  
+
   // make request for quick connect to server
   Future<QuickConnectResult?> makeQCRequest(BuildContext context) async {
     late final result;
@@ -232,12 +230,9 @@ class JellyfinAPI extends ChangeNotifier {
         context: context,
         builder: (context) => popUpDiag(
           title: 'Quick Connect Error',
-          content: [
-            Text('Quick Connect is disabled by this server.')
-          ],
+          content: [Text('Quick Connect is disabled by this server.')],
         ),
       );
-      
     }
 
     return result?.data;
@@ -259,7 +254,6 @@ class JellyfinAPI extends ChangeNotifier {
       } catch (e) {
         await Future.delayed(Duration(seconds: 5));
       }
-
     }
   }
 
@@ -282,17 +276,15 @@ class JellyfinAPI extends ChangeNotifier {
       return false;
       Navigator.pushAndRemoveUntil(
         context,
-        MaterialPageRoute(
-          builder: (context) => StartingPage(),
-        ),
+        MaterialPageRoute(builder: (context) => StartingPage()),
         (route) => false,
       );
       throw DioException;
     }
-    
+
     final token = response.data?.accessToken;
     if (token != null) {
-      appClient.setToken(token);   
+      appClient.setToken(token);
       userID = response.data?.sessionInfo.userId;
       return true;
     } else {
@@ -311,7 +303,7 @@ class JellyfinAPI extends ChangeNotifier {
       print(e.response);
     }
     return _data?.data;
-  } 
+  }
 
   Future<void> saveUser(String user, String pwd, int? index) async {
     serverList[index!].userMap = serverList[index!].userMap ?? {};
@@ -321,7 +313,7 @@ class JellyfinAPI extends ChangeNotifier {
 
     serverList[index!].save();
     // ends saving actual user data
-    
+
     // starts saving last user
     lastUser = serverList[index!].userMap?.keys.toList().indexOf('$user');
     print('$lastUser');
@@ -348,7 +340,7 @@ class JellyfinAPI extends ChangeNotifier {
       (route) => false,
     );
   }
-  
+
   // streams for homepage
   Stream<List<BaseItemDto>?> userViewsStream() async* {
     UserViewsApi uvAPI = appClient.getUserViewsApi();
@@ -383,7 +375,7 @@ class JellyfinAPI extends ChangeNotifier {
         final data = await itAPI.getResumeItems(
           userId: userID,
           fields: <ItemFields>[
-            ItemFields.overview, 
+            ItemFields.overview,
             ItemFields.taglines,
             ItemFields.tags,
           ],
@@ -418,9 +410,15 @@ class JellyfinAPI extends ChangeNotifier {
     return '${serverList[lastUsedServer!].serverURL}/Videos/${itemId}/stream?Static=true';
   }
 
-  Future<List<BaseItemDto>?> getShowEpisodes({required String seriesId, int? season = null, BuildContext? context = null}) async {
+  Future<List<BaseItemDto>?> getShowEpisodes({
+    required String seriesId,
+    int? season = null,
+    BuildContext? context = null,
+  }) async {
     if (context == null) {
-      print('getShowEpisodes(): Your Code Sucks! Add context to getShowEpisodes()');
+      print(
+        'getShowEpisodes(): Your Code Sucks! Add context to getShowEpisodes()',
+      );
       return null;
     } else {
       final tvAPI = await appClient.getTvShowsApi();
@@ -437,24 +435,16 @@ class JellyfinAPI extends ChangeNotifier {
         List<String> text = [];
         if (e.response?.statusCode == 500) {
           text = [
-            "Could not fetch episodes", 
-            "Could not connect to the Jellyfin Server as the current user cannot be used to get Show Data.\nPlease check the Jellyfin URL to see if you can log in or not."
+            "Could not fetch episodes",
+            "Could not connect to the Jellyfin Server as the current user cannot be used to get Show Data.\nPlease check the Jellyfin URL to see if you can log in or not.",
           ];
         } else {
-          text = [
-            "Unknown Error",
-            "Unknown Error"
-          ];    
+          text = ["Unknown Error", "Unknown Error"];
         }
-        SimpleErrorDiag(
-          title: text[0],
-          desc: text[1],
-          context: context,
-        );
+        SimpleErrorDiag(title: text[0], desc: text[1], context: context);
       }
-      
-      return null;
 
+      return null;
     }
   }
 
@@ -467,23 +457,28 @@ class JellyfinAPI extends ChangeNotifier {
       playbackStartInfo: PlaybackStartInfo(
         item: dto,
         itemId: dto.id,
+        positionTicks: dto.userData!.playbackPositionTicks,
       ),
     );
 
     print('Started PlayBack Session! ITEM ID: ${dto.id}');
   }
 
-  Future<void> stopPlayback(BaseItemDto dto) async {
+  Future<void> stopPlayback(BaseItemDto dto, Duration time) async {
     final psAPI = await appClient.getPlaystateApi();
+    final timeTicks = time.inTicks;
 
     final playbackStop = await psAPI.reportPlaybackStopped(
       playbackStopInfo: PlaybackStopInfo(
         item: dto,
         itemId: dto.id,
+        positionTicks: timeTicks,
       ),
     );
 
-    print('Stopped PlayBack Session! ITEM ID: ${dto.id}');
+    print(
+      'Stopped PlayBack Session! ITEM ID: ${dto.id}, POSITION TICKS: $timeTicks',
+    );
   }
 
   Future<void> reportPlayback(BaseItemDto dto, Duration time) async {
@@ -495,16 +490,18 @@ class JellyfinAPI extends ChangeNotifier {
         item: dto,
         itemId: dto.id,
         positionTicks: timeTicks,
-      )
+      ),
     );
 
-    print('Reported PlayBack Session! ITEM ID: ${dto.id}, POSITION TICKS: $timeTicks');
+    print(
+      'Reported PlayBack Session! ITEM ID: ${dto.id}, POSITION TICKS: $timeTicks, in seconds: ${time.inSeconds}',
+    );
   }
 
   // stop playback report section
 
   Future<List<SessionInfoDto>?> getSessionInfo() async {
-    final sAPI = await appClient.getSessionApi();
+    final sAPI = appClient.getSessionApi();
     final _data = await sAPI.getSessions(
       deviceId: serverList[lastUsedServer!].deviceId,
     );
@@ -512,6 +509,33 @@ class JellyfinAPI extends ChangeNotifier {
     return _data?.data;
   }
 
+  Future<UserItemDataDto?> markFavorite(String itemId) async {
+    final UserLibraryApi ulAPI = appClient.getUserLibraryApi();
+    final Response<UserItemDataDto> _data = await ulAPI.markFavoriteItem(
+      itemId: itemId,
+      userId: userID,
+    );
+
+    return _data.data;
+  }
+
+  Future<List<BaseItemDto>?> getUserViewItems({required String parentId,}) async {
+    final ItemsApi iApi = appClient.getItemsApi();
+    final Response<BaseItemDtoQueryResult> _data = await iApi.getItems(
+      userId: userID,
+      parentId: parentId,
+      recursive: true,
+      includeItemTypes: [BaseItemKind.movie, BaseItemKind.series, BaseItemKind.musicAlbum],
+      enableUserData: true,
+      fields: <ItemFields>[
+        ItemFields.overview,
+        ItemFields.taglines,
+        ItemFields.tags,
+      ],
+    );
+
+    return _data.data?.items;
+  }
 }
 
 extension Ticks on Duration {
@@ -519,7 +543,7 @@ extension Ticks on Duration {
 }
 
 // wrapper class for MediaKit
-class PlayerManager {
+class PlayerManager extends ChangeNotifier {
   late var playMedia;
 
   final Player player = Player(
@@ -543,24 +567,23 @@ class PlayerManager {
   }
 
   Future<void> addMovie(String url, BaseItemDto dto) async {
-    playMedia = Media(
-      url,
-    );
+    playMedia = Media(url);
 
     mediaData['BaseList'] ??= [dto];
     print('mediaData: $mediaData');
 
-    await player.open(playMedia);
+    await player.open(playMedia, play: false);
   }
 
   Future<void> addShow(BaseItemDto dto, BuildContext context) async {
     late List<BaseItemDto>? showData;
     try {
-      showData = await Provider.of<JellyfinAPI>(context, listen: false).getShowEpisodes(
-        seriesId: dto!.seriesId!,
-        season: dto?.parentIndexNumber,
-        context: context,
-      );
+      showData = await Provider.of<JellyfinAPI>(context, listen: false)
+          .getShowEpisodes(
+            seriesId: dto!.seriesId!,
+            season: dto?.parentIndexNumber,
+            context: context,
+          );
     } catch (e) {
       showData == null;
     }
@@ -571,7 +594,10 @@ class PlayerManager {
       List<Map<String, dynamic>> episodeData = [];
 
       for (BaseItemDto? item in showData! ?? {}) {
-        String? url = Provider.of<JellyfinAPI>(context, listen: false).getStreamUrl(item!.id!);
+        String? url = Provider.of<JellyfinAPI>(
+          context,
+          listen: false,
+        ).getStreamUrl(item!.id!);
 
         episodeData.add({'url': '$url', 'name': '${item.name}'});
       }
@@ -581,31 +607,22 @@ class PlayerManager {
       mediaData['BaseList'] = showData!;
       print('mediaData: $mediaData');
 
-      playMedia = Playlist(
-        [
-          for (Map<String, dynamic> item in episodeData)
-            Media(
-              item['url'],
-              extras: {
-                'name': '${item['name']}',
-              },
-            )
-        ],
-        index: dto!.indexNumber! - 1,
-      );
+      playMedia = Playlist([
+        for (Map<String, dynamic> item in episodeData)
+          Media(item['url'], extras: {'name': '${item['name']}'}),
+      ], index: dto!.indexNumber! - 1);
 
-      await player.open(playMedia);
+      await player.open(playMedia, play: false);
     }
-
   }
 
   Future<void> play() async {
-    Future.delayed(Duration(seconds: 1),);
+    Future.delayed(Duration(seconds: 1));
     await player.play();
   }
 
   Future<void> pause() async {
-    Future.delayed(Duration(seconds: 1),);
+    Future.delayed(Duration(seconds: 1));
     await player.pause();
   }
 
@@ -623,20 +640,22 @@ class PlayerManager {
     JellyfinAPI ama = context.read<JellyfinAPI>();
     int _index = player.state.playlist.index;
 
+    await Future.delayed(Duration(seconds: 2));
     while (true) {
-      if (player.state.playing == false) {
-        
+      if (player.state.duration == Duration.zero) {
       } else {
         Duration duration = player.state.position;
-        if (player.state.playlist.index -1 == null) {
+        if (player.state.playlist.index - 1 == null) {
           _index = 0;
         }
-        ama.reportPlayback(
-          mediaData['BaseList'][_index],
-          duration,
-        );
+        ama.reportPlayback(mediaData['BaseList'][_index], duration);
       }
       await Future.delayed(Duration(seconds: 5));
     }
+  }
+
+  Future<void> seek(Duration duration) async {
+    await Future.delayed(Duration(seconds: 1));
+    await player.seek(duration);
   }
 }

@@ -8,6 +8,13 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'dart:developer' as dev;
 import 'package:connectivity_plus/connectivity_plus.dart';
 
+/// getTextStyling(): custom Text Styling
+/// index: 
+///   0: bold, size 60
+///   1: bold, size 20
+///   2: bold, size 30
+///   3: size 20
+///   4: bold
 TextStyle getTextStyling(int index, BuildContext context) {
   if (index == 0) {
     return TextStyle(fontWeight: FontWeight.bold, fontSize: 60);
@@ -187,12 +194,20 @@ Widget UserViews(BuildContext context) {
                  scrollDirection: Axis.horizontal,
                  itemExtent: 230,
                  shrinkExtent: 100,
+                 onTap: (index) async {
+                   Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => UserViewPage(userView: data[index]),
+                    )
+                   );
+                 },
                  children: <Widget>[
                    for (BaseItemDto view in data)
                      Column(
                        children: [
                          Expanded(
-                           child:  Container(
+                           child: Container(
                              alignment: Alignment.center,
                              decoration: BoxDecoration(
                                borderRadius: BorderRadius.circular(0.5),
@@ -230,16 +245,18 @@ Widget ContinueWatching(BuildContext context) {
     child: StreamBuilder(
       stream: ama.getContinueWatching(),
       builder: (context, snapshot) {
+        late Widget secondWidget;
         if (snapshot.data == null) {
-          return Text('Failed to download library playlist.');
+          secondWidget = Text('Failed to download library playlist.');
         } else  if (snapshot.connectionState == ConnectionState.waiting) {
-          return CircularProgressIndicator();
-        } else {
+          secondWidget = CircularProgressIndicator();
+
+        } else if (snapshot.hasData) {
           final List<BaseItemDto>? data = snapshot.data;
           if (data != null) {
-            return CarouselView(
+            secondWidget = CarouselView(
               scrollDirection: Axis.horizontal,
-              itemExtent: 230,
+              itemExtent: 200,
               shrinkExtent: 100,
               onTap: (index) async {
                 print('${data.length}');
@@ -248,6 +265,7 @@ Widget ContinueWatching(BuildContext context) {
                   
                 } else if (data[index].seriesName == null) {
                   await Navigator.push(
+
                     context,
                     MaterialPageRoute(
                       builder: (context) => ItemPage(viewData: data[index], index: 0), 
@@ -300,17 +318,31 @@ Widget ContinueWatching(BuildContext context) {
                       else
                         Padding(
                           padding: EdgeInsets.only(top: 5),
-                          child: Text('${view.name}', style: getTextStyling(4, context
-                          )),
+                          child: Text('${view.name}', style: getTextStyling(4, context)),
                         )
                     ],
                   )
               ],
             );
           } else {
-            return Text('could not download user views');
+            secondWidget = Text('could not download user views');
           }
         }
+        List<BaseItemDto>? data = snapshot.data;
+        return Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            if (data?.isNotEmpty ?? false) ...[
+              Text('Continue Watching', style: getTextStyling(1, context)),
+              Expanded(
+                child: secondWidget,
+              ),
+            ]
+            else 
+              Text('')
+          ],
+        );
       },
     ),
   );
