@@ -47,8 +47,6 @@ class JellyfinAPI extends ChangeNotifier {
   }
 
   Future<bool> verifyServer(String url, BuildContext context) async {
-    isVerifyingServer = true;
-    notifyListeners();
     try {
       final dio = await Dio().get('$url/System/Info/Public');
       final conType = dio.headers.value('content-type') ?? '';
@@ -75,6 +73,7 @@ class JellyfinAPI extends ChangeNotifier {
         return true;
       }
     } on DioException catch (e) {
+                        
       print('dio errror type in add server: ${e.type}');
       String text = '';
       if (e.type == DioExceptionType.unknown) {
@@ -92,6 +91,8 @@ class JellyfinAPI extends ChangeNotifier {
         builder: (context) =>
             popUpDiag(title: 'Server Verify Error', content: [Text('$text')]),
       );
+
+      await Future.delayed(Duration(seconds: 2));
       return false;
     } finally {
       isVerifyingServer = false;
@@ -99,15 +100,10 @@ class JellyfinAPI extends ChangeNotifier {
     }
   }
 
-  Stream<DioException?> pingServerStream(BuildContext context) async* {
+  Stream<void> pingServerStream(BuildContext context) async* {
     while (true) {
       final exception = await pingServer(context);
-      await Future.delayed(Duration(seconds: 2));
-      if (exception != null) {
-        yield exception;
-      } else {
-        yield null;
-      }
+      print('pinged server!');
       await Future.delayed(Duration(seconds: 10));
     }
   }
@@ -128,6 +124,16 @@ class JellyfinAPI extends ChangeNotifier {
       await box.put(_tmpInt, objs);
       _tmpInt += 1;
     }
+    notifyListeners();
+  }
+  
+  Future removeAtServerList(int index) async {
+    if (lastUsedServer == index) {
+      lastUsedServer = null;
+      await box.put('lastUsedServer', null);
+    }
+    serverList.removeAt(index);
+    await box.delete(index);
     notifyListeners();
   }
 
@@ -367,7 +373,6 @@ class JellyfinAPI extends ChangeNotifier {
 
   Stream<List<BaseItemDto>?> getContinueWatching() async* {
     ItemsApi itAPI = appClient.getItemsApi();
-    int timeOutLimit = 3;
     int attempts = 0;
 
     while (true) {
@@ -381,9 +386,10 @@ class JellyfinAPI extends ChangeNotifier {
           ],
         );
         yield data.data?.items ?? [];
+        print('got resume items');
         await Future.delayed(Duration(seconds: 9));
       } on DioException catch (e) {
-        if (attempts == timeOutLimit) {
+        if (attempts == 3) {
           attempts = 0;
           yield null;
         } else {
@@ -410,42 +416,36 @@ class JellyfinAPI extends ChangeNotifier {
     return '${serverList[lastUsedServer!].serverURL}/Videos/${itemId}/stream?Static=true';
   }
 
-  Future<List<BaseItemDto>?> getShowEpisodes({
-    required String seriesId,
-    int? season = null,
-    BuildContext? context = null,
-  }) async {
-    if (context == null) {
-      print(
-        'getShowEpisodes(): Your Code Sucks! Add context to getShowEpisodes()',
+  Future<List<BaseItemDto>?> getShowEpisodes({required String seriesId, int? season = null, required BuildContext context,}) async {
+    final tvAPI = await appClient.getTvShowsApi();
+    late final _data;
+
+    try {
+      _data = await tvAPI.getEpisodes(
+        seriesId: seriesId,
+        userId: userID,
+        season: season,
+        fields: <ItemFields>[
+          ItemFields.overview,
+          ItemFields.taglines,
+          ItemFields.tags,
+        ],
       );
-      return null;
-    } else {
-      final tvAPI = await appClient.getTvShowsApi();
-      late final _data;
-
-      try {
-        _data = await tvAPI.getEpisodes(
-          seriesId: seriesId,
-          userId: userID,
-          season: season,
-        );
-        return _data?.data?.items;
-      } on DioException catch (e) {
-        List<String> text = [];
-        if (e.response?.statusCode == 500) {
-          text = [
-            "Could not fetch episodes",
-            "Could not connect to the Jellyfin Server as the current user cannot be used to get Show Data.\nPlease check the Jellyfin URL to see if you can log in or not.",
-          ];
-        } else {
-          text = ["Unknown Error", "Unknown Error"];
-        }
-        SimpleErrorDiag(title: text[0], desc: text[1], context: context);
+      return _data?.data?.items;
+    } on DioException catch (e) {
+      List<String> text = [];
+      if (e.response?.statusCode == 500) {
+        text = [
+          "Could not fetch episodes",
+          "Could not connect to the Jellyfin Server as the current user cannot be used to get Show Data.\nPlease check the Jellyfin URL to see if you can log in or not.",
+        ];
+      } else {
+        text = ["Unknown Error", "Unknown Error"];
       }
-
-      return null;
+      SimpleErrorDiag(title: text[0], desc: text[1], context: context);
     }
+
+    return null;
   }
 
   // start playback report section
@@ -519,13 +519,19 @@ class JellyfinAPI extends ChangeNotifier {
     return _data.data;
   }
 
-  Future<List<BaseItemDto>?> getUserViewItems({required String parentId,}) async {
+  Future<List<BaseItemDto>?> getUserViewItems({
+    required String parentId,
+  }) async {
     final ItemsApi iApi = appClient.getItemsApi();
     final Response<BaseItemDtoQueryResult> _data = await iApi.getItems(
       userId: userID,
       parentId: parentId,
       recursive: true,
-      includeItemTypes: [BaseItemKind.movie, BaseItemKind.series, BaseItemKind.musicAlbum],
+      includeItemTypes: [
+        BaseItemKind.movie,
+        BaseItemKind.series,
+        BaseItemKind.musicAlbum,
+      ],
       enableUserData: true,
       fields: <ItemFields>[
         ItemFields.overview,
@@ -538,12 +544,13 @@ class JellyfinAPI extends ChangeNotifier {
   }
 }
 
+
 extension Ticks on Duration {
   int get inTicks => inMicroseconds * 10;
 }
 
 // wrapper class for MediaKit
-class PlayerManager extends ChangeNotifier {
+class PlayerManager {
   late var playMedia;
 
   final Player player = Player(

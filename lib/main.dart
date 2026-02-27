@@ -12,6 +12,9 @@ import 'comps.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:dio/dio.dart';
 
+final bool debug = false;
+String appTitle = 'Flutterfin';
+
 /* 
   main(): uses FSS to get (or make) encryption key for hive,
   uses path_provider to get support dir path to give a location for hive,
@@ -57,7 +60,6 @@ void main() async {
         ChangeNotifierProvider<JellyfinAPI>(
           create: (_) => JellyfinAPI(jellyBox),
         ),
-        ChangeNotifierProvider<PlayerManager>(create: (_) => PlayerManager()),
       ],
       child: MyApp(jellyfinBox: jellyBox),
     ),
@@ -76,14 +78,15 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       ),
-      home: MainRedirector(),
+      home: MainRedirector(box: jellyfinBox),
     );
   }
 }
 
 // main-redirector throws user to either server add, or home page depending on their config
 class MainRedirector extends StatefulWidget {
-  const MainRedirector({super.key});
+  final Box box;
+  const MainRedirector({super.key, required this.box});
 
   @override
   State<MainRedirector> createState() => _MainRedirectorState();
@@ -113,54 +116,60 @@ class _MainRedirectorState extends State<MainRedirector> {
     );
 
     // checks for network availbility
-    return FutureBuilder<ConnectivityResult>(
-      future: checkNetwork(),
-      builder: (context, snapshot) {
-        // checks if network state is not none
-        if (snapshot.data != ConnectivityResult.none) {
-          if (ama.lastUsedServer != null) {
-            var keyBase = ama.serverList[ama.lastUsedServer!].userMap!.keys!
-                .toList();
-            var valueBase = ama.serverList[ama.lastUsedServer!].userMap!.values!
-                .toList();
+    if (debug == true) {
+      return DebugPage(box: widget.box);
+    } else {
+      return FutureBuilder<ConnectivityResult>(
+        future: checkNetwork(),
+        builder: (context, snapshot) {
+          // checks if network state is not none
+          try {
+            if (snapshot.data != ConnectivityResult.none) {
+              if (ama.lastUsedServer != null) {
+                var keyBase = ama.serverList[ama.lastUsedServer!].userMap!.keys.toList();
+                var valueBase = ama.serverList[ama.lastUsedServer!].userMap!.values.toList();
 
-            _ifLoggedIn = Future.wait([
-              Provider.of<JellyfinAPI>(
-                context,
-                listen: false,
-              ).makeClient(ama.lastUsedServer),
-              if (ama?.serverList[ama.lastUsedServer!].lastLogIsQC == true)
-                Provider.of<JellyfinAPI>(
-                  context,
-                  listen: false,
-                ).logInByQC(keyBase[ama.lastUser!], context)
-              else
-                Provider.of<JellyfinAPI>(context, listen: false).logInByName(
-                  keyBase[ama.lastUser!],
-                  valueBase[ama.lastUser!],
-                  context,
-                ),
-            ]);
+                _ifLoggedIn = Future.wait([
+                  Provider.of<JellyfinAPI>(
+                    context,
+                    listen: false,
+                  ).makeClient(ama.lastUsedServer),
+                  if (ama?.serverList[ama.lastUsedServer!].lastLogIsQC == true)
+                    Provider.of<JellyfinAPI>(
+                      context,
+                      listen: false,
+                    ).logInByQC(keyBase[ama.lastUser!], context)
+                  else
+                    Provider.of<JellyfinAPI>(context, listen: false).logInByName(
+                      keyBase[ama.lastUser!],
+                      valueBase[ama.lastUser!],
+                      context,
+                    ),
+                ]);
 
-            return FutureBuilder(
-              future: _ifLoggedIn,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return waitingWidget;
-                } else if (snapshot.hasError) {
-                  return StartingPage();
-                } else {
-                  return HomePage(index: ama.lastUsedServer);
-                }
-              },
-            );
-          } else {
+                return FutureBuilder(
+                  future: _ifLoggedIn,
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return waitingWidget;
+                    } else if (snapshot.hasError) {
+                      return StartingPage();
+                    } else {
+                      return HomePage(index: ama.lastUsedServer);
+                    }
+                  },
+                );
+              } else {
+                return StartingPage();
+              }
+            } else {
+              return NoNetworkPage();
+            }
+          } on RangeError catch (e) {
             return StartingPage();
           }
-        } else {
-          return NoNetworkPage();
-        }
-      },
-    );
+        },
+      );
+    }
   }
 }

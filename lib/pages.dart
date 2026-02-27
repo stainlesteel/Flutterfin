@@ -1,19 +1,55 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:jellyfin/objects.dart';
 import 'package:provider/provider.dart';
-import 'providers.dart';
-import 'comps.dart';
-import 'main.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:jellyfin_dart/jellyfin_dart.dart';
-import 'dart:ui';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:hive/hive.dart';
 // media kit
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 
 import 'package:dio/dio.dart';
 
-String appTitle = 'Flutterfin';
+// local imports
+import 'providers.dart';
+import 'comps.dart';
+import 'main.dart';
+
+class DebugPage extends StatefulWidget {
+  final Box box;
+
+  const DebugPage({super.key, required this.box});
+
+  @override
+  State<DebugPage> createState() => _DebugPageState();
+}
+
+class _DebugPageState extends State<DebugPage> {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text('Debug Page', style: getTextStyling(5, context),),
+            Text('To leave, set debug (bool) in main.dart to false, and hot restart.'),
+            SizedBox(height: 10,),
+            FilledButton.tonal(
+              onPressed: () async {
+                await widget.box.clear();
+                showScaffold('Deleted box data!', context);
+              },
+              child: Text('Clear Hive Box'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
 
 // start default page (no server found)
 class StartingPage extends StatefulWidget {
@@ -117,37 +153,49 @@ class _StartingPageState extends State<StartingPage> {
             if (ama.serverList.isEmpty)
               Text('No servers Available', style: getTextStyling(1, context)),
             if (ama.serverList.isNotEmpty)
-              ListView(
+              ListView.builder(
                 padding: const EdgeInsets.all(6.7),
+                itemCount: ama.serverList.length,
                 shrinkWrap: true,
-                children: [
-                  for (var e in ama.serverList)
-                    Card(
-                      child: ListTile(
-                        onTap: () async {
-                          await ama.makeClient(e.id);
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => LogInPage(index: e.id),
-                            ),
-                          );
-                        },
-                        title: Text(
-                          '${e.serverName}',
-                          style: getTextStyling(1, context),
-                        ),
-                        subtitle: Text(
-                          '${e.serverURL}',
-                          style: getTextStyling(4, context),
-                        ),
-                        trailing: Text(
-                          '${e.version}',
-                          style: getTextStyling(4, context),
+                itemBuilder: (BuildContext context, int index) {
+                  ServerObj e = ama.serverList[index];
+                  return Dismissible(
+                      background: Container(
+                        color: Colors.redAccent,
+                        child: Text('Remove'),
+                      ),
+                      key: ValueKey<ServerObj>(ama.serverList[index]),
+                      direction: DismissDirection.endToStart,
+                      onDismissed: (DismissDirection direction) {
+                        ama.removeAtServerList(index);
+                      },
+                      child: Card(
+                        child: ListTile(
+                          onTap: () async {
+                            await ama.makeClient(e.id);
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => LogInPage(index: e.id),
+                              ),
+                            );
+                          },
+                          title: Text(
+                            '${e.serverName}',
+                            style: getTextStyling(1, context),
+                          ),
+                          subtitle: Text(
+                            '${e.serverURL}',
+                            style: getTextStyling(4, context),
+                          ),
+                          trailing: Text(
+                            '${e.version}',
+                            style: getTextStyling(4, context),
+                          ),
                         ),
                       ),
-                    ),
-                ],
+                    );
+                },
               ),
           ],
         ),
@@ -272,20 +320,84 @@ class _AboutPageState extends State<AboutPage> {
   Widget build(BuildContext context) {
     JellyfinAPI ama = context.watch<JellyfinAPI>();
 
-    Widget _scaffold = Scaffold(
+    Widget scaffold = Scaffold(
       appBar: AppBar(title: Text('About $appTitle'), centerTitle: true),
       body: Center(
         child: SingleChildScrollView(
           scrollDirection: Axis.vertical,
           child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.center,
-            children: [Text('Flutterfin', style: getTextStyling(2, context))],
+            children: [
+              Text(appTitle, style: getTextStyling(0, context)),
+              SizedBox(height: 5,),
+              FilledButton.tonal(
+                onPressed: () {}, 
+                child: Text('Development', style: getTextStyling(4, context),),
+              ),
+              SizedBox(height: 5,),
+              simpleTile(
+                title: 'Report an Issue',
+                trailing: Icon(Icons.link),
+                onTap: () {
+                  showScaffold('no url yet', context);
+                },
+              ),
+              SizedBox(height: 30),
+              simpleTile(
+                title: 'Credits',
+                onTap: () {
+                  SimpleErrorDiag(
+                    title: 'Credits', 
+                    desc: 'Created by stainlesteel.\ncopyright information is defined by Apache License 2.0.', 
+                    context: context
+                  );
+                },
+              ),
+              FutureBuilder(
+                future: LicenseRegistry.licenses.toList(), 
+                builder: (context, snap) {
+                  if (!snap.hasData) {
+                    return Card(
+                      child: CircularProgressIndicator(),
+                    );
+                  } else {
+                    return simpleTile(
+                       title: 'Licenses',
+                       onTap: () {
+                         showDialog(
+                           context: context, 
+                           builder: (builder) => AlertDialog(
+                             title: Text('License Info'),
+                             content: Container(
+                               height: 300,
+                               width: 300,
+                               child: ListView.builder(
+                                   itemCount: snap.data?.length,
+                                   shrinkWrap: true,
+                                   itemBuilder: (context, index) {
+                                     final entry = snap.data![index];
+                                     return ListTile(
+                                       title: Text(entry.packages.join(', ')),
+                                       subtitle: Text(entry.packages.first),
+                                     );
+                                   }
+                                 ),
+                             ),
+                             ),
+                           );
+                          }
+                        );
+                      }
+                    }
+                  ),
+                ],
+              ),
           ),
         ),
-      ),
     );
 
-    return _scaffold;
+    return scaffold;
   }
 }
 // end AboutPage
@@ -804,7 +916,7 @@ class _UserViewPageState extends State<UserViewPage> {
 //start ItemPage
 class ItemPage extends StatefulWidget {
   final BaseItemDto viewData;
-  final int index; // 0: movie, 1: video
+  final int index; // 0: movie, 1: video/episode 
 
   const ItemPage({super.key, required this.viewData, required this.index});
 
@@ -818,12 +930,16 @@ class _ItemPageState extends State<ItemPage> {
     super.initState();
   }
 
+
   @override
   Widget build(BuildContext context) {
     var ama = context.watch<JellyfinAPI>();
     BaseItemDto viewData = widget.viewData;
 
     double runTime = viewData.runTimeTicks! / 100000000;
+    double? percentage = viewData.userData?.playedPercentage;
+    
+    print('$percentage');
 
     Widget _scaffold = Scaffold(
       appBar: AppBar(),
@@ -831,6 +947,7 @@ class _ItemPageState extends State<ItemPage> {
         child: SingleChildScrollView(
           scrollDirection: Axis.vertical,
           child: Column(
+            mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Row(
@@ -891,8 +1008,7 @@ class _ItemPageState extends State<ItemPage> {
                       final result = await Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) =>
-                              VideoPlayerPage(viewData: viewData, index: index),
+                          builder: (context) => VideoPlayerPage(viewData: viewData, index: index),
                         ),
                       );
 
@@ -904,10 +1020,15 @@ class _ItemPageState extends State<ItemPage> {
                           viewData = viewData.copyWith(
                             userData: viewData.userData?.copyWith(
                               playbackPositionTicks: result['positionTicks'],
+                              playedPercentage: result['positionTicks'] / viewData.runTimeTicks * 100,
                             ),
                           );
+                          setState(() {
+                            percentage = viewData.userData?.playedPercentage;
+                          });
+
                           print(
-                            'updated positionTicks: ${viewData.userData?.playbackPositionTicks}',
+                            'updated positionTicks: ${viewData.userData?.playbackPositionTicks}\nNEW percentage: ${viewData.userData?.playedPercentage}',
                           );
                         } catch (e) {
                           print('FAILED TO USE copyWith');
@@ -921,7 +1042,7 @@ class _ItemPageState extends State<ItemPage> {
               SizedBox(height: 7),
               if (viewData.userData?.playedPercentage != null)
                 LinearProgressIndicator(
-                  value: viewData.userData!.playedPercentage!.round().toDouble() / 100,
+                  value: percentage! / 100,
                 ),
               SizedBox(height: 7),
               if (viewData.taglines?.isNotEmpty ?? false) ...[
@@ -1000,6 +1121,93 @@ class _ItemPageState extends State<ItemPage> {
                   ),
                 ),
               ],
+              SizedBox(height: 10,),
+              if (widget.index == 1)
+                FutureBuilder(
+                  future: ama.getShowEpisodes(seriesId: viewData.seriesId!, context: context), 
+                  builder: (context, snap) {
+                    if (snap.connectionState == ConnectionState.waiting) {
+                      return CircularProgressIndicator();
+                    } else if (snap.hasError) {
+                      return Text('Failed to get other episodes.');
+                    } else if (snap.hasData) {
+                      final List<BaseItemDto>? data = snap.data;
+
+                      snap.data?.removeAt(viewData.indexNumber!);
+                      return SizedBox(
+                        height: 200,
+                        child: CarouselView(
+                          scrollDirection: Axis.horizontal,
+                          itemExtent: 200,
+                          shrinkExtent: 100,
+                          onTap: (index) async {
+                            print('${data?.length}');
+                            print('${data?[index]}');
+                            await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => ItemPage(viewData: data?[index] ?? BaseItemDto(), index: 1),
+                              ),
+                            );
+                          },
+                          children: <Widget>[
+                            for (BaseItemDto view in data ?? [])
+                              if (view == viewData) ...[
+
+                              ]
+                              else 
+                                Column(
+                                  children: [
+                                    Expanded(
+                                      child: Container(
+                                        width: double.infinity,
+                                        alignment: Alignment.bottomCenter,
+                                        decoration: BoxDecoration(
+                                          borderRadius: BorderRadius.circular(0.5),
+                                          image: DecorationImage(
+                                            image: CachedNetworkImageProvider(
+                                              '${ama.serverList[ama.lastUsedServer!].serverURL}/Items/${view!.id!}/Images/Primary?tag=${view!.imageTags?['Primary']}',
+                                            ),
+                                            fit: BoxFit.cover,
+                                          ),
+                                        ),
+                                        child: LinearProgressIndicator(
+                                          value: view.userData?.playedPercentage?.round().toDouble() ?? 0.01 / 100,
+                                        ),
+                                      ),
+                                    ),
+                                    if (view.seriesName != null) ...[
+                                      Padding(
+                                        padding: EdgeInsets.only(top: 5),
+                                        child: Text(
+                                          '${view.seriesName}',
+                                          style: getTextStyling(4, context),
+                                        ),
+                                      ),
+                                      Padding(
+                                        padding: EdgeInsets.only(top: 5),
+                                        child: Text(
+                                          'S${view.parentIndexNumber}:E${view.indexNumber}, ${view.name}',
+                                        ),
+                                      ),
+                                    ] else
+                                      Padding(
+                                        padding: EdgeInsets.only(top: 5),
+                                        child: Text(
+                                          '${view.name}',
+                                          style: getTextStyling(4, context),
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                          ],
+                        ),
+                      );
+                    } else {
+                      return Text('Unknown Error when trying to get show episodes.');
+                    }
+                  },
+                ),
             ],
           ),
         ),
@@ -1027,8 +1235,8 @@ class VideoPlayerPage extends StatefulWidget {
 }
 
 class _VideoPlayerPageState extends State<VideoPlayerPage> {
-  late var player;
   late dynamic playbackReport;
+  late dynamic player;
 
   @override
   void initState() {
@@ -1045,10 +1253,7 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
   }
 
   Future<void> starter() async {
-    final url = Provider.of<JellyfinAPI>(
-      context,
-      listen: false,
-    ).getStreamUrl(widget.viewData!.id!);
+    final url = Provider.of<JellyfinAPI>(context, listen: false,).getStreamUrl(widget.viewData.id!);
     print('Stream Url: $url');
     if (widget.index == 0) {
       await player.addMovie(url!, widget.viewData);
@@ -1103,9 +1308,7 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
     var ama = context.watch<JellyfinAPI>();
     VideoController videoConts = VideoController(player.player);
 
-    int episodeIndex =
-        widget.viewData.indexNumber ??
-        0; // the number for skip buttons to use as the base (skip previous: skipInt - 1) (skip next: skipInt + 1)
+    int episodeIndex = widget.viewData.indexNumber ?? 0; // the number for skip buttons to use as the base (skip previous: skipInt - 1) (skip next: skipInt + 1)
     // if null, video is probably a movie, in that case, this isn't going to be used
 
     List<Widget> skipButtonList = [
@@ -1187,6 +1390,7 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
             Navigator.pop(context, {'positionTicks': newPosition});
 
             player = null;
+
           },
           icon: Icon(Icons.arrow_back, color: Colors.white),
         ),
