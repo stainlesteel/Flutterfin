@@ -1,9 +1,10 @@
+
 // contains hive objects and data enums
 
 import 'package:hive/hive.dart';
 import 'package:jellyfin_dart/jellyfin_dart.dart';
 
-part 'objects.g.dart';
+part 'hive_objects.g.dart';
 
 @HiveType(typeId: 0)
 class ServerObj extends HiveObject {

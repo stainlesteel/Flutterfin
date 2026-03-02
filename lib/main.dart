@@ -1,20 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'providers.dart';
-import 'pages.dart';
+import 'package:jellyfin/providers/providers.dart';
+import 'package:jellyfin/pages/pages.dart';
 import 'package:hive/hive.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'dart:typed_data';
 import 'dart:convert';
-import 'objects.dart';
-import 'comps.dart';
+import 'package:jellyfin/objects/objects.dart';
+import 'package:jellyfin/comps/comps.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
-import 'package:dio/dio.dart';
 
 final bool debug = false;
 String appTitle = 'Flutterfin';
 
+// TODO: refactored code for new folder structure
 /* 
   main(): uses FSS to get (or make) encryption key for hive,
   uses path_provider to get support dir path to give a location for hive,

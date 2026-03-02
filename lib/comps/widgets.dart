@@ -1,55 +1,11 @@
 import 'package:flutter/material.dart';
-import 'dart:math';
 import 'package:provider/provider.dart';
-import 'providers.dart';
 import 'package:jellyfin_dart/jellyfin_dart.dart';
-import 'pages.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'dart:developer' as dev;
-import 'package:connectivity_plus/connectivity_plus.dart';
 
-/// getTextStyling(): custom Text Styling
-/// index:
-///   0: bold, size 60
-///   1: bold, size 20
-///   2: bold, size 30
-///   3: size 20
-///   4: bold
-///   5: bold, size 40
-///   6: size 30
-TextStyle getTextStyling(int index, BuildContext context) {
-  if (index == 0) {
-    return TextStyle(fontWeight: FontWeight.bold, fontSize: 60);
-  } else if (index == 1) {
-    return TextStyle(fontWeight: FontWeight.bold, fontSize: 20);
-  } else if (index == 2) {
-    return TextStyle(fontWeight: FontWeight.bold, fontSize: 30);
-  } else if (index == 3) {
-    return TextStyle(fontSize: 20);
-  } else if (index == 4) {
-    return TextStyle(fontWeight: FontWeight.bold);
-  } else if (index == 5) {
-    return TextStyle(fontWeight: FontWeight.bold, fontSize: 40);
-  } else if (index == 6) {
-    return TextStyle(fontSize: 30);
-  } else {
-    return TextStyle();
-  }
-}
-
-Widget popUpDiag({
-  String title = '',
-  List<Widget> content = const [],
-  List<Widget> actions = const [],
-}) {
-  return AlertDialog(
-    title: Text(title, style: TextStyle(color: Colors.black)),
-    content: content.isNotEmpty
-        ? Column(mainAxisSize: MainAxisSize.min, children: content)
-        : null,
-    actions: actions.isNotEmpty ? actions : null,
-  );
-}
+import 'package:jellyfin/pages/pages.dart';
+import 'package:jellyfin/comps/comps.dart';
+import 'package:jellyfin/providers/providers.dart';
 
 /// simpleTile(): A simpler version of ListTile
 /// args:
@@ -79,84 +35,6 @@ Widget simpleTile({
   );
 }
 
-void ServerConnectErrorDiag(BuildContext context) {
-  showDialog(
-    context: context,
-    builder: (context) => popUpDiag(
-      title: "Connection Error",
-      content: [
-        Text(
-          "We're unable to connect to the selected server right now. Please ensure it is running and try again.",
-        ),
-      ],
-      actions: [
-        TextButton(
-          onPressed: () {
-            Navigator.pop(context);
-          },
-          child: Text('Ok'),
-        ),
-      ],
-    ),
-  );
-}
-
-void SimpleErrorDiag({
-  required String title,
-  required String desc,
-  required BuildContext context,
-}) {
-  showDialog(
-    context: context,
-    builder: (context) => popUpDiag(
-      title: "$title",
-      content: [Text("$desc")],
-      actions: [
-        TextButton(
-          onPressed: () {
-            Navigator.pop(context);
-          },
-          child: Text('Ok'),
-        ),
-      ],
-    ),
-  );
-}
-
-void LogInErrorDiag(BuildContext context) {
-  showDialog(
-    context: context,
-    builder: (context) => popUpDiag(
-      title: "Log In Error",
-      content: [
-        Text(
-          "Unable to login to the server with these credentials, please ensure they are correct and try again.",
-        ),
-      ],
-      actions: [
-        TextButton(
-          onPressed: () {
-            Navigator.pop(context);
-          },
-          child: Text('Ok'),
-        ),
-      ],
-    ),
-  );
-}
-
-String randomString() {
-  return String.fromCharCodes(
-    List.generate(8, (index) => Random().nextInt(33) + 89),
-  );
-}
-
-String getTime(int ticks) {
-  Duration duration = Duration(microseconds: ticks * 10);
-
-  return '${duration.inHours % 24}h ${duration.inMinutes % 60}m';
-}
-
 Widget detailCard({
   String? text = '',
   List<Widget>? children = null,
@@ -179,22 +57,6 @@ Widget detailCard({
   }
 }
 
-/*
-  0: unlimited data (wifi, ethernet)
-  1: limited data (mobile)
-  2: no data (none)
-*/
-Future<ConnectivityResult> checkNetwork() async {
-  final List<ConnectivityResult> result = await (Connectivity()
-      .checkConnectivity());
-
-  print("Network Connectivity State: ${result[0]}");
-  return result[0];
-}
-
-void showScaffold(String text, BuildContext context) {
-  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text)));
-}
 
 Widget PlayerText(String text) {
   return Text(
@@ -212,7 +74,7 @@ Widget UserViews(BuildContext context) {
       stream: ama.userViewsStream(),
       builder: (context, snapshot) {
         if (snapshot.data == null) {
-          dev.log('${snapshot.error}');
+          print('${snapshot.error}');
           return Text('Failed to download libraries.');
         } else if (snapshot.connectionState == ConnectionState.waiting) {
           return CircularProgressIndicator();
@@ -236,17 +98,12 @@ Widget UserViews(BuildContext context) {
                   Column(
                     children: [
                       Expanded(
-                        child: Container(
-                          alignment: Alignment.center,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(0.5),
-                            image: DecorationImage(
-                              image: NetworkImage(
-                                '${ama.serverList[ama.lastUsedServer!].serverURL}/Items/${view!.id!}/Images/Primary?tag=${view!.imageTags?['Primary']}',
-                              ),
-                              fit: BoxFit.cover,
-                            ),
-                          ),
+                        child: CachedNetworkImage(
+                          imageUrl: '${ama.serverList[ama.lastUsedServer!].serverURL}/Items/${view!.id!}/Images/Primary?tag=${view!.imageTags?['Primary']}',
+                          errorWidget: (context, url, object) {
+                            return Icon(Icons.question_mark);
+                          },
+                          fit: BoxFit.cover,
                         ),
                       ),
                       Padding(
@@ -328,10 +185,7 @@ Widget ContinueWatching(BuildContext context) {
                           ),
                           child: LinearProgressIndicator(
                             value:
-                                view.userData!.playedPercentage!
-                                    .round()
-                                    .toDouble() /
-                                100,
+                                view.userData!.playedPercentage!.round().toDouble() / 100,
                           ),
                         ),
                       ),

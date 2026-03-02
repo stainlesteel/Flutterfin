@@ -1,14 +1,11 @@
-import 'package:provider/provider.dart';
 import 'package:flutter/material.dart';
-import 'package:hive/hive.dart';
-import 'package:dio/dio.dart';
 import 'package:jellyfin_dart/jellyfin_dart.dart';
-import 'comps.dart';
-import 'objects.dart';
-import 'pages.dart';
-// media kit
-import 'package:media_kit/media_kit.dart';
-import 'package:media_kit_video/media_kit_video.dart';
+import 'package:hive/hive.dart';
+import 'package:jellyfin/objects/objects.dart';
+import 'package:dio/dio.dart';
+import 'package:jellyfin/comps/comps.dart';
+import 'package:jellyfin/pages/pages.dart';
+import 'package:jellyfin/providers/providers.dart';
 
 class JellyfinAPI extends ChangeNotifier {
   final Box box;
@@ -97,24 +94,6 @@ class JellyfinAPI extends ChangeNotifier {
     } finally {
       isVerifyingServer = false;
       notifyListeners();
-    }
-  }
-
-  Stream<void> pingServerStream(BuildContext context) async* {
-    while (true) {
-      final exception = await pingServer(context);
-      print('pinged server!');
-      await Future.delayed(Duration(seconds: 10));
-    }
-  }
-
-  // intended only for a stream and if user is already logged in
-  Future<DioException?> pingServer(BuildContext context) async {
-    try {
-      final dio = await Dio().get('${serverList[lastUsedServer!].serverURL}');
-      return null;
-    } on DioException catch (e) {
-      return e;
     }
   }
 
@@ -519,150 +498,43 @@ class JellyfinAPI extends ChangeNotifier {
     return _data.data;
   }
 
-  Future<List<BaseItemDto>?> getUserViewItems({
-    required String parentId,
-  }) async {
-    final ItemsApi iApi = appClient.getItemsApi();
-    final Response<BaseItemDtoQueryResult> _data = await iApi.getItems(
+  Future<UserItemDataDto?> unmarkFavorite(String itemId) async {
+    final UserLibraryApi ulAPI = appClient.getUserLibraryApi();
+    final Response<UserItemDataDto> _data = await ulAPI.unmarkFavoriteItem(
+      itemId: itemId,
       userId: userID,
-      parentId: parentId,
-      recursive: true,
-      includeItemTypes: [
-        BaseItemKind.movie,
-        BaseItemKind.series,
-        BaseItemKind.musicAlbum,
-      ],
-      enableUserData: true,
-      fields: <ItemFields>[
-        ItemFields.overview,
-        ItemFields.taglines,
-        ItemFields.tags,
-      ],
     );
 
-    return _data.data?.items;
-  }
-}
-
-
-extension Ticks on Duration {
-  int get inTicks => inMicroseconds * 10;
-}
-
-// wrapper class for MediaKit
-class PlayerManager {
-  late var playMedia;
-
-  final Player player = Player(
-    configuration: PlayerConfiguration(
-      title: 'Jellyfin',
-      logLevel: MPVLogLevel.v,
-    ),
-  );
-
-  /* mediaData structure:
-      {
-        'BaseList': List<BaseItemDto>?,
-        'subtitleList': List<????>,
-      }
-   */
-  Map<String, dynamic> mediaData = {};
-
-  // wrapper functions below
-  Future<void> disposePlayer() async {
-    await player.dispose();
+    return _data.data;
   }
 
-  Future<void> addMovie(String url, BaseItemDto dto) async {
-    playMedia = Media(url);
-
-    mediaData['BaseList'] ??= [dto];
-    print('mediaData: $mediaData');
-
-    await player.open(playMedia, play: false);
-  }
-
-  Future<void> addShow(BaseItemDto dto, BuildContext context) async {
-    late List<BaseItemDto>? showData;
-    try {
-      showData = await Provider.of<JellyfinAPI>(context, listen: false)
-          .getShowEpisodes(
-            seriesId: dto!.seriesId!,
-            season: dto?.parentIndexNumber,
-            context: context,
-          );
-    } catch (e) {
-      showData == null;
-    }
-
-    if (showData == null) {
-      Navigator.pop(context);
-    } else {
-      List<Map<String, dynamic>> episodeData = [];
-
-      for (BaseItemDto? item in showData! ?? {}) {
-        String? url = Provider.of<JellyfinAPI>(
-          context,
-          listen: false,
-        ).getStreamUrl(item!.id!);
-
-        episodeData.add({'url': '$url', 'name': '${item.name}'});
-      }
-
-      // add baseitemdto list to class-wide mediaData list
-      mediaData['BaseList'] ??= [];
-      mediaData['BaseList'] = showData!;
-      print('mediaData: $mediaData');
-
-      playMedia = Playlist([
-        for (Map<String, dynamic> item in episodeData)
-          Media(item['url'], extras: {'name': '${item['name']}'}),
-      ], index: dto!.indexNumber! - 1);
-
-      await player.open(playMedia, play: false);
-    }
-  }
-
-  Future<void> play() async {
-    Future.delayed(Duration(seconds: 1));
-    await player.play();
-  }
-
-  Future<void> pause() async {
-    Future.delayed(Duration(seconds: 1));
-    await player.pause();
-  }
-
-  Future<void> skipNext() async {
-    Future.delayed(Duration(seconds: 1));
-    await player.next();
-  }
-
-  Future<void> skipPrevious() async {
-    Future.delayed(Duration(seconds: 1));
-    await player.previous();
-  }
-
-  Stream<void> reportPlaybackStream(BuildContext context) async* {
-    JellyfinAPI ama = context.read<JellyfinAPI>();
-    int _index = player.state.playlist.index;
-
-    await Future.delayed(Duration(seconds: 2));
+  Stream<List<BaseItemDto>?> getUserViewItems({required String parentId,}) async* {
+    final ItemsApi iApi = appClient.getItemsApi();
+    late Response<BaseItemDtoQueryResult> _data;
     while (true) {
-      if (player.state.duration == Duration.zero) {
-      } else {
-        Duration duration = player.state.position;
-        if (player.state.playlist.index - 1 == null) {
-          _index = 0;
-        }
-        ama.reportPlayback(mediaData['BaseList'][_index], duration);
+      try {
+        _data = await iApi.getItems(
+          userId: userID,
+          parentId: parentId,
+          recursive: true,
+          includeItemTypes: [
+            BaseItemKind.movie,
+            BaseItemKind.series,
+            BaseItemKind.musicAlbum,
+          ],
+          enableUserData: true,
+          fields: <ItemFields>[
+            ItemFields.overview,
+            ItemFields.taglines,
+            ItemFields.tags,
+          ],
+        );
+        yield _data.data?.items;
+      } catch (e) {
+      
       }
-      await Future.delayed(Duration(seconds: 5));
+      await Future.delayed(Duration(seconds: 10));
     }
-  }
 
-  Future<void> seek(Duration duration) async {
-    await Future.delayed(Duration(seconds: 1));
-    await player.seek(duration);
   }
 }
