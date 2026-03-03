@@ -65,7 +65,6 @@ Widget PlayerText(String text) {
   );
 }
 
-// starts jellyfin api widgets
 Widget UserViews(BuildContext context) {
   JellyfinAPI ama = context.watch<JellyfinAPI>();
   return SizedBox(
@@ -178,7 +177,7 @@ Widget ContinueWatching(BuildContext context) {
                             borderRadius: BorderRadius.circular(0.5),
                             image: DecorationImage(
                               image: CachedNetworkImageProvider(
-                                '${ama.serverList[ama.lastUsedServer!].serverURL}/Items/${view!.id!}/Images/Primary?tag=${view!.imageTags?['Primary']}',
+                                '${ama.serverList[ama.lastUsedServer!].serverURL}/Items/${view!.id!}/Images/Backdrop?tag=${view!.imageTags?['Backdrop']}',
                               ),
                               fit: BoxFit.cover,
                             ),
@@ -236,4 +235,3 @@ Widget ContinueWatching(BuildContext context) {
   );
 }
 
-// end jellyfin api widgets

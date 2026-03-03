@@ -38,6 +38,17 @@ class _HomePageState extends State<HomePage> {
           },
         ),
         centerTitle: true,
+        actions: [
+          IconButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => SearchPage()),
+              );
+            },
+            icon: Icon(Icons.search),
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         child: Center(

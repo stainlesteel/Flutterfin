@@ -25,6 +25,16 @@ class JellyfinAPI extends ChangeNotifier {
   // boolean loading locks
   bool isVerifyingServer = false;
 
+  late final uAPI = appClient.getUserApi();
+  late final qc = appClient.getQuickConnectApi();
+  late UserViewsApi uvAPI = appClient.getUserViewsApi();
+  late ItemsApi itAPI = appClient.getItemsApi();
+  late MediaInfoApi MIapi = appClient.getMediaInfoApi();
+  late final tvAPI = appClient.getTvShowsApi();
+  late final psAPI = appClient.getPlaystateApi();
+  late final UserLibraryApi ulAPI = appClient.getUserLibraryApi();
+  late final SearchApi seAPI = appClient.getSearchApi();
+
   Future<void> loadAppData() async {
     final _data = box.values.whereType<ServerObj>().toList();
 
@@ -164,7 +174,6 @@ class JellyfinAPI extends ChangeNotifier {
     BuildContext context,
   ) async {
     late final response;
-    var uAPI = appClient.getUserApi();
     try {
       response = await uAPI.authenticateUserByName(
         authenticateUserByName: AuthenticateUserByName(username: user, pw: pwd),
@@ -206,8 +215,6 @@ class JellyfinAPI extends ChangeNotifier {
   // make request for quick connect to server
   Future<QuickConnectResult?> makeQCRequest(BuildContext context) async {
     late final result;
-    final qc = appClient.getQuickConnectApi();
-
     try {
       result = await qc.initiateQuickConnect();
     } on DioException catch (e) {
@@ -225,8 +232,6 @@ class JellyfinAPI extends ChangeNotifier {
 
   // check if user has accepted quick connect state
   Stream<QuickConnectResult?> getQCState(String secret) async* {
-    final qc = appClient.getQuickConnectApi();
-
     while (true) {
       try {
         final data = await qc.getQuickConnectState(secret: secret);
@@ -244,7 +249,6 @@ class JellyfinAPI extends ChangeNotifier {
 
   Future<bool> logInByQC(String res_secret, BuildContext context) async {
     late final response;
-    final uAPI = appClient.getUserApi();
     try {
       response = await uAPI.authenticateWithQuickConnect(
         quickConnectDto: QuickConnectDto(secret: res_secret),
@@ -280,7 +284,6 @@ class JellyfinAPI extends ChangeNotifier {
   // end: functions related to quick connect
 
   Future<List<UserDto>?> getPublicUsers() async {
-    final UserApi uAPI = await appClient.getUserApi();
     late final _data;
     try {
       _data = await uAPI.getPublicUsers();
@@ -309,7 +312,6 @@ class JellyfinAPI extends ChangeNotifier {
   }
 
   Future<UserDto?> getCurrentUser() async {
-    final uAPI = await appClient.getUserApi();
     final data = await uAPI.getCurrentUser();
 
     return data?.data;
@@ -328,7 +330,6 @@ class JellyfinAPI extends ChangeNotifier {
 
   // streams for homepage
   Stream<List<BaseItemDto>?> userViewsStream() async* {
-    UserViewsApi uvAPI = appClient.getUserViewsApi();
     int timeOutLimit = 3;
     int attempts = 0;
 
@@ -351,7 +352,6 @@ class JellyfinAPI extends ChangeNotifier {
   }
 
   Stream<List<BaseItemDto>?> getContinueWatching() async* {
-    ItemsApi itAPI = appClient.getItemsApi();
     int attempts = 0;
 
     while (true) {
@@ -380,23 +380,11 @@ class JellyfinAPI extends ChangeNotifier {
     }
   }
 
-  Future<PlaybackInfoResponse?> getPlayBackData(String id) async {
-    MediaInfoApi _api = await appClient.getMediaInfoApi();
-    Response<PlaybackInfoResponse> _data = await _api.getPostedPlaybackInfo(
-      itemId: id,
-      userId: userID,
-    );
-    print('${_data?.data}');
-
-    return _data?.data;
-  }
-
   String? getStreamUrl(String itemId) {
     return '${serverList[lastUsedServer!].serverURL}/Videos/${itemId}/stream?Static=true';
   }
 
   Future<List<BaseItemDto>?> getShowEpisodes({required String seriesId, int? season = null, required BuildContext context,}) async {
-    final tvAPI = await appClient.getTvShowsApi();
     late final _data;
 
     try {
@@ -430,7 +418,6 @@ class JellyfinAPI extends ChangeNotifier {
   // start playback report section
 
   Future<void> startPlayback(BaseItemDto dto) async {
-    final psAPI = await appClient.getPlaystateApi();
 
     final playbackStart = await psAPI.reportPlaybackStart(
       playbackStartInfo: PlaybackStartInfo(
@@ -444,7 +431,6 @@ class JellyfinAPI extends ChangeNotifier {
   }
 
   Future<void> stopPlayback(BaseItemDto dto, Duration time) async {
-    final psAPI = await appClient.getPlaystateApi();
     final timeTicks = time.inTicks;
 
     final playbackStop = await psAPI.reportPlaybackStopped(
@@ -461,7 +447,6 @@ class JellyfinAPI extends ChangeNotifier {
   }
 
   Future<void> reportPlayback(BaseItemDto dto, Duration time) async {
-    final psAPI = await appClient.getPlaystateApi();
     final timeTicks = time.inTicks;
 
     final playbackReport = await psAPI.reportPlaybackProgress(
@@ -479,17 +464,7 @@ class JellyfinAPI extends ChangeNotifier {
 
   // stop playback report section
 
-  Future<List<SessionInfoDto>?> getSessionInfo() async {
-    final sAPI = appClient.getSessionApi();
-    final _data = await sAPI.getSessions(
-      deviceId: serverList[lastUsedServer!].deviceId,
-    );
-
-    return _data?.data;
-  }
-
   Future<UserItemDataDto?> markFavorite(String itemId) async {
-    final UserLibraryApi ulAPI = appClient.getUserLibraryApi();
     final Response<UserItemDataDto> _data = await ulAPI.markFavoriteItem(
       itemId: itemId,
       userId: userID,
@@ -499,7 +474,6 @@ class JellyfinAPI extends ChangeNotifier {
   }
 
   Future<UserItemDataDto?> unmarkFavorite(String itemId) async {
-    final UserLibraryApi ulAPI = appClient.getUserLibraryApi();
     final Response<UserItemDataDto> _data = await ulAPI.unmarkFavoriteItem(
       itemId: itemId,
       userId: userID,
@@ -509,11 +483,10 @@ class JellyfinAPI extends ChangeNotifier {
   }
 
   Stream<List<BaseItemDto>?> getUserViewItems({required String parentId,}) async* {
-    final ItemsApi iApi = appClient.getItemsApi();
     late Response<BaseItemDtoQueryResult> _data;
     while (true) {
       try {
-        _data = await iApi.getItems(
+        _data = await itAPI.getItems(
           userId: userID,
           parentId: parentId,
           recursive: true,
@@ -531,10 +504,44 @@ class JellyfinAPI extends ChangeNotifier {
         );
         yield _data.data?.items;
       } catch (e) {
-      
       }
       await Future.delayed(Duration(seconds: 10));
     }
+  }
 
+  Future<SearchHintResult?> runSearch(String term) async {
+    final _data = await seAPI.getSearchHints(
+      searchTerm: term,
+      userId: userID,
+    );
+
+    return _data.data;
+  }
+
+  Future<List<BaseItemDto>> getItemsbyId(List<String> idList) async {
+    List<BaseItemDto> dtoList = [];
+    int attempts = 0;
+
+    for (String id in idList) {
+      try {
+        final _data = await ulAPI.getItem(
+          userId: userID,
+          itemId: id,
+        );
+        
+        if (_data.data!.mediaType == MediaType.video || _data.data!.mediaType == MediaType.audio) {
+          dtoList.add(_data.data!);
+        }
+
+      } catch (e) {
+        if (attempts == 3) {
+          break;
+        } else {
+          continue;
+        }
+      }
+    }
+
+    return dtoList;
   }
 }
