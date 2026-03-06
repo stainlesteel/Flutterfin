@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:jellyfin/main.dart';
 import 'package:jellyfin/pages/pages.dart';
+import 'package:jellyfin_dart/jellyfin_dart.dart';
 import 'package:provider/provider.dart';
 import 'package:jellyfin/providers/providers.dart';
 import 'package:jellyfin/comps/comps.dart';
@@ -127,13 +128,23 @@ class _StartingPageState extends State<StartingPage> {
                       child: Card(
                         child: ListTile(
                           onTap: () async {
-                            await ama.makeClient(e.id);
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => LogInPage(index: e.id),
-                              ),
-                            );
+                            try {
+                              await ama.makeClient(e.id);
+                              await Future.delayed(Duration(seconds: 1));
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => LogInPage(index: e.id),
+                                ),
+                              );
+                            } catch (e) {
+                              SimpleErrorDiag(
+                                title: 'Connection Error', 
+                                desc: 'Could not establish any connection to the server.\n This most likely happened because the server is completely down (host inaccessible).', 
+                                context: context,
+                              );
+                            }
+
                           },
                           title: Text(
                             '${e.serverName}',

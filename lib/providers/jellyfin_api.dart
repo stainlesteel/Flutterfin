@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:jellyfin_dart/jellyfin_dart.dart';
 import 'package:hive/hive.dart';
@@ -16,24 +17,25 @@ class JellyfinAPI extends ChangeNotifier {
   List<ServerObj> serverList = [];
   int? lastUsedServer;
   int? lastUser;
-  late JellyfinDart appClient; // jellyfin_dart client
+  dynamic appClient; // jellyfin_dart client
 
   // server data collected for later use
   String? logInMsg;
   String? userID;
+  List<String>? heroIds;
 
   // boolean loading locks
   bool isVerifyingServer = false;
 
-  late final uAPI = appClient.getUserApi();
-  late final qc = appClient.getQuickConnectApi();
+  late UserApi uAPI = appClient.getUserApi();
+  late QuickConnectApi qc = appClient.getQuickConnectApi();
   late UserViewsApi uvAPI = appClient.getUserViewsApi();
   late ItemsApi itAPI = appClient.getItemsApi();
   late MediaInfoApi MIapi = appClient.getMediaInfoApi();
-  late final tvAPI = appClient.getTvShowsApi();
-  late final psAPI = appClient.getPlaystateApi();
-  late final UserLibraryApi ulAPI = appClient.getUserLibraryApi();
-  late final SearchApi seAPI = appClient.getSearchApi();
+  late TvShowsApi tvAPI = appClient.getTvShowsApi();
+  late PlaystateApi psAPI = appClient.getPlaystateApi();
+  late UserLibraryApi ulAPI = appClient.getUserLibraryApi();
+  late SearchApi seAPI = appClient.getSearchApi();
 
   Future<void> loadAppData() async {
     final _data = box.values.whereType<ServerObj>().toList();
@@ -163,6 +165,19 @@ class JellyfinAPI extends ChangeNotifier {
       deviceId: serverList[index!].deviceId ?? randrStr,
       version: '${_base.version}',
     );
+
+    uAPI = appClient.getUserApi();
+    qc = appClient.getQuickConnectApi();
+    uvAPI = appClient.getUserViewsApi();
+    itAPI = appClient.getItemsApi();
+    MIapi = appClient.getMediaInfoApi();
+    tvAPI = appClient.getTvShowsApi();
+    psAPI = appClient.getPlaystateApi();
+    ulAPI = appClient.getUserLibraryApi();
+    seAPI = appClient.getSearchApi();
+    notifyListeners();
+
+    print('made client, url: ${_base.serverURL}');
 
     final branding = await appClient.getBrandingApi().getBrandingOptions();
     logInMsg = branding.data?.loginDisclaimer;
@@ -513,6 +528,7 @@ class JellyfinAPI extends ChangeNotifier {
     final _data = await seAPI.getSearchHints(
       searchTerm: term,
       userId: userID,
+      includeItemTypes: [BaseItemKind.episode, BaseItemKind.movie, BaseItemKind.series],
     );
 
     return _data.data;
@@ -543,5 +559,14 @@ class JellyfinAPI extends ChangeNotifier {
     }
 
     return dtoList;
+  }
+
+  Future<List<BaseItemDto>?> getSeasons(String seriesId) async {
+    final data = await tvAPI.getSeasons(
+      seriesId: seriesId,
+      userId: userID,
+    );
+
+    return data.data?.items;
   }
 }

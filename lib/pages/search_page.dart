@@ -55,22 +55,13 @@ Widget getListView(List<BaseItemDto> list, JellyfinAPI ama) {
             onTap: () async {
               if (list[index] == null) {
                 
-              } else if (list[index].seriesName == null) {
-                await Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => ItemPage(viewData: list![index], index: 0), 
-                  ),
-                );
-              } else if (list[index].seriesName != null) {
-                await Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => ItemPage(viewData: list![index], index: 1), 
-                  ),
-                );
               } else {
-     
+                await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ItemPage(viewData: list![index]), 
+                  ),
+                );
               }
             },
             child: Column(

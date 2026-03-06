@@ -153,14 +153,14 @@ Widget ContinueWatching(BuildContext context) {
                   await Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => ItemPage(viewData: data[index], index: 0),
+                      builder: (context) => ItemPage(viewData: data[index]),
                     ),
                   );
                 } else if (data[index].seriesName != null) {
                   await Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => ItemPage(viewData: data[index], index: 1),
+                      builder: (context) => ItemPage(viewData: data[index]),
                     ),
                   );
                 } else {}
@@ -170,23 +170,21 @@ Widget ContinueWatching(BuildContext context) {
                   Column(
                     children: [
                       Expanded(
-                        child: Container(
-                          width: double.infinity,
-                          alignment: Alignment.bottomCenter,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(0.5),
-                            image: DecorationImage(
-                              image: CachedNetworkImageProvider(
-                                '${ama.serverList[ama.lastUsedServer!].serverURL}/Items/${view!.id!}/Images/Backdrop?tag=${view!.imageTags?['Backdrop']}',
-                              ),
-                              fit: BoxFit.cover,
-                            ),
-                          ),
-                          child: LinearProgressIndicator(
-                            value:
-                                view.userData!.playedPercentage!.round().toDouble() / 100,
+                        child: Hero(
+                          tag: view as Object,
+                          child: CachedNetworkImage(
+                            imageUrl: '${ama.serverList[ama.lastUsedServer!].serverURL}/Items/${view!.id!}/Images/Primary?tag=${view!.imageTags?['Primary']}',
+                            errorWidget: (context, url, object) {
+                              return Icon(Icons.question_mark);
+                            },
+                            fit: BoxFit.cover,
+                            height: double.infinity,
+                            width: double.infinity,
                           ),
                         ),
+                      ),
+                      LinearProgressIndicator(
+                        value: view.userData!.playedPercentage!.round().toDouble() / 100,
                       ),
                       if (view.seriesName != null) ...[
                         Padding(

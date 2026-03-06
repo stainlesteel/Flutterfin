@@ -8,20 +8,23 @@ import 'package:jellyfin/comps/comps.dart';
 
 class ItemPage extends StatefulWidget {
   BaseItemDto viewData;
-  final int index; // 0: movie, 1: video/episode 
 
-  ItemPage({super.key, required this.viewData, required this.index});
+  ItemPage({super.key, required this.viewData});
 
   @override
   State<ItemPage> createState() => _ItemPageState();
 }
 
 class _ItemPageState extends State<ItemPage> {
+
   @override
   void initState() {
     super.initState();
   }
 
+  ValueNotifier<int?> episodesIndex = ValueNotifier(null);
+  // episodesIndex will only appear if the viewData is a show, 
+  // it is used to manage the current season index the user wants to look at
 
   @override
   Widget build(BuildContext context) {
@@ -29,7 +32,6 @@ class _ItemPageState extends State<ItemPage> {
 
     double runTime = widget.viewData.runTimeTicks! / 100000000;
     double? percentage = widget.viewData.userData?.playedPercentage;
-    
 
     Widget _scaffold = Scaffold(
       appBar: AppBar(),
@@ -45,71 +47,61 @@ class _ItemPageState extends State<ItemPage> {
               child: Stack(
                 fit: StackFit.passthrough,
                 children: [
-                    Image(
-                      fit: BoxFit.cover,
-                      width: double.infinity,
-                      image: CachedNetworkImageProvider(
-                        '${ama.serverList[ama.lastUsedServer!].serverURL}/Items/${widget.viewData!.id!}/Images/Backdrop?tag=${widget.viewData!.imageTags?['Backdrop']}',
+                    Hero(
+                      tag: widget.viewData,
+                      child: CachedNetworkImage(
+                        imageUrl: '${ama.serverList[ama.lastUsedServer!].serverURL}/Items/${widget.viewData!.id!}/Images/Primary?tag=${widget.viewData!.imageTags?['Primary']}',
+                        width: double.infinity,
+                        fit: BoxFit.cover,
                       ),
                     ),
                     Positioned.fill(child: Container(color: Colors.black.withOpacity(0.5))),
-                    Center(
-                      child: Image(
-                        image: CachedNetworkImageProvider(
-                          '${ama.serverList[ama.lastUsedServer!].serverURL}/Items/${widget.viewData!.id!}/Images/Logo?tag=${widget.viewData!.imageTags?['Logo']}',
-                        ),
-                      ),
-                    ),
                 ],
               ),
             ),
-            if (widget.index == 0) SizedBox(height: 5),
+            if (widget.viewData.type == BaseItemKind.movie) SizedBox(height: 5),
             SingleChildScrollView(
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  FilledButton(
-                    onPressed: () async {
-                      int index = 0;
-                      if (widget.viewData.seriesName != null) {
-                        index = 1;
-                      }
-                      final result = await Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => VideoPlayerPage(viewData: widget.viewData, index: index),
-                        ),
-                      );
-                    
-                      if (result != null) {
-                        if (widget.index == 1 && result['episodeIndex'] != widget.viewData.indexNumber) {
-                        } else {
-                          print(
-                            'previous positionTicks: ${widget.viewData.userData?.playbackPositionTicks}',
-                          );
-                          try {
-                            widget.viewData = widget.viewData.copyWith(
-                              userData: widget.viewData.userData?.copyWith(
-                                playbackPositionTicks: result['positionTicks'],
-                                playedPercentage: result['positionTicks'] / widget.viewData.runTimeTicks * 100,
-                                isFavorite: result['isFavorite'],
-                              ),
-                            );
-                            setState(() {
-                              percentage = widget.viewData.userData?.playedPercentage;
-                            });
-                    
+                  if (widget.viewData.type != BaseItemKind.series)
+                    FilledButton(
+                      onPressed: () async {
+                        final result = await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => VideoPlayerPage(viewData: widget.viewData),
+                          ),
+                        );
+                        if (result != null) {
+                          if (widget.viewData.type == BaseItemKind.episode && result['episodeIndex'] != widget.viewData.indexNumber) {
+                          } else {
                             print(
-                              'updated positionTicks: ${widget.viewData.userData?.playbackPositionTicks}\nNEW percentage: ${widget.viewData.userData?.playedPercentage}',
+                              'previous positionTicks: ${widget.viewData.userData?.playbackPositionTicks}',
                             );
-                          } catch (e) {
-                            print('FAILED TO USE copyWith');
-                          }
-                          }
-                      }
-                    },
-                    child: Text('Play'),
-                  ),
+                            try {
+                              widget.viewData = widget.viewData.copyWith(
+                                userData: widget.viewData.userData?.copyWith(
+                                  playbackPositionTicks: result['positionTicks'],
+                                  playedPercentage: result['positionTicks'] / widget.viewData.runTimeTicks * 100,
+                                  isFavorite: result['isFavorite'],
+                                ),
+                              );
+                              setState(() {
+                                percentage = widget.viewData.userData?.playedPercentage;
+                              });
+                      
+                              print(
+                                'updated positionTicks: ${widget.viewData.userData?.playbackPositionTicks}\nNEW percentage: ${widget.viewData.userData?.playedPercentage}',
+                              );
+                            } catch (e) {
+                              print('FAILED TO USE copyWith');
+                            }
+                            }
+                        }
+                      },
+                      child: Text('Play'),
+                    ),
                 ],
               ),
             ),
@@ -196,8 +188,8 @@ class _ItemPageState extends State<ItemPage> {
               ),
             ],
             SizedBox(height: 30,),
-            if (widget.index == 1) ...[
-              Text('Other Episodes', style: getTextStyling(1, context)),
+            if (widget.viewData.type == BaseItemKind.episode) ...[
+              Text('Other Episodes from Season ${widget.viewData.parentIndexNumber}', style: getTextStyling(1, context)),
               FutureBuilder(
                 future: ama.getShowEpisodes(seriesId: widget.viewData.seriesId!, context: context), 
                 builder: (context, snap) {
@@ -221,7 +213,7 @@ class _ItemPageState extends State<ItemPage> {
                           await Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => ItemPage(viewData: data?[index] ?? BaseItemDto(), index: 1),
+                              builder: (context) => ItemPage(viewData: data?[index] ?? BaseItemDto()),
                             ),
                           );
                         },
@@ -282,6 +274,131 @@ class _ItemPageState extends State<ItemPage> {
                     return Text('Unknown Error when trying to get show episodes.');
                   }
                 },
+              ),
+            ]
+            else if (widget.viewData.type == BaseItemKind.series && widget.viewData.id != null) ...[
+              Text('Episodes from ${widget.viewData.name}', style: getTextStyling(1, context)),
+              FutureBuilder(
+                future: ama.getSeasons(widget.viewData.id!),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return CircularProgressIndicator();
+                  } else if (snapshot.hasError) {
+                    return Text('Could not get season data for ${widget.viewData.name}');
+                  } else {
+                    List<BaseItemDto> data = snapshot.data!;
+                    episodesIndex.value == 0;
+                    return Wrap(
+                      spacing: 5,
+                      children: List<Widget>.generate(
+                        data.length,
+                        (int index) {
+                          late bool selection;
+                          if (index == 0) {
+                            selection = true;
+                          } else {
+                            selection = false;
+                          }
+                          return ChoiceChip(
+                            label: Text('Season ${index + 1}'),
+                            selected: selection,
+                            onSelected: (bool selected) {
+                              episodesIndex.value == index;
+                            },
+                          );
+                        }
+                      ).toList(),
+                    );
+                  }
+                },
+              ),
+              ValueListenableBuilder(
+                valueListenable: episodesIndex,
+                builder: (context, value, child) {
+                  return FutureBuilder(
+                    future: ama.getShowEpisodes(seriesId: widget.viewData.id!, season: value, context: context),
+                    builder: (context, snap) {
+                      if (snap.connectionState == ConnectionState.waiting) {
+                        return CircularProgressIndicator();
+                      } else if (snap.hasError) {
+                        return Text('Failed to get season episodes.');
+                      } else if (snap.hasData) {
+                        final List<BaseItemDto>? data = snap.data;
+      
+                        return SizedBox(
+                          height: 200,
+                          child: CarouselView(
+                            scrollDirection: Axis.horizontal,
+                            itemExtent: 200,
+                            shrinkExtent: 100,
+                            onTap: (index) async {
+                              print('${data?.length}');
+                              print('${data?[index]}');
+                              await Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => ItemPage(viewData: data?[index] ?? BaseItemDto()),
+                                ),
+                              );
+                            },
+                            children: <Widget>[
+                              for (BaseItemDto view in data ?? [])
+                                if (view == widget.viewData) ...[
+                                ]
+                                else 
+                                  Column(
+                                    children: [
+                                      Expanded(
+                                        child: Hero(
+                                          tag: view as Object,
+                                          child: CachedNetworkImage(
+                                            imageUrl: '${ama.serverList[ama.lastUsedServer!].serverURL}/Items/${view!.id!}/Images/Primary?tag=${view!.imageTags?['Primary']}',
+                                            errorWidget: (context, url, object) {
+                                              return Icon(Icons.question_mark);
+                                            },
+                                            fit: BoxFit.cover,
+                                            height: double.infinity,
+                                            width: double.infinity,
+                                          ),
+                                        ),
+                                      ),
+                                      if (view.userData?.playedPercentage != null)
+                                        LinearProgressIndicator(
+                                          value: view.userData!.playedPercentage!.round().toDouble() / 100,
+                                        ),
+                                      if (view.seriesName != null) ...[
+                                        Padding(
+                                          padding: EdgeInsets.only(top: 5),
+                                          child: Text(
+                                            '${view.seriesName}',
+                                            style: getTextStyling(4, context),
+                                          ),
+                                        ),
+                                        Padding(
+                                          padding: EdgeInsets.only(top: 5),
+                                          child: Text(
+                                            'S${view.parentIndexNumber}:E${view.indexNumber}, ${view.name}',
+                                          ),
+                                        ),
+                                      ] else
+                                        Padding(
+                                          padding: EdgeInsets.only(top: 5),
+                                          child: Text(
+                                            '${view.name}',
+                                            style: getTextStyling(4, context),
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                            ],
+                          ),
+                        );
+                      } else {
+                        return Text('Unknown Error when trying to get show episodes.');
+                      }
+                    },
+                  );
+                }
               ),
             ],
           ],

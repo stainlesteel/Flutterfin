@@ -59,45 +59,35 @@ class _UserViewPageState extends State<UserViewPage> {
                                onTap: () async {
                                  if (data?[index] == null) {
                                    
-                                 } else if (data?[index].seriesName == null) {
-                                   await Navigator.push(
-                                     context,
-                                     MaterialPageRoute(
-                                       builder: (context) => ItemPage(viewData: data![index], index: 0), 
-                                     ),
-                                   );
-                                 } else if (data?[index].seriesName != null) {
-                                   await Navigator.push(
-                                     context,
-                                     MaterialPageRoute(
-                                       builder: (context) => ItemPage(viewData: data![index], index: 1), 
-                                     ),
-                                   );
                                  } else {
-                        
+                                   Navigator.push(
+                                     context,
+                                     MaterialPageRoute(
+                                       builder: (context) => ItemPage(viewData: data![index]), 
+                                     ),
+                                   );
                                  }
                                },
                                child: Column(
                                  children: [
                                    Expanded(
-                                     child: Container(
-                                       width: double.infinity,
-                                       alignment: Alignment.bottomCenter,
-                                       decoration: BoxDecoration(
-                                         borderRadius: BorderRadius.only(topLeft: Radius.circular(15), topRight: Radius.circular(15)),
-                                         image: DecorationImage(
-                                           image: CachedNetworkImageProvider(
-                                             '${ama.serverList[ama.lastUsedServer!].serverURL}/Items/${view!.id!}/Images/Primary?tag=${view!.imageTags?['Primary']}',
-                                           ),
-                                           fit: BoxFit.cover,
-                                         ),
-                                       ),
-                                       child: LinearProgressIndicator(
-                                         value: (view.userData?.playedPercentage != null) 
-                                         ? view.userData!.playedPercentage!.round().toDouble() / 100
-                                         : 0,
+                                     child: Hero(
+                                       tag: view as Object,
+                                       child: CachedNetworkImage(
+                                         imageUrl: '${ama.serverList[ama.lastUsedServer!].serverURL}/Items/${view!.id!}/Images/Primary?tag=${view!.imageTags?['Primary']}',
+                                         errorWidget: (context, url, object) {
+                                           return Icon(Icons.question_mark);
+                                         },
+                                         fit: BoxFit.cover,
+                                         height: double.infinity,
+                                         width: double.infinity,
                                        ),
                                      ),
+                                   ),
+                                   LinearProgressIndicator(
+                                     value: (view?.userData?.playedPercentage != null) 
+                                     ? view!.userData!.playedPercentage!.round().toDouble() / 100
+                                     : 0,
                                    ),
                                    if (view.seriesName != null) ...[
                                      Padding(

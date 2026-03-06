@@ -13,7 +13,6 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 final bool debug = false;
 String appTitle = 'Flutterfin';
 
-// TODO: refactored code for new folder structure
 /* 
   main(): uses FSS to get (or make) encryption key for hive,
   uses path_provider to get support dir path to give a location for hive,
@@ -52,6 +51,11 @@ void main() async {
   _eKey = null;
   _hiveKey = null;
   _cipher = null;
+
+  // temp
+  FlutterError.onError = (FlutterErrorDetails details) {
+    FlutterError.dumpErrorToConsole(details);
+  };
 
   runApp(
     MultiProvider(
@@ -92,83 +96,64 @@ class MainRedirector extends StatefulWidget {
 }
 
 class _MainRedirectorState extends State<MainRedirector> {
-  late Future<List<dynamic>> _ifLoggedIn;
+  late Future<void> future;
+  dynamic page;
 
   @override
   void initState() {
     super.initState();
     Provider.of<JellyfinAPI>(context, listen: false).loadAppData();
+    future = starter();
+  }
+
+  Future<void> starter() async {
+    final ama = Provider.of<JellyfinAPI>(context, listen: false);
+    final networkStatus = await checkNetwork();
+
+    if (debug == true) {
+      page = DebugPage(box: widget.box);
+    } else {
+      if (networkStatus != ConnectivityResult.none) {
+        if (ama.lastUsedServer != null) {
+          var keyBase = ama.serverList[ama.lastUsedServer!].userMap!.keys.toList();
+          var valueBase = ama.serverList[ama.lastUsedServer!].userMap!.values.toList();
+
+          try {
+            Provider.of<JellyfinAPI>(context, listen: false,).makeClient(ama.lastUsedServer);
+            if (ama?.serverList[ama.lastUsedServer!].lastLogIsQC == true) {
+              Provider.of<JellyfinAPI>(context, listen: false,).logInByQC(keyBase[ama.lastUser!], context);
+            } else {
+              Provider.of<JellyfinAPI>(context, listen: false).logInByName(
+                keyBase[ama.lastUser!],
+                valueBase[ama.lastUser!],
+                context,
+              );
+            }
+            page = HomePage(index: ama.lastUsedServer);
+          } catch (e) {
+            page = StartingPage();
+          }
+
+        } else {
+          page = StartingPage();
+        }
+      } else {
+        page = NoNetworkPage();
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    var ama = context.watch<JellyfinAPI>();
-
-    Widget waitingWidget = Scaffold(
-      appBar: AppBar(title: Text('Jellyfin'), centerTitle: true),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [CircularProgressIndicator()],
-        ),
-      ),
+    return FutureBuilder(
+      future: future,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.done) {
+          return page;
+        } else {
+          return Text('waiting');
+        }
+      }
     );
-
-    // checks for network availbility
-    if (debug == true) {
-      return DebugPage(box: widget.box);
-    } else {
-      return FutureBuilder<ConnectivityResult>(
-        future: checkNetwork(),
-        builder: (context, snapshot) {
-          // checks if network state is not none
-          try {
-            if (snapshot.data != ConnectivityResult.none) {
-              if (ama.lastUsedServer != null) {
-                var keyBase = ama.serverList[ama.lastUsedServer!].userMap!.keys.toList();
-                var valueBase = ama.serverList[ama.lastUsedServer!].userMap!.values.toList();
-
-                _ifLoggedIn = Future.wait([
-                  Provider.of<JellyfinAPI>(
-                    context,
-                    listen: false,
-                  ).makeClient(ama.lastUsedServer),
-                  if (ama?.serverList[ama.lastUsedServer!].lastLogIsQC == true)
-                    Provider.of<JellyfinAPI>(
-                      context,
-                      listen: false,
-                    ).logInByQC(keyBase[ama.lastUser!], context)
-                  else
-                    Provider.of<JellyfinAPI>(context, listen: false).logInByName(
-                      keyBase[ama.lastUser!],
-                      valueBase[ama.lastUser!],
-                      context,
-                    ),
-                ]);
-
-                return FutureBuilder(
-                  future: _ifLoggedIn,
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return waitingWidget;
-                    } else if (snapshot.hasError) {
-                      return StartingPage();
-                    } else {
-                      return HomePage(index: ama.lastUsedServer);
-                    }
-                  },
-                );
-              } else {
-                return StartingPage();
-              }
-            } else {
-              return NoNetworkPage();
-            }
-          } on RangeError catch (e) {
-            return StartingPage();
-          }
-        },
-      );
-    }
   }
 }

@@ -9,12 +9,10 @@ import 'package:jellyfin/comps/comps.dart';
 
 class VideoPlayerPage extends StatefulWidget {
   final BaseItemDto viewData;
-  final int index; // 0: movie, 1: video
 
   const VideoPlayerPage({
     super.key,
     required this.viewData,
-    required this.index,
   });
 
   @override
@@ -42,7 +40,7 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
   Future<void> starter() async {
     final url = Provider.of<JellyfinAPI>(context, listen: false,).getStreamUrl(widget.viewData.id!);
     print('Stream Url: $url');
-    if (widget.index == 0) {
+    if (widget.viewData.type == BaseItemKind.movie) {
       await player.addMovie(url!, widget.viewData);
     } else {
       await player.addShow(widget.viewData, context);
@@ -85,6 +83,8 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
     playbackReport = player.reportPlaybackStream(context).listen((event) {
       print('reported Playback Session!');
     });
+
+    await Future.delayed(Duration(seconds: 2));
   }
 
   ValueNotifier<bool> favorited = ValueNotifier<bool>(true);
@@ -98,10 +98,13 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
     int episodeIndex = widget.viewData.indexNumber ?? 0; // the number for skip buttons to use as the base (skip previous: skipInt - 1) (skip next: skipInt + 1)
      // if null, video is probably a movie, in that case, this isn't going to be used
     //
-    if (player.mediaData['BaseList'][episodeIndex].userData?.isFavorite == true) {
-      favorited.value = true;
-    } else {
-      favorited.value = false;
+    try {
+      if (player.mediaData['BaseList'][episodeIndex].userData?.isFavorite == true) {
+        favorited.value = true;
+      } else {
+        favorited.value = false;
+      }
+    } catch (e) {
     }
 
     List<Widget> skipButtonList = [
