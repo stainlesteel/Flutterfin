@@ -37,13 +37,18 @@ dependencies:
   jellyfin_dart: 0.1.2
   provider: ^6.1.5+1
   cached_network_image: 3.4.1
+
+  # hive
   hive: 2.2.3
+  hive_flutter: 1.1.0
+  
   path_provider: 2.1.5
   dio: ^5.0.0
   flutter_secure_storage: 10.0.0
   hive_generator: 2.0.1
   build_runner: 2.4.13
   connectivity_plus: 7.0.0
+
   # media ket start
   media_kit: ^1.2.6
   media_kit_video: ^2.0.1

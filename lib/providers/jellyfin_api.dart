@@ -8,6 +8,8 @@ import 'package:jellyfin/comps/comps.dart';
 import 'package:jellyfin/pages/pages.dart';
 import 'package:jellyfin/providers/providers.dart';
 
+import 'dart:math';
+
 class JellyfinAPI extends ChangeNotifier {
   final Box box;
 
@@ -35,6 +37,7 @@ class JellyfinAPI extends ChangeNotifier {
   late PlaystateApi psAPI = appClient.getPlaystateApi();
   late UserLibraryApi ulAPI = appClient.getUserLibraryApi();
   late SearchApi seAPI = appClient.getSearchApi();
+  late LibraryApi lAPI = appClient.getLibraryApi();
 
   Future<void> loadAppData() async {
     final _data = box.values.whereType<ServerObj>().toList();
@@ -169,6 +172,7 @@ class JellyfinAPI extends ChangeNotifier {
     psAPI = await appClient.getPlaystateApi();
     ulAPI = await appClient.getUserLibraryApi();
     seAPI = await appClient.getSearchApi();
+    lAPI = await appClient.getLibraryApi();
     notifyListeners();
 
     print('made client, url: ${_base.serverURL}');
@@ -380,7 +384,7 @@ class JellyfinAPI extends ChangeNotifier {
           ],
         );
         yield data.data?.items ?? [];
-        print('got resume items');
+        print('got recent items');
         await Future.delayed(Duration(seconds: 9));
       } on DioException catch (e) {
         if (attempts == 3) {
@@ -388,7 +392,57 @@ class JellyfinAPI extends ChangeNotifier {
           yield null;
         } else {
           attempts++;
-          print('userViewsStream attempts: $attempts');
+          print('getContinueWatching attempts: $attempts');
+          await Future.delayed(Duration(seconds: 2));
+        }
+      }
+    }
+  }
+
+  Stream<Map<String, List<BaseItemDto>?>?> getSimilarItems() async* {
+    int attempts = 0;
+    Response<BaseItemDtoQueryResult> items = await itAPI.getResumeItems(
+      userId: userID,
+      fields: <ItemFields>[
+        ItemFields.overview,
+        ItemFields.taglines,
+        ItemFields.tags,
+      ],
+    );
+
+    int selectedNum = Random().nextInt(items.data!.items!.length);
+
+    while (true) {
+      try {
+        final data = await lAPI.getSimilarItems(
+          userId: userID,
+          itemId: items.data!.items![selectedNum].id!,
+          fields: <ItemFields>[
+            ItemFields.overview,
+            ItemFields.taglines,
+            ItemFields.tags,
+          ],
+        );
+        if (data.data?.items?.isEmpty ?? false || data.data?.items == null) {
+          print('retrying similar items, given data: ${items.data?.items?[selectedNum].name}');
+
+          items.data?.items?.removeAt(selectedNum);
+          selectedNum = Random().nextInt(items.data!.items!.length);
+
+        } else {
+          yield {
+            '${items.data!.items![selectedNum].name}' : data.data?.items,
+          };
+          print('got similar items');
+          await Future.delayed(Duration(seconds: 9));
+        }
+      } on DioException catch (e) {
+        if (attempts == 3) {
+          attempts = 0;
+          yield null;
+        } else {
+          attempts++;
+          print('getSimilarItems attempts: $attempts, error: ${e.message}');
           await Future.delayed(Duration(seconds: 2));
         }
       }

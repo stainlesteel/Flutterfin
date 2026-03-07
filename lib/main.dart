@@ -1,9 +1,12 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:jellyfin/providers/providers.dart';
 import 'package:jellyfin/pages/pages.dart';
 import 'package:hive/hive.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'dart:convert';
 import 'package:jellyfin/objects/objects.dart';
@@ -12,6 +15,18 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 
 final bool debug = false;
 String appTitle = 'Flutterfin';
+
+// this is for adding drag support to mouses and trackpads
+class CustomScrollBehaviour extends MaterialScrollBehavior {
+  @override // TODO: implement dragDevices
+  Set<PointerDeviceKind> get dragDevices => {
+    PointerDeviceKind.touch,
+    PointerDeviceKind.trackpad,
+    PointerDeviceKind.stylus,
+    PointerDeviceKind.invertedStylus,
+    PointerDeviceKind.mouse,
+  };
+}
 
 /* 
   main(): uses FSS to get (or make) encryption key for hive,
@@ -24,7 +39,7 @@ void main() async {
 
   final _fss = const FlutterSecureStorage();
 
-  final libs = await getApplicationSupportDirectory(); // get support dir path
+
   String? _eKey = await _fss.read(key: 'encryptor'); // find encryptor
   dynamic _hiveKey = Hive.generateSecureKey(); // hive secure key
 
@@ -38,7 +53,13 @@ void main() async {
     _cipher = base64Url.decode(_eKey);
   }
 
-  Hive.init(libs.path);
+  try {
+    dynamic libs = await getApplicationDocumentsDirectory();
+    Hive.init(libs.path);
+  } catch (e) {
+    Hive.initFlutter();
+  }
+
   Hive.registerAdapter(ServerObjAdapter());
   Hive.registerAdapter(UserDataAdapter());
 
@@ -82,6 +103,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       ),
+      scrollBehavior: CustomScrollBehaviour(),
       home: MainRedirector(box: jellyfinBox),
     );
   }

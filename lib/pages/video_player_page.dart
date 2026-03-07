@@ -272,7 +272,10 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
               child: MaterialVideoControlsTheme(
                 normal: themeData,
                 fullscreen: themeData,
-                child: Video(controller: videoConts),
+                child: Video(
+                  controller: videoConts,
+                  controls: MaterialVideoControls,
+                ),
               ),
             ),
           ],
