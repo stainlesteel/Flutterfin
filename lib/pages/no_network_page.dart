@@ -42,39 +42,13 @@ class _NoNetworkPageState extends State<NoNetworkPage> {
                   late var _widgetPage;
 
                   if (ama.lastUsedServer != null) {
-                    var keyBase = ama
-                        .serverList[ama.lastUsedServer!]
-                        .userMap!
-                        .keys!
-                        .toList();
-                    var valueBase = ama
-                        .serverList[ama.lastUsedServer!]
-                        .userMap!
-                        .values!
-                        .toList();
+                    var userData = ama.serverList[ama.lastUsedServer!].userData!;
 
                     try {
                       Future.wait([
-                        Provider.of<JellyfinAPI>(
-                          context,
-                          listen: false,
-                        ).makeClient(ama.lastUsedServer),
-                        if (ama?.serverList[ama.lastUsedServer!].lastLogIsQC ==
-                            true)
-                          Provider.of<JellyfinAPI>(
-                            context,
-                            listen: false,
-                          ).logInByQC(keyBase[ama.lastUser!], context)
-                        else
-                          Provider.of<JellyfinAPI>(
-                            context,
-                            listen: false,
-                          ).logInByName(
-                            keyBase[ama.lastUser!],
-                            valueBase[ama.lastUser!],
-                            context,
-                          ),
+                        ama.makeClient(ama.lastUsedServer),
                       ]);
+                      ama.setUser(userData);
                       _widgetPage = HomePage(index: ama.lastUsedServer);
                     } catch (e) {
                       _widgetPage = StartingPage();

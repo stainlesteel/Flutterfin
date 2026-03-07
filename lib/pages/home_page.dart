@@ -19,11 +19,12 @@ class _HomePageState extends State<HomePage> {
     super.initState();
   }
 
+
   @override
   Widget build(BuildContext context) {
     var ama = context.watch<JellyfinAPI>();
-    final base = ama.serverList[widget.index!].userMap?.keys.toList();
-
+    final base = ama.serverList[widget.index!];
+    
     return Scaffold(
       appBar: AppBar(
         title: Text('Jellyfin'),
@@ -54,9 +55,20 @@ class _HomePageState extends State<HomePage> {
         child: Center(
           child: Column(
             children: [
-              Text(
-                'welcome, ${base?[ama.lastUser!] ?? 'nobody'}',
-                style: getTextStyling(2, context),
+              FutureBuilder(
+                future: ama.getCurrentUser(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return CircularProgressIndicator();
+                  } else if (snapshot.hasError) {
+                    return Text('Error getting user name.');
+                  } else {
+                    return Text(
+                      'welcome, ${snapshot.data?.name}',
+                      style: getTextStyling(2, context),
+                    );
+                  }
+                }
               ),
               Text('My Media', style: getTextStyling(1, context)),
               SizedBox(height: 10),

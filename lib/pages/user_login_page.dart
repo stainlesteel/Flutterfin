@@ -116,14 +116,10 @@ class _LogInPageState extends State<LogInPage> {
                                       userCont.text,
                                       pwdCont.text,
                                       context,
+                                      widget.index!,
                                     );
                                     if (response) {
                                       print('logged in!');
-                                      await ama.saveUser(
-                                        userCont.text,
-                                        pwdCont.text,
-                                        widget.index,
-                                      );
                                       await ama.goToHome(widget.index, context);
                                     } else {
                                       print('failure!');
@@ -172,16 +168,11 @@ class _LogInPageState extends State<LogInPage> {
                                                   .logInByQC(
                                                     data!.secret!,
                                                     context,
+                                                    widget.index!,
                                                   );
                                               if (response == true) {
                                                 print('logged in!');
-                                                final username = await ama
-                                                    .getCurrentUser();
-                                                await ama.saveUser(
-                                                  username!.name!,
-                                                  data!.secret!,
-                                                  widget.index,
-                                                );
+                                                final username = await ama.getCurrentUser();
                                                 await ama.goToHome(
                                                   widget.index,
                                                   context,
@@ -248,14 +239,10 @@ class _LogInPageState extends State<LogInPage> {
                                                 user.name!,
                                                 pwdCont.text,
                                                 context,
+                                                widget.index!
                                               );
                                           if (response) {
                                             print('logged in!');
-                                            await ama.saveUser(
-                                              user.name!,
-                                              pwdCont.text,
-                                              widget.index,
-                                            );
                                             await ama.goToHome(
                                               widget.index,
                                               context,

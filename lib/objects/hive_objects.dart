@@ -21,7 +21,7 @@ class ServerObj extends HiveObject {
   String? version;
 
   @HiveField(4)
-  Map<String, String>? userMap;
+  UserData? userData;
 
   @HiveField(5)
   bool? lastLogIsQC;
@@ -37,8 +37,22 @@ class ServerObj extends HiveObject {
     this.serverURL,
     this.serverName,
     this.version,
-    this.userMap,
+    this.userData,
     this.lastLogIsQC,
     this.profile,
+  });
+}
+
+@HiveType(typeId: 1)
+class UserData extends HiveObject {
+  @HiveField(0)
+  String? accessToken;
+
+  @HiveField(1)
+  String? userId;
+
+  UserData({
+    this.accessToken,
+    this.userId
   });
 }

@@ -40,6 +40,7 @@ void main() async {
 
   Hive.init(libs.path);
   Hive.registerAdapter(ServerObjAdapter());
+  Hive.registerAdapter(UserDataAdapter());
 
   jellyBox = await Hive.openBox(
     'jellyBox',
@@ -52,7 +53,7 @@ void main() async {
   _hiveKey = null;
   _cipher = null;
 
-  // temp
+  // in case an 'antoher exception' appears
   FlutterError.onError = (FlutterErrorDetails details) {
     FlutterError.dumpErrorToConsole(details);
   };
@@ -97,7 +98,7 @@ class MainRedirector extends StatefulWidget {
 
 class _MainRedirectorState extends State<MainRedirector> {
   late Future<void> future;
-  dynamic page;
+  Widget? page;
 
   @override
   void initState() {
@@ -115,20 +116,11 @@ class _MainRedirectorState extends State<MainRedirector> {
     } else {
       if (networkStatus != ConnectivityResult.none) {
         if (ama.lastUsedServer != null) {
-          var keyBase = ama.serverList[ama.lastUsedServer!].userMap!.keys.toList();
-          var valueBase = ama.serverList[ama.lastUsedServer!].userMap!.values.toList();
+          var userData = ama.serverList[ama.lastUsedServer!].userData;
 
           try {
-            Provider.of<JellyfinAPI>(context, listen: false,).makeClient(ama.lastUsedServer);
-            if (ama?.serverList[ama.lastUsedServer!].lastLogIsQC == true) {
-              Provider.of<JellyfinAPI>(context, listen: false,).logInByQC(keyBase[ama.lastUser!], context);
-            } else {
-              Provider.of<JellyfinAPI>(context, listen: false).logInByName(
-                keyBase[ama.lastUser!],
-                valueBase[ama.lastUser!],
-                context,
-              );
-            }
+            await Provider.of<JellyfinAPI>(context, listen: false,).makeClient(ama.lastUsedServer);
+            await Provider.of<JellyfinAPI>(context, listen: false).setUser(userData!);
             page = HomePage(index: ama.lastUsedServer);
           } catch (e) {
             page = StartingPage();
@@ -148,10 +140,29 @@ class _MainRedirectorState extends State<MainRedirector> {
     return FutureBuilder(
       future: future,
       builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.done) {
-          return page;
+        if (snapshot.hasError) {
+          print('${snapshot.error}');
+          return Scaffold(
+            appBar: AppBar(
+              title: Text('you had an error, check console'),
+              centerTitle: true,
+            ),
+            body: Center(
+              child: CircularProgressIndicator(),
+            ),
+          );
+        } else if (snapshot.connectionState == ConnectionState.done) {
+          return page!;
         } else {
-          return Text('waiting');
+          return Scaffold(
+            appBar: AppBar(
+              title: Text(appTitle),
+              centerTitle: true,
+            ),
+            body: Center(
+              child: CircularProgressIndicator(),
+            ),
+          );
         }
       }
     );

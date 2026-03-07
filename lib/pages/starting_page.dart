@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:jellyfin/main.dart';
 import 'package:jellyfin/pages/pages.dart';
-import 'package:jellyfin_dart/jellyfin_dart.dart';
 import 'package:provider/provider.dart';
 import 'package:jellyfin/providers/providers.dart';
 import 'package:jellyfin/comps/comps.dart';
@@ -131,7 +130,7 @@ class _StartingPageState extends State<StartingPage> {
                             try {
                               await ama.makeClient(e.id);
                               await Future.delayed(Duration(seconds: 1));
-                              Navigator.push(
+                              await Navigator.push(
                                 context,
                                 MaterialPageRoute(
                                   builder: (context) => LogInPage(index: e.id),

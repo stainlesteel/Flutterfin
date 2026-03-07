@@ -56,6 +56,20 @@ class _ItemPageState extends State<ItemPage> {
                       ),
                     ),
                     Positioned.fill(child: Container(color: Colors.black.withOpacity(0.5))),
+                    Center(
+                      child: CachedNetworkImage(
+                        imageUrl: '${ama.serverList[ama.lastUsedServer!].serverURL}/Items/${widget.viewData!.id!}/Images/Logo?tag=${widget.viewData!.imageTags?['Logo']}',
+                        fit: BoxFit.cover,
+                        errorWidget: (context, url, child) => Text(
+                          '${widget.viewData.name}',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 40,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
                 ],
               ),
             ),

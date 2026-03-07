@@ -16,7 +16,6 @@ class JellyfinAPI extends ChangeNotifier {
   // app data that may or may not require interaction with the jellyfin server
   List<ServerObj> serverList = [];
   int? lastUsedServer;
-  int? lastUser;
   dynamic appClient; // jellyfin_dart client
 
   // server data collected for later use
@@ -45,11 +44,6 @@ class JellyfinAPI extends ChangeNotifier {
     int? _tmpIndex = await box.get('lastUsedServer');
     if (_tmpIndex != null) {
       lastUsedServer = _tmpIndex;
-    } else {}
-
-    int? _tmpUser = await box.get('lastUser');
-    if (_tmpUser != null) {
-      lastUser = _tmpUser;
     } else {}
 
     notifyListeners();
@@ -166,15 +160,15 @@ class JellyfinAPI extends ChangeNotifier {
       version: '${_base.version}',
     );
 
-    uAPI = appClient.getUserApi();
-    qc = appClient.getQuickConnectApi();
-    uvAPI = appClient.getUserViewsApi();
-    itAPI = appClient.getItemsApi();
-    MIapi = appClient.getMediaInfoApi();
-    tvAPI = appClient.getTvShowsApi();
-    psAPI = appClient.getPlaystateApi();
-    ulAPI = appClient.getUserLibraryApi();
-    seAPI = appClient.getSearchApi();
+    uAPI = await appClient.getUserApi();
+    qc = await appClient.getQuickConnectApi();
+    uvAPI = await appClient.getUserViewsApi();
+    itAPI = await appClient.getItemsApi();
+    MIapi = await appClient.getMediaInfoApi();
+    tvAPI = await appClient.getTvShowsApi();
+    psAPI = await appClient.getPlaystateApi();
+    ulAPI = await appClient.getUserLibraryApi();
+    seAPI = await appClient.getSearchApi();
     notifyListeners();
 
     print('made client, url: ${_base.serverURL}');
@@ -187,6 +181,7 @@ class JellyfinAPI extends ChangeNotifier {
     String user,
     String pwd,
     BuildContext context,
+    int index
   ) async {
     late final response;
     try {
@@ -219,10 +214,18 @@ class JellyfinAPI extends ChangeNotifier {
     if (token != null) {
       appClient.setToken(token);
       userID = response.data?.sessionInfo.userId;
+      await saveUser(token, userID!, index);
       return true;
     } else {
       return false;
     }
+
+  }
+
+  Future<void> setUser(UserData data) async {
+    appClient.setToken(data.accessToken);
+    userID = data.userId;
+    print('$userID');
   }
 
   // start: functions related to quick connect
@@ -262,12 +265,14 @@ class JellyfinAPI extends ChangeNotifier {
     }
   }
 
-  Future<bool> logInByQC(String res_secret, BuildContext context) async {
+  Future<bool> logInByQC(String res_secret, BuildContext context, int index) async {
     late final response;
     try {
       response = await uAPI.authenticateWithQuickConnect(
         quickConnectDto: QuickConnectDto(secret: res_secret),
       );
+      serverList[index].lastLogIsQC = true;
+
     } on DioException catch (e) {
       late String text;
       print('Login Status Code: ${e.response?.statusCode}');
@@ -290,6 +295,7 @@ class JellyfinAPI extends ChangeNotifier {
     if (token != null) {
       appClient.setToken(token);
       userID = response.data?.sessionInfo.userId;
+      await saveUser(token, userID!, index);
       return true;
     } else {
       return false;
@@ -308,19 +314,13 @@ class JellyfinAPI extends ChangeNotifier {
     return _data?.data;
   }
 
-  Future<void> saveUser(String user, String pwd, int? index) async {
-    serverList[index!].userMap = serverList[index!].userMap ?? {};
+  Future<void> saveUser(String token, String userID, int? index) async {
+    serverList[index!].userData = serverList[index!].userData ?? UserData();
 
-    serverList[index!].userMap!['$user'] ??= '';
-    serverList[index!].userMap!['$user'] = '$pwd';
+    serverList[index].userData = UserData(accessToken: token, userId: userID);
 
-    serverList[index!].save();
+    serverList[index].save();
     // ends saving actual user data
-
-    // starts saving last user
-    lastUser = serverList[index!].userMap?.keys.toList().indexOf('$user');
-    print('$lastUser');
-    await box.put('lastUser', lastUser);
 
     updateServerList();
     notifyListeners();

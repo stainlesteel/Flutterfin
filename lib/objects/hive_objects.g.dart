@@ -21,7 +21,7 @@ class ServerObjAdapter extends TypeAdapter<ServerObj> {
       serverURL: fields[1] as String?,
       serverName: fields[2] as String?,
       version: fields[3] as String?,
-      userMap: (fields[4] as Map?)?.cast<String, String>(),
+      userData: fields[4] as UserData?,
       lastLogIsQC: fields[5] as bool?,
       profile: fields[8] as DeviceProfile?,
     )..deviceId = fields[7] as String?;
@@ -40,7 +40,7 @@ class ServerObjAdapter extends TypeAdapter<ServerObj> {
       ..writeByte(3)
       ..write(obj.version)
       ..writeByte(4)
-      ..write(obj.userMap)
+      ..write(obj.userData)
       ..writeByte(5)
       ..write(obj.lastLogIsQC)
       ..writeByte(7)
@@ -56,6 +56,43 @@ class ServerObjAdapter extends TypeAdapter<ServerObj> {
   bool operator ==(Object other) =>
       identical(this, other) ||
       other is ServerObjAdapter &&
+          runtimeType == other.runtimeType &&
+          typeId == other.typeId;
+}
+
+class UserDataAdapter extends TypeAdapter<UserData> {
+  @override
+  final int typeId = 1;
+
+  @override
+  UserData read(BinaryReader reader) {
+    final numOfFields = reader.readByte();
+    final fields = <int, dynamic>{
+      for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
+    };
+    return UserData(
+      accessToken: fields[0] as String?,
+      userId: fields[1] as String?,
+    );
+  }
+
+  @override
+  void write(BinaryWriter writer, UserData obj) {
+    writer
+      ..writeByte(2)
+      ..writeByte(0)
+      ..write(obj.accessToken)
+      ..writeByte(1)
+      ..write(obj.userId);
+  }
+
+  @override
+  int get hashCode => typeId.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is UserDataAdapter &&
           runtimeType == other.runtimeType &&
           typeId == other.typeId;
 }
