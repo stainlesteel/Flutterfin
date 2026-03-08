@@ -10,12 +10,6 @@ Widget JellyfinSearch(JellyfinAPI ama, BuildContext context, ValueNotifier<List<
   return Padding(
     padding: const EdgeInsets.all(20.0),
     child: SearchBar(
-      leading: IconButton(
-        onPressed: () {
-          Navigator.pop(context);
-        },
-        icon: Icon(Icons.arrow_back),
-      ),
       onSubmitted: (String result) async {
         SearchHintResult? data = await ama.runSearch(result);
 
@@ -130,18 +124,24 @@ class _SearchPageState extends State<SearchPage> {
     JellyfinAPI ama = context.watch<JellyfinAPI>();
 
     return Scaffold(
+      resizeToAvoidBottomInset: false,
+      appBar: AppBar(
+        title: Text('Search'),
+        centerTitle: true,
+      ),
       body: Center(
-        child: Column(
-          children: [
-            SizedBox(height: 50),
-            JellyfinSearch(ama, context, searchResults),
-            ValueListenableBuilder(
-              valueListenable: searchResults,
-              builder: (context, value, child) {
-                return getListView(value, ama);
-              },
-            ),
-          ],
+        child: SizedBox(
+          child: Column(
+            children: [
+              JellyfinSearch(ama, context, searchResults),
+              ValueListenableBuilder(
+                valueListenable: searchResults,
+                builder: (context, value, child) {
+                  return getListView(value, ama);
+                },
+              ),
+            ],
+          ),
         ),
       ),
     );

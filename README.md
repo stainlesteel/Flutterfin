@@ -1,16 +1,12 @@
-# jellyfin
+# Flutterfin
 
-A new Flutter project.
+Another Jellyfin client made in Flutter.
+This project is still in development and has not been fully tested in platforms other than Linux or Android.
 
-## Getting Started
-
-This project is a starting point for a Flutter application.
-
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## Development Status
+- Server page - add/remove multiple servers
+- Login page - fully supports password and quick connect login
+- Home Page - supports UserViews, Recent Items, and 'Because You Watched'
+- Search Page - A very basic search page: search - enter - result
+- UserViews Page - Shows items inside a userview, fully works for both movies/series
+- Item Page - Uses Hero + Stack to show backdrop and title/Logo at top (moves between last page), shows description, tags, ratings, other episodes, .etc.
