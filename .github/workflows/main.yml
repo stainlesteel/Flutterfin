@@ -1,0 +1,29 @@
+name: build
+
+on:
+  push:
+    branches: main
+
+jobs:
+  build-web:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4.1.1
+
+      - name: get Flutter
+        run: apt install flutter -y
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Build web app
+        run: |
+          flutter build web --release --pwa-strategy=none
+
+      - name: Deploy to GitHub Pages
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          branch: gh-pages
+          folder: ./web/
