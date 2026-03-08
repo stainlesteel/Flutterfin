@@ -64,3 +64,53 @@ Widget PlayerText(String text) {
   );
 }
 
+List<Widget> carouselWidgets(BuildContext context, List<BaseItemDto> data, JellyfinAPI ama,) {
+  return <Widget>[
+    for (BaseItemDto view in data)
+      Column(
+        children: [
+          Expanded(
+            child: Hero(
+              tag: view as Object,
+              child: CachedNetworkImage(
+                imageUrl: '${ama.serverList[ama.lastUsedServer!].serverURL}/Items/${view!.id!}/Images/Primary?tag=${view!.imageTags?['Primary']}',
+                errorWidget: (context, url, object) {
+                  return Icon(Icons.question_mark);
+                },
+                fit: BoxFit.cover,
+                height: double.infinity,
+                width: double.infinity,
+              ),
+            ),
+          ),
+          if (view.userData?.playedPercentage != null)
+            LinearProgressIndicator(
+              value: view.userData!.playedPercentage!.round().toDouble() / 100,
+            ),
+          if (view.seriesName != null) ...[
+            Padding(
+              padding: EdgeInsets.only(top: 5),
+              child: Text(
+                '${view.seriesName}',
+                style: getTextStyling(4, context),
+              ),
+            ),
+            Padding(
+              padding: EdgeInsets.only(top: 5),
+              child: Text(
+                'S${view.parentIndexNumber}:E${view.indexNumber}, ${view.name}',
+              ),
+            ),
+          ] else
+            Padding(
+              padding: EdgeInsets.only(top: 5),
+              child: Text(
+                '${view.name}',
+                style: getTextStyling(4, context),
+              ),
+            ),
+        ],
+      ),
+  ];
+}
+

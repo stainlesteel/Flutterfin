@@ -87,71 +87,13 @@ Widget ContinueWatching(BuildContext context) {
               itemExtent: 200,
               shrinkExtent: 100,
               onTap: (index) async {
-                print('${data.length}');
-                print('${data[index]}');
-                if (data[index] == null) {
-                } else if (data[index].seriesName == null) {
-                  await Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => ItemPage(viewData: data[index]),
-                    ),
-                  );
-                } else if (data[index].seriesName != null) {
-                  await Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => ItemPage(viewData: data[index]),
-                    ),
-                  );
-                } else {}
+                await goToItemPage(
+                  index: index,
+                  context: context,
+                  data: data[index],
+                );
               },
-              children: <Widget>[
-                for (BaseItemDto view in data)
-                  Column(
-                    children: [
-                      Expanded(
-                        child: Hero(
-                          tag: view as Object,
-                          child: CachedNetworkImage(
-                            imageUrl: '${ama.serverList[ama.lastUsedServer!].serverURL}/Items/${view!.id!}/Images/Primary?tag=${view!.imageTags?['Primary']}',
-                            errorWidget: (context, url, object) {
-                              return Icon(Icons.question_mark);
-                            },
-                            fit: BoxFit.cover,
-                            height: double.infinity,
-                            width: double.infinity,
-                          ),
-                        ),
-                      ),
-                      LinearProgressIndicator(
-                        value: view.userData!.playedPercentage!.round().toDouble() / 100,
-                      ),
-                      if (view.seriesName != null) ...[
-                        Padding(
-                          padding: EdgeInsets.only(top: 5),
-                          child: Text(
-                            '${view.seriesName}',
-                            style: getTextStyling(4, context),
-                          ),
-                        ),
-                        Padding(
-                          padding: EdgeInsets.only(top: 5),
-                          child: Text(
-                            'S${view.parentIndexNumber}:E${view.indexNumber}, ${view.name}',
-                          ),
-                        ),
-                      ] else
-                        Padding(
-                          padding: EdgeInsets.only(top: 5),
-                          child: Text(
-                            '${view.name}',
-                            style: getTextStyling(4, context),
-                          ),
-                        ),
-                    ],
-                  ),
-              ],
+              children: carouselWidgets(context, data, ama),
             );
           } else {
             secondWidget = Text('could not download user views');
@@ -199,81 +141,79 @@ Widget BecauseYouWatched(BuildContext context) {
               onTap: (index) async {
                 print('${data.length}');
                 print('${data[index]}');
-                if (data[index] == null) {
-                } else if (data[index].seriesName == null) {
                   await Navigator.push(
                     context,
                     MaterialPageRoute(
                       builder: (context) => ItemPage(viewData: data[index]),
                     ),
                   );
-                } else if (data[index].seriesName != null) {
-                  await Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => ItemPage(viewData: data[index]),
-                    ),
-                  );
-                } else {}
               },
-              children: <Widget>[
-                for (BaseItemDto view in data)
-                  Column(
-                    children: [
-                      Expanded(
-                        child: Hero(
-                          tag: view as Object,
-                          child: CachedNetworkImage(
-                            imageUrl: '${ama.serverList[ama.lastUsedServer!].serverURL}/Items/${view!.id!}/Images/Primary?tag=${view!.imageTags?['Primary']}',
-                            errorWidget: (context, url, object) {
-                              return Icon(Icons.question_mark);
-                            },
-                            fit: BoxFit.cover,
-                            height: double.infinity,
-                            width: double.infinity,
-                          ),
-                        ),
-                      ),
-                      LinearProgressIndicator(
-                        value: view.userData!.playedPercentage!.round().toDouble() / 100,
-                      ),
-                      if (view.seriesName != null) ...[
-                        Padding(
-                          padding: EdgeInsets.only(top: 5),
-                          child: Text(
-                            '${view.seriesName}',
-                            style: getTextStyling(4, context),
-                          ),
-                        ),
-                        Padding(
-                          padding: EdgeInsets.only(top: 5),
-                          child: Text(
-                            'S${view.parentIndexNumber}:E${view.indexNumber}, ${view.name}',
-                          ),
-                        ),
-                      ] else
-                        Padding(
-                          padding: EdgeInsets.only(top: 5),
-                          child: Text(
-                            '${view.name}',
-                            style: getTextStyling(4, context),
-                          ),
-                        ),
-                    ],
-                  ),
-              ],
+              children: carouselWidgets(context, data, ama),
             );
           } else {
             secondWidget = Text('could not get similar items');
           }
         }
-        List<BaseItemDto>? data = snapshot.data?[0];
         return Column(
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             if (snapshot.data?.isNotEmpty ?? false)
-              Text('Because You Watched $comparisonItemTitle ', style: getTextStyling(1, context)),
+              Text('Because You Watched ${comparisonItemTitle ?? '...'} ', style: getTextStyling(1, context)),
+              Expanded(child: secondWidget),
+          ],
+        );
+      },
+    ),
+  );
+}
+
+Widget RecentlyAdded(BuildContext context, List<BaseItemKind>? includeItemTypes, String title) {
+  JellyfinAPI ama = context.watch<JellyfinAPI>();
+
+  return SizedBox(
+    height: 200,
+    child: FutureBuilder(
+      future: ama.getRecentlyAddedItems(
+        sortBy: SortOrder.descending,
+        limit: 15,
+        includeItemTypes: includeItemTypes,
+      ),
+      builder: (context, snapshot) {
+        late Widget secondWidget;
+        if (snapshot.data == null) {
+          secondWidget = Text('Failed to download item data');
+        } else if (snapshot.connectionState == ConnectionState.waiting) {
+          secondWidget = CircularProgressIndicator();
+        } else if (snapshot.hasData) {
+          final data = snapshot.data;
+          if (data != null) {
+            secondWidget = CarouselView(
+              scrollDirection: Axis.horizontal,
+              itemExtent: 200,
+              shrinkExtent: 100,
+              onTap: (index) async {
+                print('${data.length}');
+                print('${data[index]}');
+                  await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => ItemPage(viewData: data[index]),
+                    ),
+                  );
+              },
+              children: carouselWidgets(context, data, ama),
+            );
+          } else {
+            secondWidget = Text('could not get similar items');
+          }
+        }
+        return Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            if (snapshot.data?.isNotEmpty ?? false)
+              Text(title, style: getTextStyling(1, context)),
               Expanded(child: secondWidget),
           ],
         );
@@ -356,6 +296,18 @@ class _HomePageState extends State<HomePage> {
               ContinueWatching(context),
               SizedBox(height: 10),
               BecauseYouWatched(context),
+              SizedBox(height: 10),
+              RecentlyAdded(
+                context,
+                [BaseItemKind.movie],
+                'Recently Added Movies'
+              ),
+              SizedBox(height: 10),
+              RecentlyAdded(
+                context,
+                [BaseItemKind.series],
+                'Recently Added Series',
+              ),
             ],
           ),
         ),

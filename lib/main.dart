@@ -18,7 +18,7 @@ String appTitle = 'Flutterfin';
 
 // this is for adding drag support to mouses and trackpads
 class CustomScrollBehaviour extends MaterialScrollBehavior {
-  @override // TODO: implement dragDevices
+  @override 
   Set<PointerDeviceKind> get dragDevices => {
     PointerDeviceKind.touch,
     PointerDeviceKind.trackpad,

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:jellyfin_dart/jellyfin_dart.dart';
 import 'package:provider/provider.dart';
 import 'package:jellyfin/providers/providers.dart';
-import 'package:jellyfin/pages/pages.dart';
 import 'package:jellyfin/comps/comps.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
@@ -57,16 +56,11 @@ class _UserViewPageState extends State<UserViewPage> {
                              final view = data?[index];
                              return InkWell(
                                onTap: () async {
-                                 if (data?[index] == null) {
-                                   
-                                 } else {
-                                   Navigator.push(
-                                     context,
-                                     MaterialPageRoute(
-                                       builder: (context) => ItemPage(viewData: data![index]), 
-                                     ),
-                                   );
-                                 }
+                                 await goToItemPage(
+                                   index: index,
+                                   data: view,
+                                   context: context,
+                                 );
                                },
                                child: Column(
                                  children: [

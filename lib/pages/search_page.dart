@@ -10,7 +10,7 @@ Widget JellyfinSearch(JellyfinAPI ama, BuildContext context, ValueNotifier<List<
   return Padding(
     padding: const EdgeInsets.all(20.0),
     child: SearchBar(
-      onSubmitted: (String result) async {
+      onChanged: (String result) async {
         SearchHintResult? data = await ama.runSearch(result);
 
         var list = data?.searchHints;

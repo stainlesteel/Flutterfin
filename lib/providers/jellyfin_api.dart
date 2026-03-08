@@ -588,6 +588,24 @@ class JellyfinAPI extends ChangeNotifier {
     return _data.data;
   }
 
+  Future<List<BaseItemDto>?> getRecentlyAddedItems({SortOrder? sortBy, int? limit, String? parentId, List<BaseItemKind>? includeItemTypes}) async {
+    final _data = await itAPI.getItems(
+      userId: userID,
+      includeItemTypes: includeItemTypes,
+      sortOrder: <SortOrder>[sortBy ?? SortOrder.ascending],
+      recursive: true,
+      limit: limit,
+      fields: <ItemFields>[
+        ItemFields.overview,
+        ItemFields.taglines,
+        ItemFields.tags,
+      ],
+      parentId: parentId,
+    );
+
+    return _data.data?.items;
+  }
+
   Future<List<BaseItemDto>> getItemsbyId(List<String> idList) async {
     List<BaseItemDto> dtoList = [];
     int attempts = 0;
@@ -599,7 +617,7 @@ class JellyfinAPI extends ChangeNotifier {
           itemId: id,
         );
         
-        if (_data.data!.mediaType == MediaType.video || _data.data!.mediaType == MediaType.audio) {
+        if (_data.data!.mediaType == MediaType.video) {
           dtoList.add(_data.data!);
         }
 
