@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:jellyfin/providers/providers.dart';
 import 'package:jellyfin/pages/pages.dart';
-import 'package:hive/hive.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -166,11 +165,11 @@ class _MainRedirectorState extends State<MainRedirector> {
           print('${snapshot.error}');
           return Scaffold(
             appBar: AppBar(
-              title: Text('you had an error, check console'),
+              title: Text('unknown error'),
               centerTitle: true,
             ),
             body: Center(
-              child: CircularProgressIndicator(),
+              child: Text('${snapshot.error}'),
             ),
           );
         } else if (snapshot.connectionState == ConnectionState.done) {

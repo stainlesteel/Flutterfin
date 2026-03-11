@@ -114,3 +114,72 @@ List<Widget> carouselWidgets(BuildContext context, List<BaseItemDto> data, Jelly
   ];
 }
 
+Widget StreamCarousel({required BuildContext context, required Stream stream, required String title, required Function(int index, AsyncSnapshot snapshot) onTap}) {
+  JellyfinAPI ama = context.watch<JellyfinAPI>();
+  return StreamBuilder(
+    stream: stream,
+    builder: (context, snapshot) {
+      late Widget secondWidget;
+  
+      if (snapshot.data == null) {
+        print('${snapshot.error}');
+        secondWidget = Text('Failed to download libraries.');
+      } else if (snapshot.connectionState == ConnectionState.waiting) {
+        secondWidget = CircularProgressIndicator();
+      } else {
+        final List<BaseItemDto>? data = snapshot.data;
+        if (data != null) {
+          secondWidget = CarouselView(
+            scrollDirection: Axis.horizontal,
+            itemExtent: 230,
+            shrinkExtent: 100,
+            onTap: (int index) {
+              onTap(index, snapshot);
+            },
+            children: <Widget>[
+              for (BaseItemDto view in data)
+                Column(
+                  children: [
+                    Expanded(
+                      child: CachedNetworkImage(
+                        imageUrl: '${ama.serverList[ama.lastUsedServer!].serverURL}/Items/${view!.id!}/Images/Primary?tag=${view!.imageTags?['Primary']}',
+                        errorWidget: (context, url, object) {
+                          return Icon(Icons.question_mark);
+                        },
+                        fit: BoxFit.cover,
+                        width: double.infinity,
+                        height: double.infinity,
+                      ),
+                    ),
+                    Padding(
+                      padding: EdgeInsets.only(top: 5),
+                      child: Text(
+                        view.name!,
+                        style: getTextStyling(4, context),
+                      ),
+                    ),
+                  ],
+                ),
+            ],
+          );
+        } else {
+          secondWidget = Text('could not download user views');
+        }
+      }
+      return Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          if (snapshot.data?.isNotEmpty ?? false) ...[
+            Text(title, style: getTextStyling(1, context)),
+            SizedBox(
+              height: 200,
+              child: secondWidget
+            ),
+          ] else
+            Text(''),
+        ],
+      );
+    },
+  );
+}

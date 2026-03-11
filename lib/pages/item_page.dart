@@ -34,7 +34,19 @@ class _ItemPageState extends State<ItemPage> {
     double? percentage = widget.viewData.userData?.playedPercentage;
 
     Widget _scaffold = Scaffold(
-      appBar: AppBar(),
+      extendBodyBehindAppBar: true,
+      appBar: AppBar(
+        forceMaterialTransparency: true,
+        leading: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: FloatingActionButton(
+            onPressed: () {
+              Navigator.pop(context);
+            },
+            child: Icon(Icons.arrow_back),
+          ),
+        ),
+      ),
       body: SingleChildScrollView(
         scrollDirection: Axis.vertical,
         child: Column(
@@ -43,7 +55,7 @@ class _ItemPageState extends State<ItemPage> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             SizedBox(
-              height: 130,
+              height: 200,
               child: Stack(
                 fit: StackFit.passthrough,
                 children: [
@@ -73,13 +85,14 @@ class _ItemPageState extends State<ItemPage> {
                 ],
               ),
             ),
+            SizedBox(height: 10),
             if (widget.viewData.type == BaseItemKind.movie) SizedBox(height: 5),
             SingleChildScrollView(
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   if (widget.viewData.type != BaseItemKind.series)
-                    FilledButton(
+                    FloatingActionButton.extended(
                       onPressed: () async {
                         final result = await Navigator.push(
                           context,
@@ -110,16 +123,17 @@ class _ItemPageState extends State<ItemPage> {
                               );
                             } catch (e) {
                               print('FAILED TO USE copyWith');
-                            }
+                              }
                             }
                         }
                       },
-                      child: Text('Play'),
+                      icon: Icon(Icons.play_arrow_rounded),
+                      label: Text('Play'),
                     ),
                 ],
               ),
             ),
-            SizedBox(height: 7),
+            SizedBox(height: 10),
             if (widget.viewData.userData?.playedPercentage != null)
               LinearProgressIndicator(
                 value: percentage! / 100,

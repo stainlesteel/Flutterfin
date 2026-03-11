@@ -146,7 +146,6 @@ class JellyfinAPI extends ChangeNotifier {
     appClient = JellyfinDart(
       dio: Dio(
         BaseOptions(
-          responseType: ResponseType.plain,
           baseUrl: _base.serverURL!,
         ),
       ),
@@ -399,6 +398,26 @@ class JellyfinAPI extends ChangeNotifier {
     }
   }
 
+  Stream<List<BaseItemDto>?> getNextUp() async* {
+    late Response<BaseItemDtoQueryResult> _data;
+    while (true) {
+      try {
+        _data = await tvAPI.getNextUp(
+          userId: userID,
+          enableUserData: true,
+          fields: <ItemFields>[
+            ItemFields.overview,
+            ItemFields.taglines,
+            ItemFields.tags,
+          ],
+        );
+        yield _data.data?.items;
+      } catch (e) {
+      }
+      await Future.delayed(Duration(seconds: 10));
+    }
+  }
+
   Stream<Map<String, List<BaseItemDto>?>?> getSimilarItems() async* {
     int attempts = 0;
     Response<BaseItemDtoQueryResult> items = await itAPI.getResumeItems(
@@ -559,6 +578,33 @@ class JellyfinAPI extends ChangeNotifier {
           userId: userID,
           parentId: parentId,
           recursive: true,
+          includeItemTypes: [
+            BaseItemKind.movie,
+            BaseItemKind.series,
+            BaseItemKind.musicAlbum,
+          ],
+          enableUserData: true,
+          fields: <ItemFields>[
+            ItemFields.overview,
+            ItemFields.taglines,
+            ItemFields.tags,
+          ],
+        );
+        yield _data.data?.items;
+      } catch (e) {
+      }
+      await Future.delayed(Duration(seconds: 10));
+    }
+  }
+  
+  Stream<List<BaseItemDto>?> getFavoriteItems() async* {
+    late Response<BaseItemDtoQueryResult> _data;
+    while (true) {
+      try {
+        _data = await itAPI.getItems(
+          userId: userID,
+          recursive: true,
+          isFavorite: true,
           includeItemTypes: [
             BaseItemKind.movie,
             BaseItemKind.series,

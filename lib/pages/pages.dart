@@ -8,3 +8,4 @@ export 'user_view_page.dart';
 export 'item_page.dart';
 export 'video_player_page.dart';
 export 'search_page.dart';
+export 'favorite_page.dart';
