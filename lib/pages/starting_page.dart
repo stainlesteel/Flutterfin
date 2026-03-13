@@ -101,68 +101,70 @@ class _StartingPageState extends State<StartingPage> {
         icon: Icon(Icons.add),
       ),
       body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text('Servers', style: getTextStyling(2, context)),
-            if (ama.serverList.isEmpty)
-              Text('No servers Available', style: getTextStyling(1, context)),
-            if (ama.serverList.isNotEmpty)
-              ListView.builder(
-                padding: const EdgeInsets.all(6.7),
-                itemCount: ama.serverList.length,
-                shrinkWrap: true,
-                itemBuilder: (BuildContext context, int index) {
-                  ServerObj e = ama.serverList[index];
-                  return Dismissible(
-                      background: Container(
-                        color: Colors.redAccent,
-                        child: Text('Remove'),
-                      ),
-                      key: ValueKey<ServerObj>(ama.serverList[index]),
-                      direction: DismissDirection.endToStart,
-                      onDismissed: (DismissDirection direction) {
-                        ama.removeAtServerList(index);
-                      },
-                      child: Card(
-                        child: ListTile(
-                          onTap: () async {
-                            try {
-                              await ama.makeClient(e.id);
-                              await Future.delayed(Duration(seconds: 1));
-                              await Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => LogInPage(index: e.id),
-                                ),
-                              );
-                            } catch (e) {
-                              SimpleErrorDiag(
-                                title: 'Connection Error', 
-                                desc: 'Could not establish any connection to the server.\n This most likely happened because the server is completely down (host inaccessible).', 
-                                context: context,
-                              );
-                            }
-
-                          },
-                          title: Text(
-                            '${e.serverName}',
-                            style: getTextStyling(1, context),
-                          ),
-                          subtitle: Text(
-                            '${e.serverURL}',
-                            style: getTextStyling(4, context),
-                          ),
-                          trailing: Text(
-                            '${e.version}',
-                            style: getTextStyling(4, context),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text('Servers', style: getTextStyling(2, context)),
+              if (ama.serverList.isEmpty)
+                Text('No servers Available', style: getTextStyling(1, context)),
+              if (ama.serverList.isNotEmpty)
+                ListView.builder(
+                  shrinkWrap: true,
+                  padding: const EdgeInsets.all(6.7),
+                  itemCount: ama.serverList.length,
+                  itemBuilder: (BuildContext context, int index) {
+                    ServerObj e = ama.serverList[index];
+                    return Dismissible(
+                        background: Container(
+                          color: Colors.redAccent,
+                          child: Text('Remove'),
+                        ),
+                        key: ValueKey<ServerObj>(ama.serverList[index]),
+                        direction: DismissDirection.endToStart,
+                        onDismissed: (DismissDirection direction) {
+                          ama.removeAtServerList(index);
+                        },
+                        child: Card(
+                          child: ListTile(
+                            onTap: () async {
+                              try {
+                                await ama.makeClient(e.id);
+                                await Future.delayed(Duration(seconds: 1));
+                                await Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => LogInPage(index: e.id),
+                                  ),
+                                );
+                              } catch (e) {
+                                SimpleErrorDiag(
+                                  title: 'Connection Error', 
+                                  desc: 'Could not establish any connection to the server.\n This most likely happened because the server is completely down (host inaccessible).', 
+                                  context: context,
+                                );
+                              }
+          
+                            },
+                            title: Text(
+                              '${e.serverName}',
+                              style: getTextStyling(1, context),
+                            ),
+                            subtitle: Text(
+                              '${e.serverURL}',
+                              style: getTextStyling(4, context),
+                            ),
+                            trailing: Text(
+                              '${e.version}',
+                              style: getTextStyling(4, context),
+                            ),
                           ),
                         ),
-                      ),
-                    );
-                },
-              ),
-          ],
+                      );
+                  },
+                ),
+            ],
+          ),
         ),
       ),
     );
