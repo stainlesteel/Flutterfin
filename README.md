@@ -10,3 +10,5 @@ This project is still in development and has not been fully tested in platforms 
 - Search Page - A very basic search page: search - enter - result
 - UserViews Page - Shows items inside a userview, fully works for both movies/series
 - Item Page - Uses Hero + Stack to show backdrop and title/Logo at top (moves between last page), shows description, tags, ratings, other episodes, .etc.
+- Favourites Page - show Favourited items from Server
+- Video Player Page - Supports Movies/Episodes, along with episode skipping, favoriting, and auto skip next (with a Dialog)
