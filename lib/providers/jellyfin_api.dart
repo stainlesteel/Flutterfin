@@ -581,7 +581,6 @@ class JellyfinAPI extends ChangeNotifier {
           includeItemTypes: [
             BaseItemKind.movie,
             BaseItemKind.series,
-            BaseItemKind.musicAlbum,
           ],
           enableUserData: true,
           fields: <ItemFields>[
@@ -608,7 +607,7 @@ class JellyfinAPI extends ChangeNotifier {
           includeItemTypes: [
             BaseItemKind.movie,
             BaseItemKind.series,
-            BaseItemKind.musicAlbum,
+            BaseItemKind.episode,
           ],
           enableUserData: true,
           fields: <ItemFields>[

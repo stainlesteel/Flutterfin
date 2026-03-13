@@ -1,6 +1,7 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:overlayment/overlayment.dart';
 import 'package:provider/provider.dart';
 import 'package:jellyfin/providers/providers.dart';
 import 'package:jellyfin/pages/pages.dart';
@@ -97,12 +98,17 @@ class MyApp extends StatelessWidget {
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
+    final navKey = GlobalKey<NavigatorState>();
+
+    Overlayment.navigationKey = navKey;
+
     return MaterialApp(
       title: 'Flutter Demo',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       ),
       scrollBehavior: CustomScrollBehaviour(),
+      navigatorKey: navKey,
       home: MainRedirector(box: jellyfinBox),
     );
   }

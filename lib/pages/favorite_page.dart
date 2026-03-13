@@ -36,76 +36,73 @@ class _FavoritesPageState extends State<FavoritesPage> {
                   } else if (snapshot.hasError) {
                     return Text('Could not get favorites.');
                   } else {
-                    return Expanded(
-                      child: GridView.builder(
-                         shrinkWrap: true,
-                         padding: EdgeInsets.all(15),
-                         gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-                           maxCrossAxisExtent: 200,
-                           crossAxisSpacing: 20,
-                           mainAxisSpacing: 20,
-                         ),
-                         scrollDirection: Axis.vertical,
-                         itemCount: snapshot.data?.length,
-                         itemBuilder: (context, index) {
-                           final view = snapshot.data?[index];
-                           return InkWell(
-                             onTap: () async {
-                               if (snapshot.data?[index] == null) {
-                                 
-                               } else {
-                                 await Navigator.push(
-                                   context,
-                                   MaterialPageRoute(
-                                     builder: (context) => ItemPage(viewData: snapshot.data![index]), 
-                                   ),
-                                 );
-                               }
-                             },
-                             child: Column(
-                               children: [
-                                 Expanded(
-                                   child: Container(
-                                     width: double.infinity,
-                                     alignment: Alignment.bottomCenter,
-                                     decoration: BoxDecoration(
-                                       borderRadius: BorderRadius.only(topLeft: Radius.circular(15), topRight: Radius.circular(15)),
-                                       image: DecorationImage(
-                                         image: CachedNetworkImageProvider(
-                                           '${ama.serverList[ama.lastUsedServer!].serverURL}/Items/${view!.id!}/Images/Primary?tag=${view!.imageTags?['Primary']}',
-                                         ),
-                                         fit: BoxFit.cover,
+                    return GridView.builder(
+                       shrinkWrap: true,
+                       padding: EdgeInsets.all(15),
+                       gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+                         maxCrossAxisExtent: 200,
+                         crossAxisSpacing: 20,
+                         mainAxisSpacing: 20,
+                       ),
+                       itemCount: snapshot.data?.length,
+                       itemBuilder: (context, index) {
+                         final view = snapshot.data?[index];
+                         return InkWell(
+                           onTap: () async {
+                             if (snapshot.data?[index] == null) {
+                               
+                             } else {
+                               await Navigator.push(
+                                 context,
+                                 MaterialPageRoute(
+                                   builder: (context) => ItemPage(viewData: snapshot.data![index]), 
+                                 ),
+                               );
+                             }
+                           },
+                           child: Column( // this is not optimized for a reason, the regular carouselWidgets() collides with GridView
+                             children: [
+                               Expanded(
+                                 child: Container(
+                                   width: double.infinity,
+                                   alignment: Alignment.bottomCenter,
+                                   decoration: BoxDecoration(
+                                     borderRadius: BorderRadius.only(topLeft: Radius.circular(15), topRight: Radius.circular(15)),
+                                     image: DecorationImage(
+                                       image: CachedNetworkImageProvider(
+                                         '${ama.serverList[ama.lastUsedServer!].serverURL}/Items/${view!.id!}/Images/Primary?tag=${view!.imageTags?['Primary']}',
                                        ),
+                                       fit: BoxFit.cover,
                                      ),
-                                     child: LinearProgressIndicator(
-                                       value: (view.userData?.playedPercentage != null) 
-                                       ? view.userData!.playedPercentage!.round().toDouble() / 100
-                                       : 0,
-                                     ),
+                                   ),
+                                   child: LinearProgressIndicator(
+                                     value: (view.userData?.playedPercentage != null) 
+                                     ? view.userData!.playedPercentage!.round().toDouble() / 100
+                                     : 0,
                                    ),
                                  ),
-                                 if (view.seriesName != null) ...[
-                                   Padding(
-                                     padding: EdgeInsets.only(top: 5),
-                                     child: Text('${view.seriesName}', style: getTextStyling(4, context
-                                     )),
-                                   ),
-                                   Padding(
-                                     padding: EdgeInsets.only(top: 5),
-                                     child: Text('S${view.parentIndexNumber}:E${view.indexNumber}, ${view.name}'),
-                                   )
-                                 ]
-                                 else
-                                   Padding(
-                                     padding: EdgeInsets.only(top: 5),
-                                     child: Text('${view.name}', style: getTextStyling(4, context)),
-                                   )
-                               ],
-                             ),
-                           );
-                         },
-                       ),
-                    );
+                               ),
+                               if (view.seriesName != null) ...[
+                                 Padding(
+                                   padding: EdgeInsets.only(top: 5),
+                                   child: Text('${view.seriesName}', style: getTextStyling(4, context
+                                   )),
+                                 ),
+                                 Padding(
+                                   padding: EdgeInsets.only(top: 5),
+                                   child: Text('S${view.parentIndexNumber}:E${view.indexNumber}, ${view.name}'),
+                                 )
+                               ]
+                               else
+                                 Padding(
+                                   padding: EdgeInsets.only(top: 5),
+                                   child: Text('${view.name}', style: getTextStyling(4, context)),
+                                 )
+                             ],
+                           ),
+                         );
+                       },
+                     );
                   }
                 }
               ),

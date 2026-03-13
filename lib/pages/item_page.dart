@@ -33,6 +33,8 @@ class _ItemPageState extends State<ItemPage> {
     double runTime = widget.viewData.runTimeTicks! / 100000000;
     double? percentage = widget.viewData.userData?.playedPercentage;
 
+    Orientation orientation = MediaQuery.orientationOf(context);
+
     Widget _scaffold = Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
@@ -55,7 +57,7 @@ class _ItemPageState extends State<ItemPage> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             SizedBox(
-              height: 200,
+              height: 250,
               child: Stack(
                 fit: StackFit.passthrough,
                 children: [
@@ -68,16 +70,19 @@ class _ItemPageState extends State<ItemPage> {
                       ),
                     ),
                     Positioned.fill(child: Container(color: Colors.black.withOpacity(0.5))),
-                    Center(
-                      child: CachedNetworkImage(
-                        imageUrl: '${ama.serverList[ama.lastUsedServer!].serverURL}/Items/${widget.viewData!.id!}/Images/Logo?tag=${widget.viewData!.imageTags?['Logo']}',
-                        fit: BoxFit.cover,
-                        errorWidget: (context, url, child) => Text(
-                          '${widget.viewData.name}',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 40,
-                            color: Colors.white,
+                    Padding(
+                      padding: const EdgeInsets.all(20),
+                      child: Center(
+                        child: CachedNetworkImage(
+                          imageUrl: '${ama.serverList[ama.lastUsedServer!].serverURL}/Items/${widget.viewData!.id!}/Images/Logo?tag=${widget.viewData!.imageTags?['Logo']}',
+                          fit: BoxFit.scaleDown,
+                          errorWidget: (context, url, child) => Text(
+                            '${widget.viewData.name}',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 40,
+                              color: Colors.white,
+                            ),
                           ),
                         ),
                       ),
@@ -101,7 +106,7 @@ class _ItemPageState extends State<ItemPage> {
                           ),
                         );
                         if (result != null) {
-                          if (widget.viewData.type == BaseItemKind.episode && result['episodeIndex'] != widget.viewData.indexNumber) {
+                          if (widget.viewData.type == BaseItemKind.episode && result['episodeIndex'] + 1 == widget.viewData.indexNumber) {
                           } else {
                             print(
                               'previous positionTicks: ${widget.viewData.userData?.playbackPositionTicks}',
@@ -137,7 +142,9 @@ class _ItemPageState extends State<ItemPage> {
             if (widget.viewData.userData?.playedPercentage != null)
               LinearProgressIndicator(
                 value: percentage! / 100,
-              ),
+              )
+            else
+              Divider(),
             SizedBox(height: 7),
             if (widget.viewData.taglines?.isNotEmpty ?? false) ...[
               Text(

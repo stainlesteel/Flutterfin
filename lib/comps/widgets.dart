@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:jellyfin_dart/jellyfin_dart.dart';
@@ -68,6 +70,7 @@ List<Widget> carouselWidgets(BuildContext context, List<BaseItemDto> data, Jelly
   return <Widget>[
     for (BaseItemDto view in data)
       Column(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Expanded(
             child: Hero(
@@ -91,14 +94,14 @@ List<Widget> carouselWidgets(BuildContext context, List<BaseItemDto> data, Jelly
             Padding(
               padding: EdgeInsets.only(top: 5),
               child: Text(
-                '${view.seriesName}',
+                '${view.name}',
                 style: getTextStyling(4, context),
               ),
             ),
             Padding(
               padding: EdgeInsets.only(top: 5),
               child: Text(
-                'S${view.parentIndexNumber}:E${view.indexNumber}, ${view.name}',
+                'S${view.parentIndexNumber}:E${view.indexNumber}, ${view.seriesName}',
               ),
             ),
           ] else
@@ -136,31 +139,7 @@ Widget StreamCarousel({required BuildContext context, required Stream stream, re
             onTap: (int index) {
               onTap(index, snapshot);
             },
-            children: <Widget>[
-              for (BaseItemDto view in data)
-                Column(
-                  children: [
-                    Expanded(
-                      child: CachedNetworkImage(
-                        imageUrl: '${ama.serverList[ama.lastUsedServer!].serverURL}/Items/${view!.id!}/Images/Primary?tag=${view!.imageTags?['Primary']}',
-                        errorWidget: (context, url, object) {
-                          return Icon(Icons.question_mark);
-                        },
-                        fit: BoxFit.cover,
-                        width: double.infinity,
-                        height: double.infinity,
-                      ),
-                    ),
-                    Padding(
-                      padding: EdgeInsets.only(top: 5),
-                      child: Text(
-                        view.name!,
-                        style: getTextStyling(4, context),
-                      ),
-                    ),
-                  ],
-                ),
-            ],
+            children: carouselWidgets(context, data, ama),
           );
         } else {
           secondWidget = Text('could not download user views');
