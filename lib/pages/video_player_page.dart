@@ -1,4 +1,7 @@
+import 'dart:nativewrappers/_internal/vm/lib/async_patch.dart';
+
 import 'package:flutter/material.dart';
+import 'package:overlayment/overlayment.dart';
 import 'package:provider/provider.dart';
 import 'package:jellyfin_dart/jellyfin_dart.dart';
 import 'package:media_kit/media_kit.dart';
@@ -23,6 +26,9 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
   late dynamic playbackReport;
   late dynamic player;
 
+  String? diagName; // this is for the auto-next dialog, and to stop stream from duplicating it
+  double percentage = 0; // this is for the percentage tracking stream
+
   @override
   void initState() {
     super.initState();
@@ -35,6 +41,7 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
   @override
   void dispose() {
     super.dispose();
+    Overlay.of(context).dispose();
   }
 
   Future<void> starter() async {
@@ -80,23 +87,115 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
       Navigator.pop(context);
     }
 
-    playbackReport = player.reportPlaybackStream(context).listen((event) {
-      print('reported Playback Session!');
-    });
+    // stream for reporting playback to Jellyfin
+    playbackReport = player.reportPlaybackStream(context).listen(
+      (event) {
+        print('reported Playback Session!');
+      },
+    );
+
+    // stream for checking completion 
+    if (widget.viewData.type == BaseItemKind.episode) {
+      player.player.stream.completed.listen(
+        (value) async {
+          if (widget.viewData.type != BaseItemKind.episode) {
+            return;
+          }
+          if (value == true) {
+            await autoPlayNext();
+          }
+        },
+      );
+
+      player.player.stream.position.listen(
+        (value) async {
+          if (player.player.state.buffering) {
+            return ;
+          }
+          await Future.delayed(Duration(seconds: 2));
+
+          final valueTicks = value.inMicroseconds * 10;
+
+          double playedPercentage = valueTicks / player.mediaData['BaseList'][episodeIndex].runTimeTicks.toDouble();
+          playedPercentage = playedPercentage * 100;
+          percentage = playedPercentage;
+          print('$percentage');
+          if (percentage >= 95 && diagName == null) {
+            diagName = randomString();
+
+            Overlayment.show(
+              OverWindow(
+                name: diagName,
+                alignment: Alignment.bottomCenter,
+                child: Padding(
+                  padding: const EdgeInsets.all(13),
+                  child: Column(
+                    children: [
+                      Text('Next Episode Approaching...'),
+                      Text('${player.mediaData['BaseList'][episodeIndex++].name}'),
+                      FilledButton(
+                        onPressed: () {
+                          Overlayment.dismissName(diagName!);
+                        },
+                        child: Text('Dismiss'),
+                      ),
+                      FilledButton(
+                        onPressed: () async {
+                          await autoPlayNext();
+                        },
+                        child: Text('Play Next Episode'),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              context: context,
+            );
+          }
+
+        }
+      );
+    }
+
+    // stream for checking position to see if we need to add overlay
 
     await Future.delayed(Duration(seconds: 2));
   }
 
+  Future<void> autoPlayNext() async {
+    final ama = Provider.of<JellyfinAPI>(context, listen: false);
+    try {
+      episodeIndex++;
+
+      await ama.stopPlayback(
+        player.mediaData['BaseList'][episodeIndex--],
+        player.player.state.position,
+      );
+      await player.skipNext();
+
+      await ama.startPlayback(player.mediaData['BaseList'][episodeIndex]);
+
+      await Future.delayed(Duration(seconds: 1));
+
+      setState(() {
+        playerTitle = '${widget.viewData.seriesName} - ${player.player.state.playlist.medias![episodeIndex].extras!['name']}';
+      });
+    } on RangeError catch (e) {
+      print('VideoPlayerPage: Episode limit reached!');
+    }
+  }
+
   ValueNotifier<bool> favorited = ValueNotifier<bool>(true);
-  ValueNotifier<String> playerTitle = ValueNotifier<String>('');
+  String playerTitle = '';
+
+  late int episodeIndex = widget.viewData.indexNumber ?? 0; // the number for skip buttons to use as the base (skip previous: skipInt - 1) (skip next: skipInt + 1)
+   // if null, video is probably a movie, in that case, this isn't going to be used
 
   @override
   Widget build(BuildContext context) {
     var ama = context.watch<JellyfinAPI>();
     VideoController videoConts = VideoController(player.player);
 
-    int episodeIndex = widget.viewData.indexNumber ?? 0; // the number for skip buttons to use as the base (skip previous: skipInt - 1) (skip next: skipInt + 1)
-     // if null, video is probably a movie, in that case, this isn't going to be used
     //
     try {
       if (player.mediaData['BaseList'][episodeIndex].userData?.isFavorite == true) {
@@ -113,19 +212,22 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
         icon: Icon(Icons.skip_previous, color: Colors.white),
         onPressed: () async {
           try {
+            episodeIndex--;
+
             await ama.stopPlayback(
               player.mediaData['BaseList'][episodeIndex],
               player.player.state.position,
             );
 
-            episodeIndex--;
             await player.skipPrevious();
 
             await ama.startPlayback(player.mediaData['BaseList'][episodeIndex]);
 
             await Future.delayed(Duration(seconds: 1));
 
-            playerTitle.value = '${widget.viewData.seriesName} - ${player.player.state.playlist.medias![episodeIndex].extras!['name']}';
+            setState(() {
+              playerTitle = '${widget.viewData.seriesName} - ${player.player.state.playlist.medias![episodeIndex].extras!['name']}';
+            });
           } on RangeError catch (e) {
             print('VideoPlayerPage: Episode limit reached!');
           }
@@ -134,32 +236,14 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
       IconButton(
         // skip next
         icon: Icon(Icons.skip_next, color: Colors.white),
-        onPressed: () async {
-          try {
-            await ama.stopPlayback(
-              player.mediaData['BaseList'][episodeIndex],
-              player.player.state.position,
-            );
-
-            episodeIndex++;
-            await player.skipNext();
-
-            await ama.startPlayback(player.mediaData['BaseList'][episodeIndex]);
-
-            await Future.delayed(Duration(seconds: 1));
-
-            playerTitle.value = '${widget.viewData.seriesName} - ${player.player.state.playlist.medias![episodeIndex].extras!['name']}';
-          } on RangeError catch (e) {
-            print('VideoPlayerPage: Episode limit reached!');
-          }
-        },
+        onPressed: autoPlayNext,
       ),
     ];
 
     if (widget.viewData.seriesName != null) {
-      playerTitle.value = '${widget.viewData.seriesName} - ${widget.viewData.name}';
+      playerTitle = '${widget.viewData.seriesName} - ${widget.viewData.name}';
     } else {
-      playerTitle.value = '${widget.viewData.name}';
+      playerTitle = '${widget.viewData.name}';
     }
 
     // player theme for both normal and fullscreen
@@ -172,7 +256,8 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
 
               await ama.stopPlayback(
                 player.mediaData['BaseList'][episodeIndex],
-                player.player.state.position,
+                (newPosition! >= 95) ? 0 : player.player.state.position,
+
               );
 
               await player.pause();
@@ -186,7 +271,7 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
                 context, 
                 {
                   'episodeIndex': episodeIndex,
-                  'positionTicks': newPosition,
+                  'positionTicks': (newPosition! >= 95) ? 0 : newPosition,
                   'isFavorite': player.mediaData['BaseList'][episodeIndex].userData?.isFavorite,
                 }
               );
@@ -198,17 +283,12 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
           },
           icon: Icon(Icons.arrow_back, color: Colors.white),
         ),
-        ValueListenableBuilder(
-          valueListenable: playerTitle,
-          builder: (context, String value, child) {
-            return Text(
-              value,
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-              ),
-            );
-          },
+        Text(
+          playerTitle,
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
         ),
       ],
       primaryButtonBar: [

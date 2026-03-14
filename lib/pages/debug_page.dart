@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
 import 'package:jellyfin/comps/comps.dart';
+import 'package:overlayment/overlayment.dart';
 
 class DebugPage extends StatefulWidget {
   final Box box;
@@ -28,6 +29,17 @@ class _DebugPageState extends State<DebugPage> {
                 showScaffold('Deleted box data!', context);
               },
               child: Text('Clear Hive Box'),
+            ),
+            FilledButton.tonal(
+              onPressed: () {
+                Overlayment.show(
+                  OverWindow(
+                    alignment: Alignment.center,
+                    child: Text('Flutter && git sucks'),
+                  ),
+                );
+              },
+              child: Text('Show OverWindow'),
             ),
           ],
         ),

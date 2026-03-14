@@ -11,6 +11,7 @@ import 'dart:convert';
 import 'package:jellyfin/objects/objects.dart';
 import 'package:jellyfin/comps/comps.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:overlayment/overlayment.dart';
 
 final bool debug = false;
 String appTitle = 'Flutterfin';
@@ -94,15 +95,20 @@ class MyApp extends StatelessWidget {
   final Box jellyfinBox;
   const MyApp({super.key, required this.jellyfinBox});
 
+
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
+    final navgatorKey = GlobalKey<NavigatorState>();
+    Overlayment.navigationKey = navgatorKey;
+
     return MaterialApp(
       title: 'Flutter Demo',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       ),
       scrollBehavior: CustomScrollBehaviour(),
+      navigatorKey: navgatorKey,
       home: MainRedirector(box: jellyfinBox),
     );
   }

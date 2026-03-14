@@ -3,9 +3,10 @@ import 'package:provider/provider.dart';
 import 'package:jellyfin_dart/jellyfin_dart.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
-import 'package:jellyfin/pages/pages.dart';
 import 'package:jellyfin/comps/comps.dart';
 import 'package:jellyfin/providers/providers.dart';
+
+import 'package:overlayment/overlayment.dart';
 
 /// simpleTile(): A simpler version of ListTile
 /// args:
@@ -136,31 +137,7 @@ Widget StreamCarousel({required BuildContext context, required Stream stream, re
             onTap: (int index) {
               onTap(index, snapshot);
             },
-            children: <Widget>[
-              for (BaseItemDto view in data)
-                Column(
-                  children: [
-                    Expanded(
-                      child: CachedNetworkImage(
-                        imageUrl: '${ama.serverList[ama.lastUsedServer!].serverURL}/Items/${view!.id!}/Images/Primary?tag=${view!.imageTags?['Primary']}',
-                        errorWidget: (context, url, object) {
-                          return Icon(Icons.question_mark);
-                        },
-                        fit: BoxFit.cover,
-                        width: double.infinity,
-                        height: double.infinity,
-                      ),
-                    ),
-                    Padding(
-                      padding: EdgeInsets.only(top: 5),
-                      child: Text(
-                        view.name!,
-                        style: getTextStyling(4, context),
-                      ),
-                    ),
-                  ],
-                ),
-            ],
+            children: carouselWidgets(context, data, ama),
           );
         } else {
           secondWidget = Text('could not download user views');

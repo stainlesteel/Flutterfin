@@ -62,44 +62,54 @@ class _UserViewPageState extends State<UserViewPage> {
                                    context: context,
                                  );
                                },
-                               child: Column(
-                                 children: [
-                                   Expanded(
-                                     child: Hero(
-                                       tag: view as Object,
-                                       child: CachedNetworkImage(
-                                         imageUrl: '${ama.serverList[ama.lastUsedServer!].serverURL}/Items/${view!.id!}/Images/Primary?tag=${view!.imageTags?['Primary']}',
-                                         errorWidget: (context, url, object) {
-                                           return Icon(Icons.question_mark);
-                                         },
-                                         fit: BoxFit.cover,
-                                         height: double.infinity,
-                                         width: double.infinity,
+                               child: ClipRRect(
+                                 borderRadius: BorderRadiusGeometry.directional(
+                                   topStart: Radius.circular(
+                                     15
+                                   ),
+                                   topEnd: Radius.circular(
+                                     15
+                                   ),
+                                 ),
+                                 child: Column(
+                                   children: [
+                                     Expanded(
+                                       child: Hero(
+                                         tag: view as Object,
+                                         child: CachedNetworkImage(
+                                           imageUrl: '${ama.serverList[ama.lastUsedServer!].serverURL}/Items/${view!.id!}/Images/Primary?tag=${view!.imageTags?['Primary']}',
+                                           errorWidget: (context, url, object) {
+                                             return Icon(Icons.question_mark);
+                                           },
+                                           fit: BoxFit.cover,
+                                           height: double.infinity,
+                                           width: double.infinity,
+                                         ),
                                        ),
                                      ),
-                                   ),
-                                   LinearProgressIndicator(
-                                     value: (view?.userData?.playedPercentage != null) 
-                                     ? view!.userData!.playedPercentage!.round().toDouble() / 100
-                                     : 0,
-                                   ),
-                                   if (view.seriesName != null) ...[
-                                     Padding(
-                                       padding: EdgeInsets.only(top: 5),
-                                       child: Text('${view.seriesName}', style: getTextStyling(4, context
-                                       )),
+                                     LinearProgressIndicator(
+                                       value: (view?.userData?.playedPercentage != null) 
+                                       ? view!.userData!.playedPercentage!.round().toDouble() / 100
+                                       : 0,
                                      ),
-                                     Padding(
-                                       padding: EdgeInsets.only(top: 5),
-                                       child: Text('S${view.parentIndexNumber}:E${view.indexNumber}, ${view.name}'),
-                                     )
-                                   ]
-                                   else
-                                     Padding(
-                                       padding: EdgeInsets.only(top: 5),
-                                       child: Text('${view.name}', style: getTextStyling(4, context)),
-                                     )
-                                 ],
+                                     if (view.seriesName != null) ...[
+                                       Padding(
+                                         padding: EdgeInsets.only(top: 5),
+                                         child: Text('${view.seriesName}', style: getTextStyling(4, context
+                                         )),
+                                       ),
+                                       Padding(
+                                         padding: EdgeInsets.only(top: 5),
+                                         child: Text('S${view.parentIndexNumber}:E${view.indexNumber}, ${view.name}'),
+                                       )
+                                     ]
+                                     else
+                                       Padding(
+                                         padding: EdgeInsets.only(top: 5),
+                                         child: Text('${view.name}', style: getTextStyling(4, context)),
+                                       )
+                                   ],
+                                 ),
                                ),
                              );
                            },
