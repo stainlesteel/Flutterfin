@@ -64,7 +64,7 @@ class _ItemPageState extends State<ItemPage> {
                     Hero(
                       tag: viewData,
                       child: CachedNetworkImage(
-                        imageUrl: '${ama.serverList[ama.lastUsedServer!].serverURL}/Items/${viewData!.id!}/Images/Primary?tag=${widget.viewData!.imageTags?['Primary']}',
+                        imageUrl: '${ama.serverList[ama.lastUsedServer!].serverURL}/Items/${viewData!.id!}/Images/Primary?tag=${viewData!.imageTags?['Primary']}',
                         width: double.infinity,
                         fit: BoxFit.cover,
                       ),
@@ -72,8 +72,9 @@ class _ItemPageState extends State<ItemPage> {
                     Positioned.fill(child: Container(color: Colors.black.withOpacity(0.5))),
                     Center(
                       child: CachedNetworkImage(
-                        imageUrl: '${ama.serverList[ama.lastUsedServer!].serverURL}/Items/${viewData!.id!}/Images/Logo?tag=${widget.viewData!.imageTags?['Logo']}',
+                        imageUrl: '${ama.serverList[ama.lastUsedServer!].serverURL}/Items/${viewData!.id!}/Images/Logo?tag=${viewData!.imageTags?['Logo']}',
                         fit: BoxFit.cover,
+                        placeholder: (context, url) => CircularProgressIndicator(),
                         errorWidget: (context, url, child) => Text(
                           '${viewData.name}',
                           style: TextStyle(
@@ -91,6 +92,7 @@ class _ItemPageState extends State<ItemPage> {
             if (viewData.type == BaseItemKind.movie) SizedBox(height: 5),
             SingleChildScrollView(
               child: Row(
+                spacing: 10,
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   if (viewData.type != BaseItemKind.series)
@@ -116,6 +118,41 @@ class _ItemPageState extends State<ItemPage> {
                       },
                       icon: Icon(Icons.play_arrow_rounded),
                       label: Text('Play'),
+                    ),
+                  FloatingActionButton.extended(
+                    onPressed: () async {
+                      if (viewData.userData?.isFavorite == false) {
+                        await ama.markFavorite(viewData.id!);
+                        print('favorited item');
+                      } else {
+                        await ama.unmarkFavorite(viewData.id!);
+                        print('UNfavorited item');
+                      }
+
+                      List<BaseItemDto> newViewData = await ama.getItemsbyId(
+                         [viewData.id!],
+                      );
+                      setState(
+                        () {
+                          print('Updating ITEMPAGE');
+                          viewData = newViewData[0];
+                        },
+                      );
+
+                    },
+                    label: Text(
+                      (viewData.userData?.isFavorite ?? false) ? 'Unfavourite' : 'Favorite',
+                    ),
+                    icon: Icon(Icons.favorite),
+                  ),
+                  if (widget.viewData.remoteTrailers?.isNotEmpty ?? false)
+                    FloatingActionButton.extended(
+                      onPressed: () async {
+                        print(widget.viewData.remoteTrailers![0].url!);
+                        await goToURL(widget.viewData.remoteTrailers![0].url!);
+                      },
+                      icon: Icon(Icons.dvr_rounded),
+                      label: Text('Watch Trailer'),
                     ),
                 ],
               ),
@@ -242,7 +279,7 @@ class _ItemPageState extends State<ItemPage> {
                 },
               ),
             ]
-            else if (viewData.type == BaseItemKind.series && widget.viewData.id != null) ...[
+            else if (viewData.type == BaseItemKind.series && viewData.id != null) ...[
               Text('Episodes from ${viewData.name}', style: getTextStyling(1, context)),
               FutureBuilder(
                 future: ama.getSeasons(viewData.id!),

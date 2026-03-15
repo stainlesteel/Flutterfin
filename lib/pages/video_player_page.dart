@@ -10,6 +10,7 @@ import 'package:jellyfin/providers/providers.dart';
 import 'package:dio/dio.dart';
 import 'package:jellyfin/comps/comps.dart';
 
+
 class VideoPlayerPage extends StatefulWidget {
   final BaseItemDto viewData;
 
@@ -166,6 +167,53 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
     await Future.delayed(Duration(seconds: 2));
   }
 
+  Future<void> autoPlayBack() async {
+    final ama = Provider.of<JellyfinAPI>(context, listen: false);
+    try {
+        percentage = 0;
+        diagName = null;
+
+        if (player.player.state.position.inMicroseconds * 10 ~/ player.mediaData['BaseList'][episodeIndex].runTimeTicks >= 90) {
+          player.mediaData['BaseList'][episodeIndex].copyWith(
+            userData: player.mediaData['BaseList'][episodeIndex].userData.copyWith(
+              played: true,
+            ),
+          );
+        }
+
+        await player.player.stream.buffering.firstWhere(
+          (value) => value == false,
+        );
+
+        final newDuration = Duration(
+          seconds: player.mediaData['BaseList'][episodeIndex].userData.playbackPositionTicks! ~/ 10000000,
+        );
+
+        await player.seek(newDuration);
+
+        await player.player.stream.buffering.firstWhere(
+          (value) => value == false,
+        );
+
+        await ama.stopPlayback(
+          player.mediaData['BaseList'][episodeIndex],
+          player.player.state.position,
+        );
+
+        episodeIndex--;
+
+        await player.skipPrevious();
+
+        await ama.startPlayback(player.mediaData['BaseList'][episodeIndex]);
+
+        await Future.delayed(Duration(seconds: 1));
+
+        playerTitle.value = '${widget.viewData.seriesName} - ${player.mediaData['BaseList'][episodeIndex].name}';
+      } on RangeError catch (e) {
+        print('VideoPlayerPage: Episode limit reached!');
+      }
+    }
+
   Future<void> autoPlayNext() async {
     final ama = Provider.of<JellyfinAPI>(context, listen: false);
     try {
@@ -208,16 +256,14 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
 
       await Future.delayed(Duration(seconds: 1));
 
-      setState(() {
-        playerTitle = '${widget.viewData.seriesName} - ${player.player.state.playlist.medias![episodeIndex].extras!['name']}';
-      });
+      playerTitle.value = '${widget.viewData.seriesName} - ${player.mediaData['BaseList'][episodeIndex].name}';
     } on RangeError catch (e) {
       print('VideoPlayerPage: Episode limit reached!');
     }
   }
 
   ValueNotifier<bool> favorited = ValueNotifier<bool>(true);
-  String playerTitle = '';
+  ValueNotifier<String> playerTitle = ValueNotifier('');
 
 
   late int episodeIndex = player.getJellyfinIndex(widget.viewData.indexNumber ?? 0); // the number for skip buttons to use as the base (skip previous: skipInt - 1) (skip next: skipInt + 1)
@@ -242,53 +288,7 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
       IconButton(
         // skip previous
         icon: Icon(Icons.skip_previous, color: Colors.white),
-        onPressed: () async {
-          try {
-            percentage = 0;
-            diagName = null;
-
-            if (player.player.state.position.inMicroseconds * 10 ~/ player.mediaData['BaseList'][episodeIndex].runTimeTicks >= 90) {
-              player.mediaData['BaseList'][episodeIndex].copyWith(
-                userData: player.mediaData['BaseList'][episodeIndex].userData.copyWith(
-                  played: true,
-                ),
-              );
-            }
-
-            await player.player.stream.buffering.firstWhere(
-              (value) => value == false,
-            );
-
-            final newDuration = Duration(
-              seconds: player.mediaData['BaseList'][episodeIndex].userData.playbackPositionTicks! ~/ 10000000,
-            );
-
-            await player.seek(newDuration);
-
-            await player.player.stream.buffering.firstWhere(
-              (value) => value == false,
-            );
-
-            await ama.stopPlayback(
-              player.mediaData['BaseList'][episodeIndex],
-              player.player.state.position,
-            );
-
-            episodeIndex--;
-
-            await player.skipPrevious();
-
-            await ama.startPlayback(player.mediaData['BaseList'][episodeIndex]);
-
-            await Future.delayed(Duration(seconds: 1));
-
-            setState(() {
-              playerTitle = '${widget.viewData.seriesName} - ${player.player.state.playlist.medias![episodeIndex].extras!['name']}';
-            });
-          } on RangeError catch (e) {
-            print('VideoPlayerPage: Episode limit reached!');
-          }
-        },
+        onPressed: autoPlayBack,
       ),
       IconButton(
         // skip next
@@ -298,9 +298,9 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
     ];
 
     if (widget.viewData.seriesName != null) {
-      playerTitle = '${widget.viewData.seriesName} - ${widget.viewData.name}';
+      playerTitle.value = '${widget.viewData.seriesName} - ${widget.viewData.name}';
     } else {
-      playerTitle = '${widget.viewData.name}';
+      playerTitle.value = '${widget.viewData.name}';
     }
 
     // player theme for both normal and fullscreen
@@ -340,12 +340,17 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
           },
           icon: Icon(Icons.arrow_back, color: Colors.white),
         ),
-        Text(
-          playerTitle,
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-          ),
+        ValueListenableBuilder(
+          valueListenable: playerTitle,
+          builder: (context, value, child) {
+            return Text(
+              value,
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            );
+          }
         ),
       ],
       primaryButtonBar: [

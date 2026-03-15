@@ -37,8 +37,8 @@ class _AboutPageState extends State<AboutPage> {
               simpleTile(
                 title: 'Report an Issue',
                 trailing: Icon(Icons.link),
-                onTap: () {
-                  showScaffold('no url yet', context);
+                onTap: () async {
+                  await goToURL('https://github.com/stainlesteel/Flutterfin/issues');
                 },
               ),
               SizedBox(height: 30),

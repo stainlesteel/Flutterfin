@@ -10,6 +10,13 @@ import 'package:jellyfin/providers/providers.dart';
 
 import 'dart:math';
 
+final List<ItemFields> itemFields = [
+  ItemFields.overview,
+  ItemFields.taglines,
+  ItemFields.tags,
+  ItemFields.remoteTrailers,
+];
+
 class JellyfinAPI extends ChangeNotifier {
   final Box box;
 
@@ -376,11 +383,7 @@ class JellyfinAPI extends ChangeNotifier {
       try {
         final data = await itAPI.getResumeItems(
           userId: userID,
-          fields: <ItemFields>[
-            ItemFields.overview,
-            ItemFields.taglines,
-            ItemFields.tags,
-          ],
+          fields: itemFields,
         );
         yield data.data?.items ?? [];
         print('got recent items');
@@ -405,11 +408,7 @@ class JellyfinAPI extends ChangeNotifier {
         _data = await tvAPI.getNextUp(
           userId: userID,
           enableUserData: true,
-          fields: <ItemFields>[
-            ItemFields.overview,
-            ItemFields.taglines,
-            ItemFields.tags,
-          ],
+          fields: itemFields,
         );
         yield _data.data?.items;
       } catch (e) {
@@ -422,11 +421,7 @@ class JellyfinAPI extends ChangeNotifier {
     int attempts = 0;
     Response<BaseItemDtoQueryResult> items = await itAPI.getResumeItems(
       userId: userID,
-      fields: <ItemFields>[
-        ItemFields.overview,
-        ItemFields.taglines,
-        ItemFields.tags,
-      ],
+      fields: itemFields,
     );
 
     int selectedNum = Random().nextInt(items.data!.items!.length);
@@ -436,11 +431,7 @@ class JellyfinAPI extends ChangeNotifier {
         final data = await lAPI.getSimilarItems(
           userId: userID,
           itemId: items.data!.items![selectedNum].id!,
-          fields: <ItemFields>[
-            ItemFields.overview,
-            ItemFields.taglines,
-            ItemFields.tags,
-          ],
+          fields: itemFields,
         );
         if (data.data?.items?.isEmpty ?? false || data.data?.items == null) {
           print('retrying similar items, given data: ${items.data?.items?[selectedNum].name}');
@@ -480,11 +471,7 @@ class JellyfinAPI extends ChangeNotifier {
         seriesId: seriesId,
         userId: userID,
         season: season,
-        fields: <ItemFields>[
-          ItemFields.overview,
-          ItemFields.taglines,
-          ItemFields.tags,
-        ],
+        fields: itemFields,
       );
       return _data?.data?.items;
     } on DioException catch (e) {
@@ -511,11 +498,7 @@ class JellyfinAPI extends ChangeNotifier {
         seriesId: seriesId,
         userId: userID,
         season: season,
-        fields: <ItemFields>[
-          ItemFields.overview,
-          ItemFields.taglines,
-          ItemFields.tags,
-        ],
+        fields: itemFields,
       );
       yield _data?.data?.items;
     } on DioException catch (e) {
@@ -605,11 +588,7 @@ class JellyfinAPI extends ChangeNotifier {
             BaseItemKind.musicAlbum,
           ],
           enableUserData: true,
-          fields: <ItemFields>[
-            ItemFields.overview,
-            ItemFields.taglines,
-            ItemFields.tags,
-          ],
+          fields: itemFields,
         );
         yield _data.data?.items;
       } catch (e) {
@@ -632,11 +611,7 @@ class JellyfinAPI extends ChangeNotifier {
             BaseItemKind.musicAlbum,
           ],
           enableUserData: true,
-          fields: <ItemFields>[
-            ItemFields.overview,
-            ItemFields.taglines,
-            ItemFields.tags,
-          ],
+          fields: itemFields,
         );
         yield _data.data?.items;
       } catch (e) {
@@ -662,11 +637,7 @@ class JellyfinAPI extends ChangeNotifier {
       sortOrder: <SortOrder>[sortBy ?? SortOrder.ascending],
       recursive: true,
       limit: limit,
-      fields: <ItemFields>[
-        ItemFields.overview,
-        ItemFields.taglines,
-        ItemFields.tags,
-      ],
+      fields: itemFields,
       parentId: parentId,
     );
 

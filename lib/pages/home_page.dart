@@ -124,12 +124,26 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  Future<UserDto?> verifyUser() async {
+    final data = await Provider.of<JellyfinAPI>(context, listen: false).getCurrentUser();
+    if (data == null) {
+      Navigator.pushAndRemoveUntil(
+        context, 
+        MaterialPageRoute(
+          builder: (context) => StartingPage(),
+        ), 
+        (route) => false,
+      );
+    }
+  }
+
   @override
   void initState() {
     super.initState();
+    verifyUser();
   }
 
-   int barIndex = 0;
+  int barIndex = 0;
 
   @override
   Widget build(BuildContext context) {
