@@ -1,4 +1,4 @@
-import 'dart:nativewrappers/_internal/vm/lib/async_patch.dart';
+import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:overlayment/overlayment.dart';
@@ -23,7 +23,11 @@ class VideoPlayerPage extends StatefulWidget {
 }
 
 class _VideoPlayerPageState extends State<VideoPlayerPage> {
-  late dynamic playbackReport;
+  // streams used in the starter() method
+  late StreamSubscription completeTracker;
+  late StreamSubscription trackerForAutonext;
+  late StreamSubscription playbackReport;
+
   late dynamic player;
 
   String? diagName; // this is for the auto-next dialog, and to stop stream from duplicating it
@@ -96,7 +100,7 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
 
     // stream for checking completion 
     if (widget.viewData.type == BaseItemKind.episode) {
-      player.player.stream.completed.listen(
+      completeTracker =  player.player.stream.completed.listen(
         (value) async {
           if (widget.viewData.type != BaseItemKind.episode) {
             return;
@@ -107,55 +111,55 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
         },
       );
 
-      player.player.stream.position.listen(
+      trackerForAutonext = player.player.stream.position.listen(
         (value) async {
-          if (player.player.state.buffering) {
-            return ;
-          }
-          await Future.delayed(Duration(seconds: 2));
+          await Future.delayed(Duration(seconds: 1));
 
-          final valueTicks = value.inMicroseconds * 10;
+          if (player.player.state.buffering || !player.player.state.playing) {}
+          else {
+            final valueTicks = value.inMicroseconds * 10;
 
-          double playedPercentage = valueTicks / player.mediaData['BaseList'][episodeIndex].runTimeTicks.toDouble();
-          playedPercentage = playedPercentage * 100;
-          percentage = playedPercentage;
-          print('$percentage');
-          if (percentage >= 95 && diagName == null) {
-            diagName = randomString();
+            double playedPercentage = valueTicks / player.mediaData['BaseList'][episodeIndex].runTimeTicks.toDouble();
+            playedPercentage = playedPercentage * 100;
+            print('$playedPercentage');
+            if (playedPercentage >= 95 && diagName == null) {
+              diagName = randomString();
 
-            Overlayment.show(
-              OverWindow(
-                name: diagName,
-                alignment: Alignment.bottomCenter,
-                child: Padding(
-                  padding: const EdgeInsets.all(13),
-                  child: Column(
-                    children: [
-                      Text('Next Episode Approaching...'),
-                      Text('${player.mediaData['BaseList'][episodeIndex++].name}'),
-                      FilledButton(
-                        onPressed: () {
-                          Overlayment.dismissName(diagName!);
-                        },
-                        child: Text('Dismiss'),
-                      ),
-                      FilledButton(
-                        onPressed: () async {
-                          await autoPlayNext();
-                        },
-                        child: Text('Play Next Episode'),
-                      ),
-                    ],
+              Overlayment.show(
+                OverWindow(
+                  name: diagName,
+                  alignment: Alignment.bottomCenter,
+                  child: Padding(
+                    padding: const EdgeInsets.all(13),
+                    child: Column(
+                      children: [
+                        Text('Next Episode Approaching...'),
+                        Text('${player.mediaData['BaseList'][episodeIndex++].name}'),
+                        FilledButton(
+                          onPressed: () {
+                            Overlayment.dismissName(diagName!);
+                          },
+                          child: Text('Dismiss'),
+                        ),
+                        FilledButton(
+                          onPressed: () async {
+                            await autoPlayNext();
+                          },
+                          child: Text('Play Next Episode'),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-              context: context,
-            );
+                context: context,
+              );
+            }
           }
-
         }
       );
     }
+
+    // set the episode index here
 
     // stream for checking position to see if we need to add overlay
 
@@ -165,15 +169,42 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
   Future<void> autoPlayNext() async {
     final ama = Provider.of<JellyfinAPI>(context, listen: false);
     try {
-      episodeIndex++;
+      percentage = 0;
+      diagName = null;
+
+      if (player.player.state.position.inMicroseconds * 10 ~/ player.mediaData['BaseList'][episodeIndex].runTimeTicks >= 90) {
+        player.mediaData['BaseList'][episodeIndex].copyWith(
+          userData: player.mediaData['BaseList'][episodeIndex].userData.copyWith(
+            played: true,
+          ),
+        );
+      }
 
       await ama.stopPlayback(
-        player.mediaData['BaseList'][episodeIndex--],
+        player.mediaData['BaseList'][episodeIndex],
         player.player.state.position,
       );
+
+      episodeIndex++;
+      print('Episode Index: $episodeIndex');
       await player.skipNext();
 
+      final newDuration = Duration(
+        seconds: player.mediaData['BaseList'][episodeIndex].userData.playbackPositionTicks! ~/ 10000000,
+      );
+
+      await player.player.stream.buffering.firstWhere(
+        (value) => value == false,
+      );
+
+      await player.seek(newDuration);
+
+      await player.player.stream.buffering.firstWhere(
+        (value) => value == false,
+      );
+
       await ama.startPlayback(player.mediaData['BaseList'][episodeIndex]);
+      print('new episodeData: ${player.mediaData['BaseList'][episodeIndex]}');
 
       await Future.delayed(Duration(seconds: 1));
 
@@ -188,7 +219,8 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
   ValueNotifier<bool> favorited = ValueNotifier<bool>(true);
   String playerTitle = '';
 
-  late int episodeIndex = widget.viewData.indexNumber ?? 0; // the number for skip buttons to use as the base (skip previous: skipInt - 1) (skip next: skipInt + 1)
+
+  late int episodeIndex = player.getJellyfinIndex(widget.viewData.indexNumber ?? 0); // the number for skip buttons to use as the base (skip previous: skipInt - 1) (skip next: skipInt + 1)
    // if null, video is probably a movie, in that case, this isn't going to be used
 
   @override
@@ -212,12 +244,37 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
         icon: Icon(Icons.skip_previous, color: Colors.white),
         onPressed: () async {
           try {
-            episodeIndex--;
+            percentage = 0;
+            diagName = null;
+
+            if (player.player.state.position.inMicroseconds * 10 ~/ player.mediaData['BaseList'][episodeIndex].runTimeTicks >= 90) {
+              player.mediaData['BaseList'][episodeIndex].copyWith(
+                userData: player.mediaData['BaseList'][episodeIndex].userData.copyWith(
+                  played: true,
+                ),
+              );
+            }
+
+            await player.player.stream.buffering.firstWhere(
+              (value) => value == false,
+            );
+
+            final newDuration = Duration(
+              seconds: player.mediaData['BaseList'][episodeIndex].userData.playbackPositionTicks! ~/ 10000000,
+            );
+
+            await player.seek(newDuration);
+
+            await player.player.stream.buffering.firstWhere(
+              (value) => value == false,
+            );
 
             await ama.stopPlayback(
               player.mediaData['BaseList'][episodeIndex],
               player.player.state.position,
             );
+
+            episodeIndex--;
 
             await player.skipPrevious();
 
@@ -256,29 +313,29 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
 
               await ama.stopPlayback(
                 player.mediaData['BaseList'][episodeIndex],
-                (newPosition! >= 95) ? 0 : player.player.state.position,
+                (newPosition! / player.mediaData['BaseList'][episodeIndex].runTimeTicks >= 95) ? Duration(seconds: 0) : player.player.state.position,
 
               );
+
+              playbackReport.cancel();
+              completeTracker.cancel();
+              trackerForAutonext.cancel();
 
               await player.pause();
               await player.disposePlayer();
 
-              playbackReport.cancel();
 
               await Future.delayed(Duration(milliseconds: 100));
 
               Navigator.pop(
                 context, 
-                {
-                  'episodeIndex': episodeIndex,
-                  'positionTicks': (newPosition! >= 95) ? 0 : newPosition,
-                  'isFavorite': player.mediaData['BaseList'][episodeIndex].userData?.isFavorite,
-                }
+                'rebuild',
               );
 
               player = null;
 
             } catch (e) {
+              print('back error: ${e}');
             }
           },
           icon: Icon(Icons.arrow_back, color: Colors.white),
@@ -311,8 +368,8 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
                 BaseItemDto? dto = player.mediaData['BaseList'][episodeIndex];
                 UserItemDataDto? userDto = player.mediaData['BaseList'][episodeIndex].userData;
                 if (userDto?.isFavorite == true) {
-                  await ama.unmarkFavorite(dto!.id!);
-                  player.mediaData['BaseList'][episodeIndex] = dto.copyWith(
+                  await ama.unmarkFavorite(player.mediaData['BaseList'][player.getJellyfinIndex(episodeIndex)].id!);
+                  player.mediaData['BaseList'][episodeIndex] = dto?.copyWith(
                     userData: userDto?.copyWith(
                       isFavorite: false,
                     ),
@@ -320,8 +377,8 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
                   print('marked unfavorite, isFavorite: ${player.mediaData['BaseList'][episodeIndex].userData.isFavorite}');
                   favorited.value = false;
                 } else {
-                  await ama.markFavorite(dto!.id!);
-                  player.mediaData['BaseList'][episodeIndex] = dto.copyWith(
+                  await ama.markFavorite(player.mediaData['BaseList'][player.getJellyfinIndex(episodeIndex)].id!);
+                  player.mediaData['BaseList'][episodeIndex] = dto?.copyWith(
                     userData: userDto?.copyWith(
                       isFavorite: true,
                     ),

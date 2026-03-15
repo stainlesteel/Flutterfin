@@ -65,29 +65,102 @@ Widget PlayerText(String text) {
   );
 }
 
-List<Widget> carouselWidgets(BuildContext context, List<BaseItemDto> data, JellyfinAPI ama,) {
+List<Widget> carouselWidgets(BuildContext context, List<BaseItemDto> data, JellyfinAPI ama) {
   return <Widget>[
     for (BaseItemDto view in data)
+      Stack(
+        children: [
+          Column(
+            children: [
+              Expanded(
+                child: Container(
+                  width: double.infinity,
+                  alignment: Alignment.bottomCenter,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.only(topLeft: Radius.circular(15), topRight: Radius.circular(15)),
+                    image: DecorationImage(
+                      image: CachedNetworkImageProvider(
+                        '${ama.serverList[ama.lastUsedServer!].serverURL}/Items/${view!.id!}/Images/Primary?tag=${view!.imageTags?['Primary']}',
+                      ),
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                  child: LinearProgressIndicator(
+                    value: (view.userData?.playedPercentage != null) 
+                    ? view.userData!.playedPercentage!.round().toDouble() / 100
+                    : 0,
+                  ),
+                ),
+              ),
+              if (view.seriesName != null) ...[
+                Padding(
+                  padding: EdgeInsets.only(top: 5),
+                  child: Text(
+                    '${view.seriesName}',
+                    style: getTextStyling(4, context),
+                  ),
+                ),
+                Padding(
+                  padding: EdgeInsets.only(top: 5),
+                  child: Text(
+                    'S${view.parentIndexNumber}:E${view.indexNumber}, ${view.name}',
+                  ),
+                ),
+              ] else
+                Padding(
+                  padding: EdgeInsets.only(top: 5),
+                  child: Text(
+                    '${view.name}',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          if (view.userData?.played ?? false)
+            Align(
+              alignment: Alignment.topRight,
+              child: Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Card(
+                  child: Icon(
+                    Icons.check
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+  ];
+}
+
+Widget builderWidgets(BuildContext context, BaseItemDto view, JellyfinAPI ama) {
+  return Stack(
+    children: [
       Column(
         children: [
           Expanded(
-            child: Hero(
-              tag: view as Object,
-              child: CachedNetworkImage(
-                imageUrl: '${ama.serverList[ama.lastUsedServer!].serverURL}/Items/${view!.id!}/Images/Primary?tag=${view!.imageTags?['Primary']}',
-                errorWidget: (context, url, object) {
-                  return Icon(Icons.question_mark);
-                },
-                fit: BoxFit.cover,
-                height: double.infinity,
-                width: double.infinity,
+            child: Container(
+              width: double.infinity,
+              alignment: Alignment.bottomCenter,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.only(topLeft: Radius.circular(15), topRight: Radius.circular(15)),
+                image: DecorationImage(
+                  image: CachedNetworkImageProvider(
+                    '${ama.serverList[ama.lastUsedServer!].serverURL}/Items/${view!.id!}/Images/Primary?tag=${view!.imageTags?['Primary']}',
+                  ),
+                  fit: BoxFit.cover,
+                ),
+              ),
+              child: LinearProgressIndicator(
+                value: (view.userData?.playedPercentage != null) 
+                ? view.userData!.playedPercentage!.round().toDouble() / 100
+                : 0,
               ),
             ),
           ),
-          if (view.userData?.playedPercentage != null)
-            LinearProgressIndicator(
-              value: view.userData!.playedPercentage!.round().toDouble() / 100,
-            ),
           if (view.seriesName != null) ...[
             Padding(
               padding: EdgeInsets.only(top: 5),
@@ -107,12 +180,28 @@ List<Widget> carouselWidgets(BuildContext context, List<BaseItemDto> data, Jelly
               padding: EdgeInsets.only(top: 5),
               child: Text(
                 '${view.name}',
-                style: getTextStyling(4, context),
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
             ),
         ],
       ),
-  ];
+      if (view.userData?.played ?? false)
+        Align(
+          alignment: Alignment.topRight,
+          child: Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Card(
+              child: Icon(
+                Icons.check
+              ),
+            ),
+          ),
+        ),
+    ],
+  );
 }
 
 Widget StreamCarousel({required BuildContext context, required Stream stream, required String title, required Function(int index, AsyncSnapshot snapshot) onTap}) {

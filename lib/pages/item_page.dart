@@ -26,12 +26,14 @@ class _ItemPageState extends State<ItemPage> {
   // episodesIndex will only appear if the viewData is a show, 
   // it is used to manage the current season index the user wants to look at
 
+  late BaseItemDto viewData = widget.viewData;
+
   @override
   Widget build(BuildContext context) {
     var ama = context.watch<JellyfinAPI>();
 
-    double runTime = widget.viewData.runTimeTicks! / 100000000;
-    double? percentage = widget.viewData.userData?.playedPercentage;
+    double runTime = viewData.runTimeTicks! / 100000000;
+    double? percentage = viewData.userData?.playedPercentage;
 
     Widget _scaffold = Scaffold(
       extendBodyBehindAppBar: true,
@@ -60,9 +62,9 @@ class _ItemPageState extends State<ItemPage> {
                 fit: StackFit.passthrough,
                 children: [
                     Hero(
-                      tag: widget.viewData,
+                      tag: viewData,
                       child: CachedNetworkImage(
-                        imageUrl: '${ama.serverList[ama.lastUsedServer!].serverURL}/Items/${widget.viewData!.id!}/Images/Primary?tag=${widget.viewData!.imageTags?['Primary']}',
+                        imageUrl: '${ama.serverList[ama.lastUsedServer!].serverURL}/Items/${viewData!.id!}/Images/Primary?tag=${widget.viewData!.imageTags?['Primary']}',
                         width: double.infinity,
                         fit: BoxFit.cover,
                       ),
@@ -70,10 +72,10 @@ class _ItemPageState extends State<ItemPage> {
                     Positioned.fill(child: Container(color: Colors.black.withOpacity(0.5))),
                     Center(
                       child: CachedNetworkImage(
-                        imageUrl: '${ama.serverList[ama.lastUsedServer!].serverURL}/Items/${widget.viewData!.id!}/Images/Logo?tag=${widget.viewData!.imageTags?['Logo']}',
+                        imageUrl: '${ama.serverList[ama.lastUsedServer!].serverURL}/Items/${viewData!.id!}/Images/Logo?tag=${widget.viewData!.imageTags?['Logo']}',
                         fit: BoxFit.cover,
                         errorWidget: (context, url, child) => Text(
-                          '${widget.viewData.name}',
+                          '${viewData.name}',
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 40,
@@ -86,45 +88,30 @@ class _ItemPageState extends State<ItemPage> {
               ),
             ),
             SizedBox(height: 10),
-            if (widget.viewData.type == BaseItemKind.movie) SizedBox(height: 5),
+            if (viewData.type == BaseItemKind.movie) SizedBox(height: 5),
             SingleChildScrollView(
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  if (widget.viewData.type != BaseItemKind.series)
+                  if (viewData.type != BaseItemKind.series)
                     FloatingActionButton.extended(
                       onPressed: () async {
                         final result = await Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => VideoPlayerPage(viewData: widget.viewData),
+                            builder: (context) => VideoPlayerPage(viewData: viewData),
                           ),
                         );
                         if (result != null) {
-                          if (widget.viewData.type == BaseItemKind.episode && result['episodeIndex'] != widget.viewData.indexNumber) {
-                          } else {
-                            print(
-                              'previous positionTicks: ${widget.viewData.userData?.playbackPositionTicks}',
-                            );
-                            try {
-                              widget.viewData = widget.viewData.copyWith(
-                                userData: widget.viewData.userData?.copyWith(
-                                  playbackPositionTicks: result['positionTicks'],
-                                  playedPercentage: result['positionTicks'] / widget.viewData.runTimeTicks * 100,
-                                  isFavorite: result['isFavorite'],
-                                ),
-                              );
-                              setState(() {
-                                percentage = widget.viewData.userData?.playedPercentage;
-                              });
-                      
-                              print(
-                                'updated positionTicks: ${widget.viewData.userData?.playbackPositionTicks}\nNEW percentage: ${widget.viewData.userData?.playedPercentage}',
-                              );
-                            } catch (e) {
-                              print('FAILED TO USE copyWith');
-                              }
-                            }
+                          List<BaseItemDto> newViewData = await ama.getItemsbyId(
+                             [viewData.id!],
+                          );
+                          setState(
+                            () {
+                              print('Updating ITEMPAGE');
+                              viewData = newViewData[0];
+                            },
+                          );
                         }
                       },
                       icon: Icon(Icons.play_arrow_rounded),
@@ -134,14 +121,14 @@ class _ItemPageState extends State<ItemPage> {
               ),
             ),
             SizedBox(height: 10),
-            if (widget.viewData.userData?.playedPercentage != null)
+            if (viewData.userData?.playedPercentage != null)
               LinearProgressIndicator(
                 value: percentage! / 100,
               ),
             SizedBox(height: 7),
-            if (widget.viewData.taglines?.isNotEmpty ?? false) ...[
+            if (viewData.taglines?.isNotEmpty ?? false) ...[
               Text(
-                '${widget.viewData.taglines?.firstOrNull ?? "Can't find taglines"}',
+                '${viewData.taglines?.firstOrNull ?? "Can't find taglines"}',
                 textAlign: TextAlign.center,
                 style: getTextStyling(1, context),
               ),
@@ -153,7 +140,7 @@ class _ItemPageState extends State<ItemPage> {
                 children: [
                   SizedBox(width: 15),
                   detailCard(
-                    text: '${widget.viewData.productionYear ?? ''}',
+                    text: '${viewData.productionYear ?? ''}',
                     context: context,
                   ),
                   SizedBox(width: 20),
@@ -161,22 +148,22 @@ class _ItemPageState extends State<ItemPage> {
                     text: '${getTime(runTime.round())}',
                     context: context,
                   ),
-                  if (widget.viewData.officialRating != null) ...[
+                  if (viewData.officialRating != null) ...[
                     SizedBox(width: 20),
                     detailCard(
                       text:
-                          '${widget.viewData.officialRating ?? 'Rating Unavailable'}',
+                          '${viewData.officialRating ?? 'Rating Unavailable'}',
                       context: context,
                     ),
                   ],
-                  if (widget.viewData.criticRating != null) ...[
+                  if (viewData.criticRating != null) ...[
                     SizedBox(width: 20),
                     detailCard(
                       children: [
                         Icon(Icons.rate_review, color: Colors.red),
                         SizedBox(width: 5),
                         Text(
-                          '${widget.viewData.criticRating?.round() ?? 'Unavailable'}',
+                          '${viewData.criticRating?.round() ?? 'Unavailable'}',
                           style: getTextStyling(1, context),
                         ),
                       ],
@@ -189,7 +176,7 @@ class _ItemPageState extends State<ItemPage> {
                       Icon(Icons.star, color: Colors.yellow),
                       SizedBox(width: 5),
                       Text(
-                        '${widget.viewData?.communityRating ?? 'Unavailable'}',
+                        '${viewData?.communityRating ?? 'Unavailable'}',
                         style: getTextStyling(1, context),
                       ),
                     ],
@@ -199,8 +186,8 @@ class _ItemPageState extends State<ItemPage> {
               ),
             ),
             SizedBox(height: 15),
-            Text('${widget.viewData?.overview ?? ''}', textAlign: TextAlign.center),
-            if (widget.viewData?.tags?.isNotEmpty ?? false) ...[
+            Text('${viewData?.overview ?? ''}', textAlign: TextAlign.center),
+            if (viewData?.tags?.isNotEmpty ?? false) ...[
               SizedBox(height: 15),
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
@@ -209,17 +196,17 @@ class _ItemPageState extends State<ItemPage> {
                     SizedBox(width: 12),
                     Text('Tags:'),
                     SizedBox(width: 5),
-                    for (String tag in widget.viewData.tags ?? [])
+                    for (String tag in viewData.tags ?? [])
                       detailCard(text: '$tag', context: context),
                   ],
                 ),
               ),
             ],
             SizedBox(height: 30,),
-            if (widget.viewData.type == BaseItemKind.episode) ...[
-              Text('Other Episodes from Season ${widget.viewData.parentIndexNumber}', style: getTextStyling(1, context)),
+            if (viewData.type == BaseItemKind.episode) ...[
+              Text('Other Episodes from Season ${viewData.parentIndexNumber}', style: getTextStyling(1, context)),
               FutureBuilder(
-                future: ama.getShowEpisodes(seriesId: widget.viewData.seriesId!, context: context), 
+                future: ama.getShowEpisodes(seriesId: viewData.seriesId!, context: context), 
                 builder: (context, snap) {
                   if (snap.connectionState == ConnectionState.waiting) {
                     return CircularProgressIndicator();
@@ -228,7 +215,7 @@ class _ItemPageState extends State<ItemPage> {
                   } else if (snap.hasData) {
                     final List<BaseItemDto>? data = snap.data;
       
-                    snap.data?.removeAt(widget.viewData.indexNumber! - 1);
+                    snap.data?.removeAt(viewData.indexNumber! - 1);
                     return SizedBox(
                       height: 200,
                       child: CarouselView(
@@ -255,15 +242,15 @@ class _ItemPageState extends State<ItemPage> {
                 },
               ),
             ]
-            else if (widget.viewData.type == BaseItemKind.series && widget.viewData.id != null) ...[
-              Text('Episodes from ${widget.viewData.name}', style: getTextStyling(1, context)),
+            else if (viewData.type == BaseItemKind.series && widget.viewData.id != null) ...[
+              Text('Episodes from ${viewData.name}', style: getTextStyling(1, context)),
               FutureBuilder(
-                future: ama.getSeasons(widget.viewData.id!),
+                future: ama.getSeasons(viewData.id!),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return CircularProgressIndicator();
                   } else if (snapshot.hasError) {
-                    return Text('Could not get season data for ${widget.viewData.name}');
+                    return Text('Could not get season data for ${viewData.name}');
                   } else {
                     List<BaseItemDto> data = snapshot.data!;
                     episodesIndex.value == 0;
@@ -294,8 +281,8 @@ class _ItemPageState extends State<ItemPage> {
               ValueListenableBuilder(
                 valueListenable: episodesIndex,
                 builder: (context, value, child) {
-                  return FutureBuilder(
-                    future: ama.getShowEpisodes(seriesId: widget.viewData.id!, season: value, context: context),
+                  return StreamBuilder(
+                    stream: ama.showEpisodesStream(seriesId: viewData.id!, season: value, context: context),
                     builder: (context, snap) {
                       if (snap.connectionState == ConnectionState.waiting) {
                         return CircularProgressIndicator();

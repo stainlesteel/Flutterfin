@@ -503,6 +503,27 @@ class JellyfinAPI extends ChangeNotifier {
     return null;
   }
 
+  Stream<List<BaseItemDto>?> showEpisodesStream ({required String seriesId, int? season = null, required BuildContext context,}) async* {
+    late final _data;
+
+    try {
+      _data = await tvAPI.getEpisodes(
+        seriesId: seriesId,
+        userId: userID,
+        season: season,
+        fields: <ItemFields>[
+          ItemFields.overview,
+          ItemFields.taglines,
+          ItemFields.tags,
+        ],
+      );
+      yield _data?.data?.items;
+    } on DioException catch (e) {
+      print('showEpisodesStream(): Could not get show episodes, error: $e');
+    }
+    await Future.delayed(Duration(seconds: 5));
+  }
+
   // start playback report section
 
   Future<void> startPlayback(BaseItemDto dto) async {

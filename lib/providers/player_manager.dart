@@ -69,10 +69,13 @@ class PlayerManager {
       mediaData['BaseList'] = showData!;
       print('mediaData: $mediaData');
 
-      playMedia = Playlist([
-        for (Map<String, dynamic> item in episodeData)
-          Media(item['url'], extras: {'name': '${item['name']}'}),
-      ], index: dto!.indexNumber! - 1);
+      playMedia = Playlist(
+        [
+          for (Map<String, dynamic> item in episodeData)
+            Media(item['url'], extras: {'name': '${item['name']}'}),
+        ], 
+        index: dto!.indexNumber! - 1
+      );
 
       await player.open(playMedia, play: false);
     }
@@ -119,5 +122,9 @@ class PlayerManager {
   Future<void> seek(Duration duration) async {
     await Future.delayed(Duration(seconds: 1));
     await player.seek(duration);
+  }
+
+  int getJellyfinIndex(int index) {
+    return (index == 0) ? 0 : index - 1;
   }
 }

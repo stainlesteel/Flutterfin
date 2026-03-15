@@ -4,6 +4,7 @@ import 'package:jellyfin/providers/providers.dart';
 import 'package:jellyfin/pages/pages.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:jellyfin_dart/jellyfin_dart.dart';
 
 class FavoritesPage extends StatefulWidget {
   const FavoritesPage({super.key});
@@ -61,46 +62,7 @@ class _FavoritesPageState extends State<FavoritesPage> {
                                );
                              }
                            },
-                           child: Column(
-                             children: [
-                               Expanded(
-                                 child: Container(
-                                   width: double.infinity,
-                                   alignment: Alignment.bottomCenter,
-                                   decoration: BoxDecoration(
-                                     borderRadius: BorderRadius.only(topLeft: Radius.circular(15), topRight: Radius.circular(15)),
-                                     image: DecorationImage(
-                                       image: CachedNetworkImageProvider(
-                                         '${ama.serverList[ama.lastUsedServer!].serverURL}/Items/${view!.id!}/Images/Primary?tag=${view!.imageTags?['Primary']}',
-                                       ),
-                                       fit: BoxFit.cover,
-                                     ),
-                                   ),
-                                   child: LinearProgressIndicator(
-                                     value: (view.userData?.playedPercentage != null) 
-                                     ? view.userData!.playedPercentage!.round().toDouble() / 100
-                                     : 0,
-                                   ),
-                                 ),
-                               ),
-                               if (view.seriesName != null) ...[
-                                 Padding(
-                                   padding: EdgeInsets.only(top: 5),
-                                   child: Text('${view.seriesName}', style: getTextStyling(4, context
-                                   )),
-                                 ),
-                                 Padding(
-                                   padding: EdgeInsets.only(top: 5),
-                                   child: Text('S${view.parentIndexNumber}:E${view.indexNumber}, ${view.name}'),
-                                 )
-                               ]
-                               else
-                                 Padding(
-                                   padding: EdgeInsets.only(top: 5),
-                                   child: Text('${view.name}', style: getTextStyling(4, context)),
-                                 )
-                             ],
-                           ),
+                           child: builderWidgets(context, view ?? BaseItemDto(), ama),
                          );
                        },
                      );

@@ -24,7 +24,7 @@ Widget BecauseYouWatched(BuildContext context) {
         if (data != null) {
           secondWidget = CarouselView(
             scrollDirection: Axis.horizontal,
-            itemExtent: 200,
+            itemExtent: 230,
             shrinkExtent: 100,
             onTap: (index) async {
               print('${data.length}');
@@ -80,7 +80,7 @@ Widget RecentlyAdded(BuildContext context, List<BaseItemKind>? includeItemTypes,
         if (data != null) {
           secondWidget = CarouselView(
             scrollDirection: Axis.horizontal,
-            itemExtent: 200,
+            itemExtent: 230,
             shrinkExtent: 100,
             onTap: (index) async {
               print('${data.length}');
