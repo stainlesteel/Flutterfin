@@ -13,10 +13,12 @@ import 'package:jellyfin/comps/comps.dart';
 
 class VideoPlayerPage extends StatefulWidget {
   final BaseItemDto viewData;
+  final bool resume;
 
   const VideoPlayerPage({
     super.key,
     required this.viewData,
+    this.resume = true,
   });
 
   @override
@@ -25,8 +27,8 @@ class VideoPlayerPage extends StatefulWidget {
 
 class _VideoPlayerPageState extends State<VideoPlayerPage> {
   // streams used in the starter() method
-  late StreamSubscription completeTracker;
-  late StreamSubscription trackerForAutonext;
+  StreamSubscription? completeTracker;
+  StreamSubscription? trackerForAutonext;
   late StreamSubscription playbackReport;
 
   late dynamic player;
@@ -50,6 +52,8 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
   }
 
   Future<void> starter() async {
+    Duration? runtimeDuration;
+
     final url = Provider.of<JellyfinAPI>(context, listen: false,).getStreamUrl(widget.viewData.id!);
     print('Stream Url: $url');
     if (widget.viewData.type == BaseItemKind.movie) {
@@ -58,13 +62,15 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
       await player.addShow(widget.viewData, context);
     }
 
-    print(
-      'current progress of video (in seconds): ${widget.viewData.userData!.playbackPositionTicks! ~/ 10000000}',
-    );
+    if (!widget.resume) {
+      print(
+        'current progress of video (in seconds): ${widget.viewData.userData!.playbackPositionTicks! ~/ 10000000}',
+      );
 
-    final runtimeDuration = Duration(
-      seconds: widget.viewData.userData!.playbackPositionTicks! ~/ 10000000,
-    );
+      runtimeDuration = Duration(
+        seconds: widget.viewData.userData!.playbackPositionTicks! ~/ 10000000,
+      );
+    }
 
     await Future.delayed(Duration(milliseconds: 1500));
 
@@ -74,7 +80,9 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
         (value) => value == false,
       );
 
-      await player.seek(runtimeDuration);
+      if (widget.resume == true) {
+        await player.seek(runtimeDuration);
+      }
 
       await player.player.stream.buffering.firstWhere(
         (value) => value == false,
@@ -318,8 +326,10 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
               );
 
               playbackReport.cancel();
-              completeTracker.cancel();
-              trackerForAutonext.cancel();
+              if (completeTracker != null && trackerForAutonext != null) {
+                completeTracker!.cancel();
+                trackerForAutonext!.cancel();
+              }
 
               await player.pause();
               await player.disposePlayer();

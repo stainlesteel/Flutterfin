@@ -124,7 +124,7 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  Future<UserDto?> verifyUser() async {
+  Future<void> verifyUser() async {
     final data = await Provider.of<JellyfinAPI>(context, listen: false).getCurrentUser();
     if (data == null) {
       Navigator.pushAndRemoveUntil(
@@ -133,6 +133,11 @@ class _HomePageState extends State<HomePage> {
           builder: (context) => StartingPage(),
         ), 
         (route) => false,
+      );
+      SimpleErrorDiag(
+        title: 'Log In Error',
+        desc: 'The previous log in data is incorrect and is not accepted by the server. Please log in again.',
+        context: context
       );
     }
   }

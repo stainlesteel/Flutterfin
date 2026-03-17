@@ -22,10 +22,32 @@ class _ItemPageState extends State<ItemPage> {
     super.initState();
   }
 
+  Future<void> gotoVideoPlayerPage({bool resume = true}) async {
+    final ama = context.read<JellyfinAPI>();
+
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => VideoPlayerPage(viewData: viewData, resume: resume,),
+      ),
+    );
+    if (result != null) {
+      List<BaseItemDto> newViewData = await ama.getItemsbyId(
+         [viewData.id!],
+      );
+      setState(
+        () {
+          print('Updating ITEMPAGE');
+          viewData = newViewData[0];
+        },
+      );
+    }
+  }
+
   ValueNotifier<int?> episodesIndex = ValueNotifier(null);
   // episodesIndex will only appear if the viewData is a show, 
   // it is used to manage the current season index the user wants to look at
-
+  
   late BaseItemDto viewData = widget.viewData;
 
   @override
@@ -57,7 +79,7 @@ class _ItemPageState extends State<ItemPage> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             SizedBox(
-              height: 200,
+              height: 230,
               child: Stack(
                 fit: StackFit.passthrough,
                 children: [
@@ -95,31 +117,20 @@ class _ItemPageState extends State<ItemPage> {
                 spacing: 10,
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  if (viewData.type != BaseItemKind.series)
+                  if (viewData.type != BaseItemKind.series) ...[
                     FloatingActionButton.extended(
-                      onPressed: () async {
-                        final result = await Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => VideoPlayerPage(viewData: viewData),
-                          ),
-                        );
-                        if (result != null) {
-                          List<BaseItemDto> newViewData = await ama.getItemsbyId(
-                             [viewData.id!],
-                          );
-                          setState(
-                            () {
-                              print('Updating ITEMPAGE');
-                              viewData = newViewData[0];
-                            },
-                          );
-                        }
-                      },
-                      icon: Icon(Icons.play_arrow_rounded),
-                      label: Text('Play'),
+                      onPressed: gotoVideoPlayerPage,
+                      icon: Icon(Icons.replay_10_rounded),
+                      label: Text('Resume'),
                     ),
-                  FloatingActionButton.extended(
+                    FloatingActionButton(
+                      onPressed: () async {
+                        await gotoVideoPlayerPage(resume: false);
+                      },
+                      child: Icon(Icons.play_arrow),
+                    ),
+                  ],
+                  FloatingActionButton(
                     onPressed: () async {
                       if (viewData.userData?.isFavorite == false) {
                         await ama.markFavorite(viewData.id!);
@@ -140,19 +151,17 @@ class _ItemPageState extends State<ItemPage> {
                       );
 
                     },
-                    label: Text(
-                      (viewData.userData?.isFavorite ?? false) ? 'Unfavourite' : 'Favorite',
-                    ),
-                    icon: Icon(Icons.favorite),
+                    child: (viewData.userData?.isFavorite ?? false)
+                    ? Icon(Icons.favorite, color: Colors.red,)
+                    : Icon(Icons.favorite),
                   ),
                   if (widget.viewData.remoteTrailers?.isNotEmpty ?? false)
-                    FloatingActionButton.extended(
+                    FloatingActionButton(
                       onPressed: () async {
                         print(widget.viewData.remoteTrailers![0].url!);
                         await goToURL(widget.viewData.remoteTrailers![0].url!);
                       },
-                      icon: Icon(Icons.dvr_rounded),
-                      label: Text('Watch Trailer'),
+                      child: Icon(Icons.dvr_rounded),
                     ),
                 ],
               ),
