@@ -59,6 +59,23 @@ extension PostFutures on JellyfinAPI {
     return _data.data;
   }
 
+  Future<UserItemDataDto?> markPlayed(String itemId) async {
+    final Response<UserItemDataDto> _data = await psAPI.markPlayedItem(
+      itemId: itemId,
+      userId: userID,
+    );
+
+    return _data.data;
+  }
+
+  Future<UserItemDataDto?> markunPlayed(String itemId) async {
+    final Response<UserItemDataDto> _data = await psAPI.markUnplayedItem(
+      itemId: itemId,
+      userId: userID,
+    );
+
+    return _data.data;
+  }
 
   Future<SearchHintResult?> runSearch(String term) async {
     final _data = await seAPI.getSearchHints(

@@ -140,6 +140,32 @@ class _ItemPageState extends State<ItemPage> {
                         print('UNfavorited item');
                       }
 
+                      BaseItemDto? newViewData = await ama.getItem(viewData.id!);
+
+                      setState(
+                        () {
+                          print('Updating ITEMPAGE');
+                          if (newViewData != null) {
+                            viewData = newViewData;
+                          }
+                        },
+                      );
+
+                    },
+                    child: (viewData.userData?.isFavorite ?? false)
+                    ? Icon(Icons.favorite, color: Colors.red,)
+                    : Icon(Icons.favorite),
+                  ),
+                  FloatingActionButton(
+                    onPressed: () async {
+                      if (viewData.userData?.played == false) {
+                        await ama.markPlayed(viewData.id!);
+                        print('ItemPage(): Marked item PLAYED');
+                      } else {
+                        await ama.markunPlayed(viewData.id!);
+                        print('ItemPage(): Marked item PLAYED');
+                      }
+
                       List<BaseItemDto> newViewData = await ama.getItemsbyId(
                          [viewData.id!],
                       );
@@ -151,9 +177,9 @@ class _ItemPageState extends State<ItemPage> {
                       );
 
                     },
-                    child: (viewData.userData?.isFavorite ?? false)
-                    ? Icon(Icons.favorite, color: Colors.red,)
-                    : Icon(Icons.favorite),
+                    child: (viewData.userData?.played ?? false)
+                    ? Icon(Icons.check, color: Colors.red,)
+                    : Icon(Icons.check),
                   ),
                   if (widget.viewData.remoteTrailers?.isNotEmpty ?? false)
                     FloatingActionButton(

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:overlayment/overlayment.dart';
@@ -10,6 +11,7 @@ import 'package:jellyfin/providers/providers.dart';
 import 'package:dio/dio.dart';
 import 'package:jellyfin/comps/comps.dart';
 
+// TODO: Implement that MenuAnchor for other settings
 
 class VideoPlayerPage extends StatefulWidget {
   final BaseItemDto viewData;
@@ -62,7 +64,7 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
       await player.addShow(widget.viewData, context);
     }
 
-    if (!widget.resume) {
+    if (widget.resume == true) {
       print(
         'current progress of video (in seconds): ${widget.viewData.userData!.playbackPositionTicks! ~/ 10000000}',
       );
@@ -270,7 +272,7 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
     }
   }
 
-  ValueNotifier<bool> favorited = ValueNotifier<bool>(true);
+  late ValueNotifier<bool> favorited = ValueNotifier<bool>(widget.viewData.userData?.isFavorite ?? false);
   ValueNotifier<String> playerTitle = ValueNotifier('');
 
 
@@ -281,16 +283,7 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
   Widget build(BuildContext context) {
     var ama = context.watch<JellyfinAPI>();
     VideoController videoConts = VideoController(player.player);
-
-    //
-    try {
-      if (player.mediaData['BaseList'][episodeIndex].userData?.isFavorite == true) {
-        favorited.value = true;
-      } else {
-        favorited.value = false;
-      }
-    } catch (e) {
-    }
+    MenuController menuConts = MenuController();
 
     List<Widget> skipButtonList = [
       IconButton(
@@ -350,6 +343,7 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
           },
           icon: Icon(Icons.arrow_back, color: Colors.white),
         ),
+        Spacer(),
         ValueListenableBuilder(
           valueListenable: playerTitle,
           builder: (context, value, child) {
@@ -362,17 +356,41 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
             );
           }
         ),
+        Spacer(),
       ],
       primaryButtonBar: [
-        if (widget.viewData.seriesName != null) skipButtonList[0],
-        SizedBox(width: 100),
-        MaterialPlayOrPauseButton(),
-        SizedBox(width: 100),
-        if (widget.viewData.seriesName != null) skipButtonList[1],
+        SizedBox(
+          width: MediaQuery.heightOf(context) * 0.8,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              IconButton(
+                color: Colors.white,
+                icon: Icon(Icons.replay_10),
+                onPressed: () async {
+                  await player.seek(Duration(seconds: player.player.state.position.inSeconds - 10));
+                },
+              ),
+              Spacer(),
+              if (widget.viewData.seriesName != null) skipButtonList[0],
+              Spacer(),
+              MaterialPlayOrPauseButton(),
+              Spacer(),
+              if (widget.viewData.seriesName != null) skipButtonList[1],
+              Spacer(),
+              IconButton(
+                color: Colors.white,
+                icon: Icon(Icons.replay_10),
+                onPressed: () async {
+                  await player.seek(Duration(seconds: player.player.state.position.inSeconds + 10));
+                },
+              ),
+            ],
+          ),
+        ),
       ],
       bottomButtonBar: [
         MaterialPlayOrPauseButton(), // play pause
-        if (widget.viewData.seriesName != null) ...skipButtonList,
         MaterialPositionIndicator(), // position indicator
         Spacer(), // separate left from right
         ValueListenableBuilder(
@@ -409,6 +427,9 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
               ),
             );
           }
+        ),
+        MenuAnchor(
+          menuChildren: [],
         ),
         MaterialFullscreenButton(), // fullscreen button
       ],

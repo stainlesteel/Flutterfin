@@ -73,25 +73,22 @@ List<Widget> carouselWidgets(BuildContext context, List<BaseItemDto> data, Jelly
           Column(
             children: [
               Expanded(
-                child: Container(
+                child: CachedNetworkImage(
+                  imageUrl: '${ama.serverList[ama.lastUsedServer!].serverURL}/Items/${view!.id!}/Images/Primary?tag=${view!.imageTags?['Primary']}',
                   width: double.infinity,
-                  alignment: Alignment.bottomCenter,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.only(topLeft: Radius.circular(15), topRight: Radius.circular(15)),
-                    image: DecorationImage(
-                      image: CachedNetworkImageProvider(
-                        '${ama.serverList[ama.lastUsedServer!].serverURL}/Items/${view!.id!}/Images/Primary?tag=${view!.imageTags?['Primary']}',
-                      ),
-                      fit: BoxFit.cover,
-                    ),
-                  ),
-                  child: LinearProgressIndicator(
-                    value: (view.userData?.playedPercentage != null) 
-                    ? view.userData!.playedPercentage!.round().toDouble() / 100
-                    : 0,
-                  ),
+                  height: double.infinity,
+                  fit: BoxFit.cover,
+                  errorWidget: (context, url, child) {
+                    return Icon(Icons.question_mark);
+                  },
                 ),
               ),
+              if (view.userData?.playedPercentage != null)
+                LinearProgressIndicator(
+                  value: (view.userData?.playedPercentage != null) 
+                  ? view.userData!.playedPercentage!.round().toDouble() / 100
+                  : 0,
+                ),
               if (view.seriesName != null) ...[
                 Padding(
                   padding: EdgeInsets.only(top: 5),
@@ -237,13 +234,13 @@ Widget StreamCarousel({required BuildContext context, required Stream stream, re
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           if (snapshot.data?.isNotEmpty ?? false) ...[
+            SizedBox(height: 10),
             Text(title, style: getTextStyling(1, context)),
             SizedBox(
               height: 200,
               child: secondWidget
             ),
-          ] else
-            Text(''),
+          ]
         ],
       );
     },

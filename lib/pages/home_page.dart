@@ -53,7 +53,7 @@ Widget BecauseYouWatched(BuildContext context) {
               child: secondWidget
             ),
           ] else
-            Text('')
+            SizedBox(height: 0, width: 0,)
         ],
       );
     },
@@ -124,22 +124,17 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  bool? userIsOk;
+
   Future<void> verifyUser() async {
     final data = await Provider.of<JellyfinAPI>(context, listen: false).getCurrentUser();
-    if (data == null) {
-      Navigator.pushAndRemoveUntil(
-        context, 
-        MaterialPageRoute(
-          builder: (context) => StartingPage(),
-        ), 
-        (route) => false,
-      );
-      SimpleErrorDiag(
-        title: 'Log In Error',
-        desc: 'The previous log in data is incorrect and is not accepted by the server. Please log in again.',
-        context: context
-      );
-    }
+    setState(() {
+      if (data == null) {
+        userIsOk = false;
+      } else {
+        userIsOk = true;
+      }
+    });
   }
 
   @override
@@ -158,6 +153,13 @@ class _HomePageState extends State<HomePage> {
     Orientation orientation = MediaQuery.orientationOf(context);
 
     Widget _actualPage(BuildContext context) {
+      if (userIsOk == null) {
+        return Scaffold(
+          body: Center(
+            child: CircularProgressIndicator(),
+          ),
+        );
+      }
         return Scaffold(
         appBar: AppBar(
           title: Text('Jellyfin'),
@@ -175,7 +177,7 @@ class _HomePageState extends State<HomePage> {
         ),
         body: SingleChildScrollView(
           child: Center(
-            child: Column(
+            child: userIsOk! ? Column(
               children: [
                 FutureBuilder(
                   future: ama.getCurrentUser(),
@@ -192,7 +194,6 @@ class _HomePageState extends State<HomePage> {
                     }
                   }
                 ),
-                SizedBox(height: 10),
                 StreamCarousel(
                   context: context, 
                   stream: ama.userViewsStream(), 
@@ -206,7 +207,6 @@ class _HomePageState extends State<HomePage> {
                     );
                   }
                 ),
-                SizedBox(height: 10),
                 StreamCarousel(
                   context: context, 
                   stream: ama.getContinueWatching(), 
@@ -236,6 +236,26 @@ class _HomePageState extends State<HomePage> {
                   context,
                   [BaseItemKind.series],
                   'Recently Added Series',
+                ),
+              ],
+            )
+            : Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text('Error', style: getTextStyling(5, context),),
+                Text("Please log in and out again, \nthe previous log in data isn't usable."),
+                SizedBox(height: 10),
+                FilledButton.tonal(
+                  onPressed: () {
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => StartingPage(),
+                      )
+                    );
+                  },
+                  child: Text("Ok"),
                 ),
               ],
             ),

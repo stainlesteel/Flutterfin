@@ -124,6 +124,11 @@ class PlayerManager {
     await player.seek(duration);
   }
 
+  Future<void> setRate(double rate) async {
+    await Future.delayed(Duration(seconds: 1));
+    await player.setRate(rate);
+  }
+
   int getJellyfinIndex(int index) {
     return (index == 0) ? 0 : index - 1;
   }

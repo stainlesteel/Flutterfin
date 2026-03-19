@@ -24,6 +24,7 @@ class _FavoritesPageState extends State<FavoritesPage> {
         centerTitle: true,
       ),
       body: SingleChildScrollView(
+        physics: AlwaysScrollableScrollPhysics(),
         child: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -36,9 +37,12 @@ class _FavoritesPageState extends State<FavoritesPage> {
                     return CircularProgressIndicator();
                   } else if (snapshot.hasError) {
                     return Text('Could not get favorites.');
+                  } else if (snapshot.data!.isEmpty) {
+                    return Center(child: Text('No Favorites.'));
                   } else {
                     return GridView.builder(
                        shrinkWrap: true,
+                       physics: NeverScrollableScrollPhysics(),
                        padding: EdgeInsets.all(15),
                        gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
                          maxCrossAxisExtent: 200,

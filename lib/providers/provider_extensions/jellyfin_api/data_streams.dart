@@ -16,7 +16,9 @@ extension DataStreams on JellyfinAPI {
 
     while (true) {
       try {
-        final data = await uvAPI.getUserViews(userId: userID);
+        final data = await uvAPI.getUserViews(
+          userId: userID,
+        );
         yield data.data?.items;
         await Future.delayed(Duration(seconds: 9));
       } on DioException catch (e) {
@@ -185,7 +187,6 @@ extension DataStreams on JellyfinAPI {
           includeItemTypes: [
             BaseItemKind.movie,
             BaseItemKind.series,
-            BaseItemKind.musicAlbum,
           ],
           enableUserData: true,
           fields: itemFields,
@@ -208,7 +209,6 @@ extension DataStreams on JellyfinAPI {
           includeItemTypes: [
             BaseItemKind.movie,
             BaseItemKind.series,
-            BaseItemKind.musicAlbum,
           ],
           enableUserData: true,
           fields: itemFields,
@@ -268,5 +268,14 @@ extension DataStreams on JellyfinAPI {
     );
 
     return data.data?.items;
+  }
+
+  Future<BaseItemDto?> getItem(String id) async {
+    final data = await ulAPI.getItem(
+      userId: userID,
+      itemId: id,
+    );
+    
+    return data.data;
   }
 }
