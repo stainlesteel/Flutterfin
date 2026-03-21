@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:overlayment/overlayment.dart';
@@ -11,7 +10,101 @@ import 'package:jellyfin/providers/providers.dart';
 import 'package:dio/dio.dart';
 import 'package:jellyfin/comps/comps.dart';
 
-// TODO: Implement that MenuAnchor for other settings
+class SettingsSheet extends StatefulWidget {
+  final PlayerManager player;
+
+  const SettingsSheet({super.key, required this.player});
+
+  @override
+  State<SettingsSheet> createState() => _SettingsSheetState();
+}
+
+class _SettingsSheetState extends State<SettingsSheet> {
+  ValueNotifier<int> pageIndex = ValueNotifier(0);
+
+  @override
+  void initState() {
+    super.initState();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+
+    final List<Widget> sheetPages = [
+      Column( // main page
+        children: [
+          ListView(
+            shrinkWrap: true,
+            children: [
+              Card.filled(
+                child: ListTile(
+                  title: Text('Playback Speed'),
+                  onTap: () {
+                    pageIndex.value = 1;
+                  },
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+      Center(
+        child: Column(
+          children: [
+            Text('Playback Speed', style: getTextStyling(2, context),),
+            Text('Wrong positions will not affect the speed'),
+            SizedBox(height: 3,),
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: TextField(
+                decoration: InputDecoration(
+                  border: OutlineInputBorder(),
+                  hintText: 'Type the number here',
+                ),
+                onChanged: (string) async {
+                  try {
+                    double rate = double.parse(string);
+              
+                    await widget.player.setRate(rate);
+                    print('Playback rate is now: ${double.parse(string)}');
+                  } catch (e) {
+                    print('User gave wrong playback rate');
+                  }
+                },
+              ),
+            ),
+            SizedBox(height: 3,),
+            FilledButton.tonal(
+              onPressed: () async {
+                await widget.player.setRate(1);
+              },
+              child: Text('Reset to Default'),
+            ),
+          ],
+        ),
+      ),
+    ];
+
+    return IconButton(
+      onPressed: () {
+        showSheet(
+          context: context,
+          heightMultipler: 0.5,
+          children: [
+            ValueListenableBuilder(
+              valueListenable: pageIndex,
+              builder: (context, value, child) => sheetPages[value],
+            ),
+          ],
+        );
+      },
+      icon: Icon(Icons.settings),
+      color: Colors.white,
+    );
+  }
+}
+
+
 
 class VideoPlayerPage extends StatefulWidget {
   final BaseItemDto viewData;
@@ -33,7 +126,7 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
   StreamSubscription? trackerForAutonext;
   late StreamSubscription playbackReport;
 
-  late dynamic player;
+  late PlayerManager player;
 
   String? diagName; // this is for the auto-next dialog, and to stop stream from duplicating it
   double percentage = 0; // this is for the percentage tracking stream
@@ -83,7 +176,7 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
       );
 
       if (widget.resume == true) {
-        await player.seek(runtimeDuration);
+        await player.seek(runtimeDuration!);
       }
 
       await player.player.stream.buffering.firstWhere(
@@ -140,12 +233,15 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
                 OverWindow(
                   name: diagName,
                   alignment: Alignment.bottomCenter,
+                  backgroundSettings: BackgroundSettings(
+                    dismissOnClick: false,
+                  ),
                   child: Padding(
                     padding: const EdgeInsets.all(13),
                     child: Column(
                       children: [
                         Text('Next Episode Approaching...'),
-                        Text('${player.mediaData['BaseList'][episodeIndex++].name}'),
+                        Text('${player.mediaData['BaseList'][episodeIndex + 1].name}'),
                         FilledButton(
                           onPressed: () {
                             Overlayment.dismissName(diagName!);
@@ -154,6 +250,9 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
                         ),
                         FilledButton(
                           onPressed: () async {
+                            await player.pause();
+
+                            Overlayment.dismissName(diagName!);
                             await autoPlayNext();
                           },
                           child: Text('Play Next Episode'),
@@ -335,8 +434,6 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
                 'rebuild',
               );
 
-              player = null;
-
             } catch (e) {
               print('back error: ${e}');
             }
@@ -359,35 +456,29 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
         Spacer(),
       ],
       primaryButtonBar: [
-        SizedBox(
-          width: MediaQuery.heightOf(context) * 0.8,
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              IconButton(
-                color: Colors.white,
-                icon: Icon(Icons.replay_10),
-                onPressed: () async {
-                  await player.seek(Duration(seconds: player.player.state.position.inSeconds - 10));
-                },
-              ),
-              Spacer(),
-              if (widget.viewData.seriesName != null) skipButtonList[0],
-              Spacer(),
-              MaterialPlayOrPauseButton(),
-              Spacer(),
-              if (widget.viewData.seriesName != null) skipButtonList[1],
-              Spacer(),
-              IconButton(
-                color: Colors.white,
-                icon: Icon(Icons.replay_10),
-                onPressed: () async {
-                  await player.seek(Duration(seconds: player.player.state.position.inSeconds + 10));
-                },
-              ),
-            ],
-          ),
+        Spacer(),
+        IconButton(
+          color: Colors.white,
+          icon: Icon(Icons.replay_10),
+          onPressed: () async {
+            await player.seek(Duration(seconds: player.player.state.position.inSeconds - 10));
+          },
         ),
+        Spacer(),
+        if (widget.viewData.seriesName != null) skipButtonList[0],
+        Spacer(),
+        MaterialPlayOrPauseButton(),
+        Spacer(),
+        if (widget.viewData.seriesName != null) skipButtonList[1],
+        Spacer(),
+        IconButton(
+          color: Colors.white,
+          icon: Icon(Icons.replay_10),
+          onPressed: () async {
+            await player.seek(Duration(seconds: player.player.state.position.inSeconds + 10));
+          },
+        ),
+        Spacer(),
       ],
       bottomButtonBar: [
         MaterialPlayOrPauseButton(), // play pause
@@ -428,14 +519,13 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
             );
           }
         ),
-        MenuAnchor(
-          menuChildren: [],
-        ),
+        SettingsSheet(player: player,),
         MaterialFullscreenButton(), // fullscreen button
       ],
     );
 
     Widget _scaffold = Scaffold(
+      resizeToAvoidBottomInset: false,
       body: Center(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,

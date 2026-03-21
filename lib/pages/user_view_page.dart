@@ -27,7 +27,12 @@ class _UserViewPageState extends State<UserViewPage> {
     BaseItemDto userView = widget.userView;
 
     Widget scaffold = Scaffold(
-      appBar: AppBar(),
+      appBar: AppBar(
+        leading: IconButton(
+          onPressed: () => Navigator.pop(context),
+          icon: Icon(Icons.arrow_back_sharp),
+        ),
+      ),
       body: Center(
         child: StreamBuilder(
             stream: ama.getUserViewItems(parentId: widget.userView.id!), 

@@ -73,14 +73,17 @@ List<Widget> carouselWidgets(BuildContext context, List<BaseItemDto> data, Jelly
           Column(
             children: [
               Expanded(
-                child: CachedNetworkImage(
-                  imageUrl: '${ama.serverList[ama.lastUsedServer!].serverURL}/Items/${view!.id!}/Images/Primary?tag=${view!.imageTags?['Primary']}',
-                  width: double.infinity,
-                  height: double.infinity,
-                  fit: BoxFit.cover,
-                  errorWidget: (context, url, child) {
-                    return Icon(Icons.question_mark);
-                  },
+                child: Hero(
+                  tag: view.id!,
+                  child: CachedNetworkImage(
+                    imageUrl: '${ama.serverList[ama.lastUsedServer!].serverURL}/Items/${view!.id!}/Images/Primary?tag=${view!.imageTags?['Primary']}',
+                    width: double.infinity,
+                    height: double.infinity,
+                    fit: BoxFit.cover,
+                    errorWidget: (context, url, child) {
+                      return Icon(Icons.question_mark);
+                    },
+                  ),
                 ),
               ),
               if (view.userData?.playedPercentage != null)

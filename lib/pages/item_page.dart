@@ -44,6 +44,15 @@ class _ItemPageState extends State<ItemPage> {
     }
   }
 
+  Future<void> rebuildPage() async {
+    BaseItemDto? newViewData = await Provider.of<JellyfinAPI>(context, listen: (false)).getItem(widget.viewData.id!);
+
+    setState(() {
+      print('updating ITEMPAGE');
+      viewData = newViewData!;
+    });
+  }
+
   ValueNotifier<int?> episodesIndex = ValueNotifier(null);
   // episodesIndex will only appear if the viewData is a show, 
   // it is used to manage the current season index the user wants to look at
@@ -57,6 +66,7 @@ class _ItemPageState extends State<ItemPage> {
     double runTime = viewData.runTimeTicks! / 100000000;
     double? percentage = viewData.userData?.playedPercentage;
 
+
     Widget _scaffold = Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
@@ -64,12 +74,24 @@ class _ItemPageState extends State<ItemPage> {
         leading: Padding(
           padding: const EdgeInsets.all(8.0),
           child: FloatingActionButton(
+            heroTag: null,
             onPressed: () {
               Navigator.pop(context);
             },
             child: Icon(Icons.arrow_back),
           ),
         ),
+        actions: [
+          if (viewData.userData?.played ?? false)
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Card(
+                child: Icon(
+                  Icons.check
+                ),
+              ),
+            ),
+        ],
       ),
       body: SingleChildScrollView(
         scrollDirection: Axis.vertical,
@@ -84,7 +106,7 @@ class _ItemPageState extends State<ItemPage> {
                 fit: StackFit.passthrough,
                 children: [
                     Hero(
-                      tag: viewData,
+                      tag: viewData.id!,
                       child: CachedNetworkImage(
                         imageUrl: '${ama.serverList[ama.lastUsedServer!].serverURL}/Items/${viewData!.id!}/Images/Primary?tag=${viewData!.imageTags?['Primary']}',
                         width: double.infinity,
@@ -119,11 +141,13 @@ class _ItemPageState extends State<ItemPage> {
                 children: [
                   if (viewData.type != BaseItemKind.series) ...[
                     FloatingActionButton.extended(
+                      heroTag: null,
                       onPressed: gotoVideoPlayerPage,
                       icon: Icon(Icons.replay_10_rounded),
                       label: Text('Resume'),
                     ),
                     FloatingActionButton(
+                      heroTag: null,
                       onPressed: () async {
                         await gotoVideoPlayerPage(resume: false);
                       },
@@ -131,6 +155,7 @@ class _ItemPageState extends State<ItemPage> {
                     ),
                   ],
                   FloatingActionButton(
+                    heroTag: null,
                     onPressed: () async {
                       if (viewData.userData?.isFavorite == false) {
                         await ama.markFavorite(viewData.id!);
@@ -140,23 +165,14 @@ class _ItemPageState extends State<ItemPage> {
                         print('UNfavorited item');
                       }
 
-                      BaseItemDto? newViewData = await ama.getItem(viewData.id!);
-
-                      setState(
-                        () {
-                          print('Updating ITEMPAGE');
-                          if (newViewData != null) {
-                            viewData = newViewData;
-                          }
-                        },
-                      );
-
+                      await rebuildPage();
                     },
                     child: (viewData.userData?.isFavorite ?? false)
                     ? Icon(Icons.favorite, color: Colors.red,)
                     : Icon(Icons.favorite),
                   ),
                   FloatingActionButton(
+                    heroTag: null,
                     onPressed: () async {
                       if (viewData.userData?.played == false) {
                         await ama.markPlayed(viewData.id!);
@@ -166,16 +182,8 @@ class _ItemPageState extends State<ItemPage> {
                         print('ItemPage(): Marked item PLAYED');
                       }
 
-                      List<BaseItemDto> newViewData = await ama.getItemsbyId(
-                         [viewData.id!],
-                      );
-                      setState(
-                        () {
-                          print('Updating ITEMPAGE');
-                          viewData = newViewData[0];
-                        },
-                      );
 
+                      await rebuildPage();
                     },
                     child: (viewData.userData?.played ?? false)
                     ? Icon(Icons.check, color: Colors.red,)
@@ -183,6 +191,7 @@ class _ItemPageState extends State<ItemPage> {
                   ),
                   if (widget.viewData.remoteTrailers?.isNotEmpty ?? false)
                     FloatingActionButton(
+                      heroTag: null,
                       onPressed: () async {
                         print(widget.viewData.remoteTrailers![0].url!);
                         await goToURL(widget.viewData.remoteTrailers![0].url!);
@@ -375,6 +384,8 @@ class _ItemPageState extends State<ItemPage> {
                                 context: context,
                                 data: data?[index] ?? BaseItemDto(),
                               );
+
+                              await rebuildPage();
                             },
                             children: carouselWidgets(
                               context,

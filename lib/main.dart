@@ -138,8 +138,10 @@ class _MainRedirectorState extends State<MainRedirector> {
     final ama = Provider.of<JellyfinAPI>(context, listen: false);
     final networkStatus = await checkNetwork();
 
+    late Widget tempPageValue;
+
     if (debug == true) {
-      page = DebugPage(box: widget.box);
+      tempPageValue = DebugPage(box: widget.box);
     } else {
       if (networkStatus != ConnectivityResult.none) {
         if (ama.lastUsedServer != null) {
@@ -148,50 +150,41 @@ class _MainRedirectorState extends State<MainRedirector> {
           try {
             await Provider.of<JellyfinAPI>(context, listen: false,).makeClient(ama.lastUsedServer);
             await Provider.of<JellyfinAPI>(context, listen: false).setUser(userData!);
-            page = HomePage(index: ama.lastUsedServer);
+
+            tempPageValue = HomePage(index: ama.lastUsedServer);
           } catch (e) {
-            page = StartingPage();
+            tempPageValue = StartingPage();
           }
 
         } else {
-          page = StartingPage();
+          tempPageValue = StartingPage();
         }
       } else {
-        page = NoNetworkPage();
+        tempPageValue = NoNetworkPage();
       }
     }
+    
+    setState(
+      () {
+        page = tempPageValue;
+      }
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder(
-      future: future,
-      builder: (context, snapshot) {
-        if (snapshot.hasError) {
-          print('${snapshot.error}');
-          return Scaffold(
-            appBar: AppBar(
-              title: Text('unknown error'),
-              centerTitle: true,
-            ),
-            body: Center(
-              child: Text('${snapshot.error}'),
-            ),
-          );
-        } else if (snapshot.connectionState == ConnectionState.done) {
-          return page!;
-        } else {
-          return Scaffold(
-            appBar: AppBar(
-              title: Text(appTitle),
-              centerTitle: true,
-            ),
-            body: Center(
-              child: CircularProgressIndicator(),
-            ),
-          );
-        }
-      }
+    if (page != null) {
+      return page!;
+    }
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Flutterfin'),
+        centerTitle: true,
+      ),
+      body: Center(
+        child: CircularProgressIndicator()
+      ),
     );
   }
 }
