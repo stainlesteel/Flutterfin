@@ -73,8 +73,7 @@ List<Widget> carouselWidgets(BuildContext context, List<BaseItemDto> data, Jelly
           Column(
             children: [
               Expanded(
-                child: Hero(
-                  tag: view.id!,
+                child: HeroMode(
                   child: CachedNetworkImage(
                     imageUrl: '${ama.serverList[ama.lastUsedServer!].serverURL}/Items/${view!.id!}/Images/Primary?tag=${view!.imageTags?['Primary']}',
                     width: double.infinity,

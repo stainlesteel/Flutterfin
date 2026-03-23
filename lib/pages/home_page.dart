@@ -152,6 +152,27 @@ class _HomePageState extends State<HomePage> {
 
     Orientation orientation = MediaQuery.orientationOf(context);
 
+    Widget errorPage = Column(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Text('Error', style: getTextStyling(5, context),),
+        Text("Please log in and out again, \nthe previous log in data isn't usable."),
+        SizedBox(height: 10),
+        FilledButton.tonal(
+          onPressed: () {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => StartingPage(),
+              )
+            );
+          },
+          child: Text("Ok"),
+        ),
+      ],
+    );
+
     Widget _actualPage(BuildContext context) {
       if (userIsOk == null) {
         return Scaffold(
@@ -239,26 +260,7 @@ class _HomePageState extends State<HomePage> {
                 ),
               ],
             )
-            : Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text('Error', style: getTextStyling(5, context),),
-                Text("Please log in and out again, \nthe previous log in data isn't usable."),
-                SizedBox(height: 10),
-                FilledButton.tonal(
-                  onPressed: () {
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => StartingPage(),
-                      )
-                    );
-                  },
-                  child: Text("Ok"),
-                ),
-              ],
-            ),
+            : errorPage,
           ),
         ),
       );
@@ -267,7 +269,7 @@ class _HomePageState extends State<HomePage> {
     List<Widget> barPages = [_actualPage(context), FavoritesPage(), SearchPage()];
 
     return Scaffold(
-      bottomNavigationBar: (orientation == Orientation.portrait) 
+      bottomNavigationBar: (orientation == Orientation.portrait && userIsOk == true) 
       ? NavigationBar(
         selectedIndex: barIndex,
         onDestinationSelected: (int index) {
@@ -295,7 +297,7 @@ class _HomePageState extends State<HomePage> {
       : null,
       body: Row(
         children: [
-          if (orientation == Orientation.landscape) ...[
+          if (orientation == Orientation.landscape && userIsOk == true) ...[
             NavigationRail(
               extended: (MediaQuery.heightOf(context) >= 700),
               selectedIndex: barIndex,

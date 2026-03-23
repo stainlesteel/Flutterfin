@@ -60,9 +60,10 @@ void showScaffold(String text, BuildContext context) {
   ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text)));
 }
 
-void showSheet({required BuildContext context, required List<Widget> children, double widthMultipler = 0.8, double heightMultipler = 0.5}) {
+void showSheet({required BuildContext context, required List<Widget> children, double widthMultipler = 0.8, double? heightMultipler}) {
   showModalBottomSheet(
     isDismissible: true,
+    isScrollControlled: true,
     context: context,
     builder: (context) {
       return Container(
@@ -72,11 +73,53 @@ void showSheet({required BuildContext context, required List<Widget> children, d
           borderRadius: BorderRadius.all(Radius.circular(20)),
         ),
         width: MediaQuery.widthOf(context) * widthMultipler,
-        height: MediaQuery.heightOf(context) * heightMultipler,
+        height: (heightMultipler != null) ? MediaQuery.heightOf(context) * heightMultipler : null,
         child: SingleChildScrollView(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: children,
+          child: Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: children,
+            ),
+          ),
+        ),
+      );
+    }
+  );
+}
+
+void showAnimatedSheet({
+  required BuildContext context, 
+  required List<Widget> children, 
+  double widthMultipler = 0.8, 
+  double? heightMultipler, 
+  Duration? duration,
+  Cubic curves = Curves.ease,
+}) {
+  showModalBottomSheet(
+    isDismissible: true,
+    isScrollControlled: true,
+    context: context,
+    builder: (context) {
+      return AnimatedSize(
+        duration: duration ?? Duration(milliseconds: 300),
+        curve: curves,
+        child: Container(
+          padding: EdgeInsets.all(2),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.onPrimary,
+            borderRadius: BorderRadius.all(Radius.circular(20)),
+          ),
+          width: MediaQuery.widthOf(context) * widthMultipler,
+          height: (heightMultipler != null) ? MediaQuery.heightOf(context) * heightMultipler : null,
+          child: SingleChildScrollView(
+            child: Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: children,
+              ),
+            ),
           ),
         ),
       );

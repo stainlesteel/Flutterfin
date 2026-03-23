@@ -124,14 +124,13 @@ class MainRedirector extends StatefulWidget {
 }
 
 class _MainRedirectorState extends State<MainRedirector> {
-  late Future<void> future;
   Widget? page;
 
   @override
   void initState() {
     super.initState();
     Provider.of<JellyfinAPI>(context, listen: false).loadAppData();
-    future = starter();
+    starter();
   }
 
   Future<void> starter() async {

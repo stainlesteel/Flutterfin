@@ -105,13 +105,10 @@ class _ItemPageState extends State<ItemPage> {
               child: Stack(
                 fit: StackFit.passthrough,
                 children: [
-                    Hero(
-                      tag: viewData.id!,
-                      child: CachedNetworkImage(
-                        imageUrl: '${ama.serverList[ama.lastUsedServer!].serverURL}/Items/${viewData!.id!}/Images/Primary?tag=${viewData!.imageTags?['Primary']}',
-                        width: double.infinity,
-                        fit: BoxFit.cover,
-                      ),
+                    CachedNetworkImage(
+                      imageUrl: '${ama.serverList[ama.lastUsedServer!].serverURL}/Items/${viewData!.id!}/Images/Primary?tag=${viewData!.imageTags?['Primary']}',
+                      width: double.infinity,
+                      fit: BoxFit.cover,
                     ),
                     Positioned.fill(child: Container(color: Colors.black.withOpacity(0.5))),
                     Center(
@@ -132,8 +129,7 @@ class _ItemPageState extends State<ItemPage> {
                 ],
               ),
             ),
-            SizedBox(height: 10),
-            if (viewData.type == BaseItemKind.movie) SizedBox(height: 5),
+            SizedBox(height: 15),
             SingleChildScrollView(
               child: Row(
                 spacing: 10,
@@ -313,7 +309,7 @@ class _ItemPageState extends State<ItemPage> {
                         children: carouselWidgets(
                           context,
                           data ?? [],
-                          ama
+                          ama,
                         ),
                       ),
                     );

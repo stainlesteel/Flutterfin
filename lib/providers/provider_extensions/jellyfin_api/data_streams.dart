@@ -278,4 +278,9 @@ extension DataStreams on JellyfinAPI {
     
     return data.data;
   }
+
+  Future<PlaybackInfoResponse> getPlaybackInfo(String itemId) async {
+    final data = await MIapi.getPlaybackInfo(itemId: itemId, userId: userID);
+    return data.data!;
+  }
 }

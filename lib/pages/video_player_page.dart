@@ -12,14 +12,15 @@ import 'package:jellyfin/comps/comps.dart';
 
 class SettingsSheet extends StatefulWidget {
   final PlayerManager player;
-
-  const SettingsSheet({super.key, required this.player});
+  final int episodeIndex;
+  
+  const SettingsSheet({super.key, required this.player, required this.episodeIndex});
 
   @override
   State<SettingsSheet> createState() => _SettingsSheetState();
 }
 
-class _SettingsSheetState extends State<SettingsSheet> {
+class _SettingsSheetState extends State<SettingsSheet> with SingleTickerProviderStateMixin {
   ValueNotifier<int> pageIndex = ValueNotifier(0);
 
   @override
@@ -27,11 +28,27 @@ class _SettingsSheetState extends State<SettingsSheet> {
     super.initState();
   }
 
+
   @override
   Widget build(BuildContext context) {
 
+    final Widget backButton = Positioned.fill(
+      bottom: 0,
+      child: SizedBox(
+        width: MediaQuery.widthOf(context) * 0.75,
+        child: FilledButton.tonal(
+          onPressed: () {
+            print('SettingsSheet(): Updating pageIndex to 0');
+            pageIndex.value = 0;
+          },
+          child: Text('Back'),
+        ),
+      ),
+    );
+
     final List<Widget> sheetPages = [
       Column( // main page
+        mainAxisSize: MainAxisSize.min,
         children: [
           ListView(
             shrinkWrap: true,
@@ -40,7 +57,18 @@ class _SettingsSheetState extends State<SettingsSheet> {
                 child: ListTile(
                   title: Text('Playback Speed'),
                   onTap: () {
+                    print('SettingsSheet(): Updating pageIndex to 1');
                     pageIndex.value = 1;
+                  },
+                ),
+              ),
+              SizedBox(height: 5),
+              Card.filled(
+                child: ListTile(
+                  title: Text('Video Tracks'),
+                  onTap: () {
+                    print('SettingsSheet(): Updating pageIndex to 2');
+                    pageIndex.value = 2;
                   },
                 ),
               ),
@@ -48,53 +76,85 @@ class _SettingsSheetState extends State<SettingsSheet> {
           ),
         ],
       ),
-      Center(
-        child: Column(
-          children: [
-            Text('Playback Speed', style: getTextStyling(2, context),),
-            Text('Wrong positions will not affect the speed'),
-            SizedBox(height: 3,),
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: TextField(
-                decoration: InputDecoration(
-                  border: OutlineInputBorder(),
-                  hintText: 'Type the number here',
-                ),
-                onChanged: (string) async {
-                  try {
-                    double rate = double.parse(string);
-              
-                    await widget.player.setRate(rate);
-                    print('Playback rate is now: ${double.parse(string)}');
-                  } catch (e) {
-                    print('User gave wrong playback rate');
-                  }
-                },
+      Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SizedBox(height: 3,),
+          Text('Playback Speed', style: getTextStyling(2, context),),
+          Text('Wrong positions will not affect the speed'),
+          SizedBox(height: 3,),
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: TextField(
+              decoration: InputDecoration(
+                border: OutlineInputBorder(),
+                filled: true,
+                hintText: 'Type the number here',
               ),
-            ),
-            SizedBox(height: 3,),
-            FilledButton.tonal(
-              onPressed: () async {
-                await widget.player.setRate(1);
+              onChanged: (string) async {
+                try {
+                  double rate = double.parse(string);
+            
+                  await widget.player.setRate(rate);
+                  print('Playback rate is now: ${double.parse(string)}');
+                } catch (e) {
+                  print('User gave wrong playback rate');
+                }
               },
-              child: Text('Reset to Default'),
             ),
-          ],
-        ),
+          ),
+          SizedBox(height: 3,),
+          FilledButton.tonal(
+            onPressed: () async {
+              await widget.player.setRate(1);
+            },
+            child: Text('Reset to Default'),
+          ),
+          backButton,
+        ],
+      ),
+      Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SizedBox(height: 3,),
+          Text('Video Tracks', style: getTextStyling(2, context),),
+          ListView.builder(
+            shrinkWrap: true,
+            itemCount: widget.player.mediaData['BaseList'][widget.episodeIndex].mediaSources.length,
+            itemBuilder: (context, index) {
+              MediaSourceInfo data = widget.player.mediaData['BaseList'][widget.episodeIndex].mediaSources[index];
+              return Card.outlined(
+                child: ListTile(
+                  title: Text('${data.name}', style: getTextStyling(1, context),),
+                  subtitle: Text('${data.mediaStreams?.first.videoRange ?? ''}'),
+                  trailing: Text('${data.mediaStreams?.first.codec ?? ''}'),
+                  onTap: () async {
+                    await widget.player.loadMedia(
+                      dto: widget.player.mediaData['BaseList'][widget.episodeIndex], 
+                      context: context, 
+                      resume: false,
+                      mediaSourceId: data.id,
+                    );
+                  },
+                ),
+              );
+            },
+          ),
+          SizedBox(height: 3,),
+          backButton,
+        ],
       ),
     ];
 
     return IconButton(
       onPressed: () {
-        showSheet(
+        showAnimatedSheet(
           context: context,
-          heightMultipler: 0.5,
           children: [
             ValueListenableBuilder(
               valueListenable: pageIndex,
               builder: (context, value, child) => sheetPages[value],
-            ),
+            )
           ],
         );
       },
@@ -142,58 +202,16 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
 
   @override
   void dispose() {
-    super.dispose();
     Overlay.of(context).dispose();
+    super.dispose();
   }
 
   Future<void> starter() async {
-    Duration? runtimeDuration;
-
-    final url = Provider.of<JellyfinAPI>(context, listen: false,).getStreamUrl(widget.viewData.id!);
-    print('Stream Url: $url');
-    if (widget.viewData.type == BaseItemKind.movie) {
-      await player.addMovie(url!, widget.viewData);
-    } else {
-      await player.addShow(widget.viewData, context);
-    }
-
-    if (widget.resume == true) {
-      print(
-        'current progress of video (in seconds): ${widget.viewData.userData!.playbackPositionTicks! ~/ 10000000}',
-      );
-
-      runtimeDuration = Duration(
-        seconds: widget.viewData.userData!.playbackPositionTicks! ~/ 10000000,
-      );
-    }
-
-    await Future.delayed(Duration(milliseconds: 1500));
-
-    try {
-      await player.play();
-      await player.player.stream.buffering.firstWhere(
-        (value) => value == false,
-      );
-
-      if (widget.resume == true) {
-        await player.seek(runtimeDuration!);
-      }
-
-      await player.player.stream.buffering.firstWhere(
-        (value) => value == false,
-      );
-      await Provider.of<JellyfinAPI>(
-        context,
-        listen: false,
-      ).startPlayback(widget.viewData);
-    } on DioException catch (e) {
-      SimpleErrorDiag(
-        title: 'Reporting Error',
-        desc: 'This app could not tell the server that a playback session has started, and will not play the video to interfere with video progress.\nHTTP code: ${e.response?.statusCode}.',
-        context: context,
-      );
-      Navigator.pop(context);
-    }
+    await player.loadMedia(
+      dto: widget.viewData, 
+      context: context, 
+      resume: widget.resume
+    );
 
     // stream for reporting playback to Jellyfin
     playbackReport = player.reportPlaybackStream(context).listen(
@@ -374,6 +392,7 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
   late ValueNotifier<bool> favorited = ValueNotifier<bool>(widget.viewData.userData?.isFavorite ?? false);
   ValueNotifier<String> playerTitle = ValueNotifier('');
 
+  late Widget settingsSheet = SettingsSheet(player: player, episodeIndex: episodeIndex,);
 
   late int episodeIndex = player.getJellyfinIndex(widget.viewData.indexNumber ?? 0); // the number for skip buttons to use as the base (skip previous: skipInt - 1) (skip next: skipInt + 1)
    // if null, video is probably a movie, in that case, this isn't going to be used
@@ -519,7 +538,7 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
             );
           }
         ),
-        SettingsSheet(player: player,),
+        settingsSheet,
         MaterialFullscreenButton(), // fullscreen button
       ],
     );

@@ -28,6 +28,7 @@ class JellyfinAPI extends ChangeNotifier {
     ItemFields.taglines,
     ItemFields.tags,
     ItemFields.remoteTrailers,
+    ItemFields.mediaSources,
   ];
 
   // boolean loading locks

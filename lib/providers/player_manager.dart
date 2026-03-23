@@ -1,8 +1,11 @@
+import 'package:build_runner/build_runner.dart';
 import 'package:flutter/material.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:jellyfin_dart/jellyfin_dart.dart';
 import 'package:jellyfin/providers/providers.dart';
 import 'package:provider/provider.dart';
+import 'package:jellyfin/comps/dialogs.dart';
+import 'package:dio/dio.dart';
 
 // wrapper class for MediaKit
 class PlayerManager {
@@ -28,11 +31,85 @@ class PlayerManager {
     await player.dispose();
   }
 
-  Future<void> addMovie(String url, BaseItemDto dto) async {
-    playMedia = Media(url);
+  Future<void> loadMedia({
+    required BaseItemDto dto, 
+    required BuildContext context, 
+    bool resume = true, 
+    String? mediaSourceId
+  }) async {
+    Duration? runtimeDuration;
 
-    mediaData['BaseList'] ??= [dto];
-    print('mediaData: $mediaData');
+    if (player.state.playing == true) {
+      await pause();
+    }
+
+    if (mediaSourceId != null) {
+      runtimeDuration = Duration(
+        seconds: player.state.position.inSeconds,
+      );
+    }
+
+    if (dto.type == BaseItemKind.movie) {
+      await addMovie(
+        dto: dto, 
+        context: context,
+        mediaSourceId: (mediaSourceId != null) ? mediaSourceId : null,
+      );
+    } else {
+      await addShow(dto, context);
+    }
+
+    if (resume == true) {
+      print(
+        'current progress of video (in seconds): ${dto.userData!.playbackPositionTicks! ~/ 10000000}',
+      );
+
+      runtimeDuration = Duration(
+        seconds: dto.userData!.playbackPositionTicks! ~/ 10000000,
+      );
+    }
+
+    await Future.delayed(Duration(milliseconds: 500));
+
+    try {
+      await play();
+      await player.stream.buffering.firstWhere(
+        (value) => value == false,
+      );
+
+      if (resume == true || mediaSourceId != null) {
+        await player.seek(runtimeDuration!);
+      }
+
+      await player.stream.buffering.firstWhere(
+        (value) => value == false,
+      );
+      await Provider.of<JellyfinAPI>(
+        context,
+        listen: false,
+      ).startPlayback(dto);
+    } on DioException catch (e) {
+      SimpleErrorDiag(
+        title: 'Reporting Error',
+        desc: 'This app could not tell the server that a playback session has started, and will not play the video to interfere with video progress.\nHTTP code: ${e.response?.statusCode}.',
+        context: context,
+      );
+      Navigator.pop(context);
+    }
+  }
+
+  Future<void> addMovie({required BaseItemDto dto, required BuildContext context, String? mediaSourceId}) async {
+    BaseItemDto newDto = dto;
+
+    final url = Provider.of<JellyfinAPI>(context, listen: false).getStreamUrl(dto: newDto, mediaSourceId: mediaSourceId);
+    playMedia = Media(url!);
+
+    final playbackInfo = await Provider.of<JellyfinAPI>(context, listen: false).getPlaybackInfo(newDto.id!);
+    newDto = newDto.copyWith(
+      mediaSources: playbackInfo.mediaSources,
+    );
+
+    mediaData['BaseList'] ??= [newDto];
 
     await player.open(playMedia, play: false);
   }
@@ -40,12 +117,11 @@ class PlayerManager {
   Future<void> addShow(BaseItemDto dto, BuildContext context) async {
     late List<BaseItemDto>? showData;
     try {
-      showData = await Provider.of<JellyfinAPI>(context, listen: false)
-          .getShowEpisodes(
-            seriesId: dto!.seriesId!,
-            season: dto?.parentIndexNumber,
-            context: context,
-          );
+      showData = await Provider.of<JellyfinAPI>(context, listen: false).getShowEpisodes(
+        seriesId: dto.seriesId!,
+        season: dto.parentIndexNumber,
+        context: context,
+      );
     } catch (e) {
       showData == null;
     }
@@ -59,9 +135,16 @@ class PlayerManager {
         String? url = Provider.of<JellyfinAPI>(
           context,
           listen: false,
-        ).getStreamUrl(item!.id!);
+        ).getStreamUrl(dto: item!);
 
-        episodeData.add({'url': '$url', 'name': '${item.name}'});
+        BaseItemDto newDto = item;
+        final playbackInfo = await Provider.of<JellyfinAPI>(context, listen: false).getPlaybackInfo(newDto.id!);
+        newDto = newDto.copyWith(
+          mediaSources: playbackInfo.mediaSources,
+        );
+        item = newDto;
+
+        episodeData.add({'url': '$url'});
       }
 
       // add baseitemdto list to class-wide mediaData list
@@ -131,5 +214,10 @@ class PlayerManager {
 
   int getJellyfinIndex(int index) {
     return (index == 0) ? 0 : index - 1;
+  }
+
+  Future<void> setVideoTrack(VideoTrack track) async {
+    await Future.delayed(Duration(seconds: 1));
+    await player.setVideoTrack(track);
   }
 }
