@@ -7,7 +7,6 @@ import 'package:jellyfin_dart/jellyfin_dart.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 import 'package:jellyfin/providers/providers.dart';
-import 'package:dio/dio.dart';
 import 'package:jellyfin/comps/comps.dart';
 
 class SettingsSheet extends StatefulWidget {
@@ -28,23 +27,28 @@ class _SettingsSheetState extends State<SettingsSheet> with SingleTickerProvider
     super.initState();
   }
 
+  late final Widget backButton = Positioned.fill(
+    bottom: 0,
+    child: SizedBox(
+      width: MediaQuery.widthOf(context) * 0.75,
+      child: FilledButton.tonal(
+        onPressed: () {
+          print('SettingsSheet(): Updating pageIndex to 0');
+          pageIndex.value = 0;
+        },
+        child: Text('Back'),
+      ),
+    ),
+  );
+
+  late List<MediaStream>? audioStreamList = widget.player.currentMediaSource!.mediaStreams!
+  .where((MediaStream stream) => stream.type == MediaStreamType.audio)
+  .toList();
+
+  List<double> playbackSpeedPresets = [0.25, 0.50, 0.75, 1.00, 1.25, 1.50];
 
   @override
   Widget build(BuildContext context) {
-
-    final Widget backButton = Positioned.fill(
-      bottom: 0,
-      child: SizedBox(
-        width: MediaQuery.widthOf(context) * 0.75,
-        child: FilledButton.tonal(
-          onPressed: () {
-            print('SettingsSheet(): Updating pageIndex to 0');
-            pageIndex.value = 0;
-          },
-          child: Text('Back'),
-        ),
-      ),
-    );
 
     final List<Widget> sheetPages = [
       Column( // main page
@@ -62,13 +66,22 @@ class _SettingsSheetState extends State<SettingsSheet> with SingleTickerProvider
                   },
                 ),
               ),
-              SizedBox(height: 5),
+              SizedBox(height: 7),
               Card.filled(
                 child: ListTile(
                   title: Text('Video Tracks'),
                   onTap: () {
                     print('SettingsSheet(): Updating pageIndex to 2');
                     pageIndex.value = 2;
+                  },
+                ),
+              ),
+              Card.filled(
+                child: ListTile(
+                  title: Text('Audio Tracks'),
+                  onTap: () {
+                    print('SettingsSheet(): Updating pageIndex to 3');
+                    pageIndex.value = 3;
                   },
                 ),
               ),
@@ -103,6 +116,21 @@ class _SettingsSheetState extends State<SettingsSheet> with SingleTickerProvider
               },
             ),
           ),
+          Wrap(
+            spacing: 5,
+            children: [
+              for (double num in playbackSpeedPresets)
+                InkWell(
+                  onTap: () async {
+                    await widget.player.setRate(num);
+                    print('Playback rate is now: $num');
+                  },
+                  child: Chip( 
+                    label: Text('$num'),
+                  ),
+                )
+            ],
+          ),
           SizedBox(height: 3,),
           FilledButton.tonal(
             onPressed: () async {
@@ -118,11 +146,14 @@ class _SettingsSheetState extends State<SettingsSheet> with SingleTickerProvider
         children: [
           SizedBox(height: 3,),
           Text('Video Tracks', style: getTextStyling(2, context),),
+          Text(
+            'Warning: setting a Video track will reset the other audio and subtitle tracks, this is a limitation of MediaKit.'
+          ),
           ListView.builder(
             shrinkWrap: true,
-            itemCount: widget.player.mediaData['BaseList'][widget.episodeIndex].mediaSources.length,
+            itemCount: widget.player.mediaData[widget.episodeIndex].mediaSources?.length ?? 0,
             itemBuilder: (context, index) {
-              MediaSourceInfo data = widget.player.mediaData['BaseList'][widget.episodeIndex].mediaSources[index];
+              MediaSourceInfo data = widget.player.mediaData[widget.episodeIndex].mediaSources![index];
               return Card.outlined(
                 child: ListTile(
                   title: Text('${data.name}', style: getTextStyling(1, context),),
@@ -130,10 +161,43 @@ class _SettingsSheetState extends State<SettingsSheet> with SingleTickerProvider
                   trailing: Text('${data.mediaStreams?.first.codec ?? ''}'),
                   onTap: () async {
                     await widget.player.loadMedia(
-                      dto: widget.player.mediaData['BaseList'][widget.episodeIndex], 
+                      dto: widget.player.mediaData[widget.episodeIndex], 
                       context: context, 
                       resume: false,
                       mediaSourceId: data.id,
+                    );
+                    widget.player.currentMediaSource = data;
+                  },
+                ),
+              );
+            },
+          ),
+          SizedBox(height: 3,),
+          backButton,
+        ],
+      ),
+      Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SizedBox(height: 3,),
+          Text('Audio Tracks', style: getTextStyling(2, context),),
+          ListView.builder(
+            shrinkWrap: true,
+            itemCount: audioStreamList?.length ?? 0,
+            itemBuilder: (context, index) {
+              MediaStream data = audioStreamList![index];
+              return Card.outlined(
+                child: ListTile(
+                  title: Text('${data.displayTitle}', style: getTextStyling(1, context),),
+                  trailing: Text('${data.codec ?? ''}'),
+                  onTap: () async {
+                    await widget.player.setAudioTrack(
+                      AudioTrack.uri(
+                        Provider.of<JellyfinAPI>(context, listen: false).getStreamUrl(
+                          dto: widget.player.mediaData[widget.episodeIndex],
+                          audioStreamIndex: data.index,
+                        )!,
+                      ),
                     );
                   },
                 ),
@@ -241,7 +305,7 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
           else {
             final valueTicks = value.inMicroseconds * 10;
 
-            double playedPercentage = valueTicks / player.mediaData['BaseList'][episodeIndex].runTimeTicks.toDouble();
+            double playedPercentage = valueTicks / player.mediaData[episodeIndex].runTimeTicks!.toDouble();
             playedPercentage = playedPercentage * 100;
             print('$playedPercentage');
             if (playedPercentage >= 95 && diagName == null) {
@@ -259,7 +323,7 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
                     child: Column(
                       children: [
                         Text('Next Episode Approaching...'),
-                        Text('${player.mediaData['BaseList'][episodeIndex + 1].name}'),
+                        Text('${player.mediaData[episodeIndex + 1].name}'),
                         FilledButton(
                           onPressed: () {
                             Overlayment.dismissName(diagName!);
@@ -300,9 +364,9 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
         percentage = 0;
         diagName = null;
 
-        if (player.player.state.position.inMicroseconds * 10 ~/ player.mediaData['BaseList'][episodeIndex].runTimeTicks >= 90) {
-          player.mediaData['BaseList'][episodeIndex].copyWith(
-            userData: player.mediaData['BaseList'][episodeIndex].userData.copyWith(
+        if (player.player.state.position.inMicroseconds * 10 ~/ player.mediaData[episodeIndex].runTimeTicks! >= 90 ) {
+          player.mediaData[episodeIndex].copyWith(
+            userData: player.mediaData[episodeIndex].userData?.copyWith(
               played: true,
             ),
           );
@@ -313,7 +377,9 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
         );
 
         final newDuration = Duration(
-          seconds: player.mediaData['BaseList'][episodeIndex].userData.playbackPositionTicks! ~/ 10000000,
+          seconds: (player.mediaData[episodeIndex].userData != null)
+          ? player.mediaData[episodeIndex].userData!.playbackPositionTicks! ~/ 10000000
+          : 0,
         );
 
         await player.seek(newDuration);
@@ -323,7 +389,7 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
         );
 
         await ama.stopPlayback(
-          player.mediaData['BaseList'][episodeIndex],
+          player.mediaData[episodeIndex],
           player.player.state.position,
         );
 
@@ -331,11 +397,11 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
 
         await player.skipPrevious();
 
-        await ama.startPlayback(player.mediaData['BaseList'][episodeIndex]);
+        await ama.startPlayback(player.mediaData[episodeIndex]);
 
         await Future.delayed(Duration(seconds: 1));
 
-        playerTitle.value = '${widget.viewData.seriesName} - ${player.mediaData['BaseList'][episodeIndex].name}';
+        playerTitle.value = '${widget.viewData.seriesName} - ${player.mediaData[episodeIndex].name ?? 'Unknown Name'}';
       } on RangeError catch (e) {
         print('VideoPlayerPage: Episode limit reached!');
       }
@@ -347,16 +413,16 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
       percentage = 0;
       diagName = null;
 
-      if (player.player.state.position.inMicroseconds * 10 ~/ player.mediaData['BaseList'][episodeIndex].runTimeTicks >= 90) {
-        player.mediaData['BaseList'][episodeIndex].copyWith(
-          userData: player.mediaData['BaseList'][episodeIndex].userData.copyWith(
+      if (player.player.state.position.inMicroseconds * 10 ~/ player.mediaData[episodeIndex].runTimeTicks! >= 90) {
+        player.mediaData[episodeIndex].copyWith(
+          userData: player.mediaData[episodeIndex].userData?.copyWith(
             played: true,
           ),
         );
       }
 
       await ama.stopPlayback(
-        player.mediaData['BaseList'][episodeIndex],
+        player.mediaData[episodeIndex],
         player.player.state.position,
       );
 
@@ -365,7 +431,9 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
       await player.skipNext();
 
       final newDuration = Duration(
-        seconds: player.mediaData['BaseList'][episodeIndex].userData.playbackPositionTicks! ~/ 10000000,
+        seconds: (player.mediaData[episodeIndex].userData != null)
+        ? player.mediaData[episodeIndex].userData!.playbackPositionTicks! ~/ 10000000
+        : 0,
       );
 
       await player.player.stream.buffering.firstWhere(
@@ -378,12 +446,12 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
         (value) => value == false,
       );
 
-      await ama.startPlayback(player.mediaData['BaseList'][episodeIndex]);
-      print('new episodeData: ${player.mediaData['BaseList'][episodeIndex]}');
+      await ama.startPlayback(player.mediaData[episodeIndex]);
+      print('new episodeData: ${player.mediaData[episodeIndex]}');
 
       await Future.delayed(Duration(seconds: 1));
 
-      playerTitle.value = '${widget.viewData.seriesName} - ${player.mediaData['BaseList'][episodeIndex].name}';
+      playerTitle.value = '${widget.viewData.seriesName} - ${player.mediaData[episodeIndex].name ?? 'Unknown Episode'}';
     } on RangeError catch (e) {
       print('VideoPlayerPage: Episode limit reached!');
     }
@@ -401,7 +469,6 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
   Widget build(BuildContext context) {
     var ama = context.watch<JellyfinAPI>();
     VideoController videoConts = VideoController(player.player);
-    MenuController menuConts = MenuController();
 
     List<Widget> skipButtonList = [
       IconButton(
@@ -425,15 +492,14 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
     // player theme for both normal and fullscreen
     MaterialVideoControlsThemeData themeData = MaterialVideoControlsThemeData(
       topButtonBar: [
-        IconButton(
-          onPressed: () async {
+        InkWell(
+          onTap: () async {
             try {
               int? newPosition = player.player.state.position.inMicroseconds * 10;
 
               await ama.stopPlayback(
-                player.mediaData['BaseList'][episodeIndex],
-                (newPosition! / player.mediaData['BaseList'][episodeIndex].runTimeTicks >= 95) ? Duration(seconds: 0) : player.player.state.position,
-
+                player.mediaData[episodeIndex],
+                (newPosition! / player.mediaData[episodeIndex].runTimeTicks! >= 95) ? Duration(seconds: 0) : player.player.state.position,
               );
 
               playbackReport.cancel();
@@ -457,7 +523,20 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
               print('back error: ${e}');
             }
           },
-          icon: Icon(Icons.arrow_back, color: Colors.white),
+          child: Row(
+            spacing: 3,
+            children: [
+              Icon(Icons.arrow_back, color: Colors.white),
+              Text(
+                'Back',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          
         ),
         Spacer(),
         ValueListenableBuilder(
@@ -473,6 +552,41 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
           }
         ),
         Spacer(),
+        ValueListenableBuilder(
+          valueListenable: favorited,
+          builder: (context, value, child) {
+            return IconButton( // mark favorite
+              onPressed: () async {
+                BaseItemDto? dto = player.mediaData[episodeIndex];
+                UserItemDataDto? userDto = player.mediaData[episodeIndex].userData;
+                if (userDto?.isFavorite == true) {
+                  await ama.unmarkFavorite(player.mediaData[player.getJellyfinIndex(episodeIndex)].id!);
+                  player.mediaData[episodeIndex] = dto.copyWith(
+                    userData: userDto?.copyWith(
+                      isFavorite: false,
+                    ),
+                  );
+                  print('marked unfavorite, isFavorite: ${player.mediaData[episodeIndex].userData!.isFavorite!}');
+                  favorited.value = false;
+                } else {
+                  await ama.markFavorite(player.mediaData[player.getJellyfinIndex(episodeIndex)].id!);
+                  player.mediaData[episodeIndex] = dto.copyWith(
+                    userData: userDto?.copyWith(
+                      isFavorite: true,
+                    ),
+                  );
+                  favorited.value = true;
+                  print('marked favorite, isFavorite: ${player.mediaData[episodeIndex].userData!.isFavorite}');
+                }
+                await Future.delayed(Duration(seconds: 1));
+              },
+              icon: Icon(
+                Icons.favorite,
+                color: value ? Colors.red : Colors.white,
+              ),
+            );
+          }
+        ),
       ],
       primaryButtonBar: [
         Spacer(),
@@ -503,42 +617,7 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
         MaterialPlayOrPauseButton(), // play pause
         MaterialPositionIndicator(), // position indicator
         Spacer(), // separate left from right
-        ValueListenableBuilder(
-          valueListenable: favorited,
-          builder: (context, value, child) {
-            return IconButton( // mark favorite
-              onPressed: () async {
-                BaseItemDto? dto = player.mediaData['BaseList'][episodeIndex];
-                UserItemDataDto? userDto = player.mediaData['BaseList'][episodeIndex].userData;
-                if (userDto?.isFavorite == true) {
-                  await ama.unmarkFavorite(player.mediaData['BaseList'][player.getJellyfinIndex(episodeIndex)].id!);
-                  player.mediaData['BaseList'][episodeIndex] = dto?.copyWith(
-                    userData: userDto?.copyWith(
-                      isFavorite: false,
-                    ),
-                  );
-                  print('marked unfavorite, isFavorite: ${player.mediaData['BaseList'][episodeIndex].userData.isFavorite}');
-                  favorited.value = false;
-                } else {
-                  await ama.markFavorite(player.mediaData['BaseList'][player.getJellyfinIndex(episodeIndex)].id!);
-                  player.mediaData['BaseList'][episodeIndex] = dto?.copyWith(
-                    userData: userDto?.copyWith(
-                      isFavorite: true,
-                    ),
-                  );
-                  favorited.value = true;
-                  print('marked favorite, isFavorite: ${player.mediaData['BaseList'][episodeIndex].userData.isFavorite}');
-                }
-                await Future.delayed(Duration(seconds: 1));
-              },
-              icon: Icon(
-                Icons.favorite,
-                color: value ? Colors.red : Colors.white,
-              ),
-            );
-          }
-        ),
-        settingsSheet,
+        settingsSheet, // this is actually a button leading to setting sheet
         MaterialFullscreenButton(), // fullscreen button
       ],
     );

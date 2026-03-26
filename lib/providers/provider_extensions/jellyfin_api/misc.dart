@@ -125,11 +125,16 @@ extension Misc on JellyfinAPI {
     );
   }
 
-  String? getStreamUrl({required BaseItemDto dto, String? mediaSourceId}) {
+  String? getStreamUrl({required BaseItemDto dto, String? mediaSourceId, int? audioStreamIndex}) {
+    String baseUrl = '${serverList[lastUsedServer!].serverURL}/Videos/${dto.id}/stream?Static=true&api_key=${serverList[lastUsedServer!].userData!.accessToken}';
+
     if (mediaSourceId != null) {
-      return '${serverList[lastUsedServer!].serverURL}/Videos/${dto.id}/main.m3u8?Static=false&mediaSourceId=$mediaSourceId&api_key=${serverList[lastUsedServer!].userData!.accessToken}';
+      baseUrl = '$baseUrl&MediaSourceId=$mediaSourceId';
+    }
+    if (audioStreamIndex != null) {
+      baseUrl = '$baseUrl&AudioStreamIndex=$audioStreamIndex';
     }
 
-    return '${serverList[lastUsedServer!].serverURL}/Videos/${dto.id}/main.m3u8?Static=false&api_key=${serverList[lastUsedServer!].userData!.accessToken}';
+    return baseUrl;
   }
 }

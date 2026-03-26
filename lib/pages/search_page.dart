@@ -3,13 +3,13 @@ import 'package:jellyfin/providers/providers.dart';
 import 'package:provider/provider.dart';
 import 'package:jellyfin_dart/jellyfin_dart.dart';
 import 'package:jellyfin/comps/comps.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:jellyfin/pages/pages.dart';
 
-Widget JellyfinSearch(JellyfinAPI ama, BuildContext context, ValueNotifier<List<BaseItemDto>> pageNotifier) {
+Widget JellyfinSearch(JellyfinAPI ama, BuildContext context, ValueNotifier<List<BaseItemDto>?> pageNotifier, TextEditingController controller) {
   return Padding(
     padding: const EdgeInsets.all(20.0),
     child: SearchBar(
+      controller: controller,
       onChanged: (String result) async {
         SearchHintResult? data = await ama.runSearch(result);
 
@@ -27,81 +27,54 @@ Widget JellyfinSearch(JellyfinAPI ama, BuildContext context, ValueNotifier<List<
         pageNotifier.value = dtoList;
 
       },
+      trailing: [
+        ValueListenableBuilder(
+          valueListenable: pageNotifier,
+          builder: (context, value, child) {
+            if (value == null) {
+              return Text('');
+            }
+            return IconButton(
+              onPressed: () {
+                controller.clear();
+                pageNotifier.value = null;
+              },
+              icon: Icon(Icons.cancel),
+            );
+          },
+        ),
+      ],
     ),
   );
 }
 
-Widget getListView(List<BaseItemDto> list, JellyfinAPI ama) {
-   return Expanded(
-     child: GridView.builder(
-        shrinkWrap: true,
-        padding: EdgeInsets.all(15),
-        gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-          maxCrossAxisExtent: 200,
-          crossAxisSpacing: 20,
-          mainAxisSpacing: 20,
-        ),
-        scrollDirection: Axis.vertical,
-        itemCount: list.length,
-        itemBuilder: (context, index) {
-          final view = list[index];
-          return InkWell(
-            onTap: () async {
-              if (list[index] == null) {
-                
-              } else {
-                await Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => ItemPage(viewData: list![index]), 
-                  ),
-                );
-              }
-            },
-            child: Column(
-              children: [
-                Expanded(
-                  child: Container(
-                    width: double.infinity,
-                    alignment: Alignment.bottomCenter,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.only(topLeft: Radius.circular(15), topRight: Radius.circular(15)),
-                      image: DecorationImage(
-                        image: CachedNetworkImageProvider(
-                          '${ama.serverList[ama.lastUsedServer!].serverURL}/Items/${view!.id!}/Images/Primary?tag=${view!.imageTags?['Primary']}',
-                        ),
-                        fit: BoxFit.cover,
-                      ),
-                    ),
-                    child: LinearProgressIndicator(
-                      value: (view.userData?.playedPercentage != null) 
-                      ? view.userData!.playedPercentage!.round().toDouble() / 100
-                      : 0,
-                    ),
-                  ),
-                ),
-                if (view.seriesName != null) ...[
-                  Padding(
-                    padding: EdgeInsets.only(top: 5),
-                    child: Text('${view.seriesName}', style: getTextStyling(4, context
-                    )),
-                  ),
-                  Padding(
-                    padding: EdgeInsets.only(top: 5),
-                    child: Text('S${view.parentIndexNumber}:E${view.indexNumber}, ${view.name}'),
-                  )
-                ]
-                else
-                  Padding(
-                    padding: EdgeInsets.only(top: 5),
-                    child: Text('${view.name}', style: getTextStyling(4, context)),
-                  )
-              ],
-            ),
-          );
-        },
+
+Widget getListView(List<BaseItemDto>? list, JellyfinAPI ama) {
+   return GridView.builder(
+      shrinkWrap: true,
+      padding: EdgeInsets.all(15),
+      gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+        maxCrossAxisExtent: 200,
+        crossAxisSpacing: 20,
+        mainAxisSpacing: 20,
       ),
-   );
+      scrollDirection: Axis.vertical,
+      itemCount: list?.length ?? 0,
+      itemBuilder: (context, index) {
+        final view = list![index];
+        return InkWell(
+          onTap: () async {
+            await Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => ItemPage(viewData: list![index]), 
+              ),
+            );
+          },
+          child: builderWidgets(context, view, ama),
+        );
+      },
+    );
 }
 
 class SearchPage extends StatefulWidget {
@@ -112,12 +85,20 @@ class SearchPage extends StatefulWidget {
 }
 
 class _SearchPageState extends State<SearchPage> {
+  ValueNotifier<List<BaseItemDto>?> searchResults = ValueNotifier(null);
+  TextEditingController barController = TextEditingController();
+
   @override
   void initState() {
     super.initState();
   }
 
-  ValueNotifier<List<BaseItemDto>> searchResults = ValueNotifier([]);
+  @override
+  void dispose() {
+    barController.dispose();
+    super.dispose();
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -129,11 +110,11 @@ class _SearchPageState extends State<SearchPage> {
         title: Text('Search'),
         centerTitle: true,
       ),
-      body: Center(
-        child: SizedBox(
+      body: SingleChildScrollView(
+        child: Center(
           child: Column(
             children: [
-              JellyfinSearch(ama, context, searchResults),
+              JellyfinSearch(ama, context, searchResults, barController),
               ValueListenableBuilder(
                 valueListenable: searchResults,
                 builder: (context, value, child) {

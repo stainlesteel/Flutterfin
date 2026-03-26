@@ -1,4 +1,3 @@
-import 'package:build_runner/build_runner.dart';
 import 'package:flutter/material.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:jellyfin_dart/jellyfin_dart.dart';
@@ -24,10 +23,13 @@ class PlayerManager {
         'subtitleList': List<????>,
       }
    */
-  Map<String, dynamic> mediaData = {};
+  List<BaseItemDto> mediaData = [];
+  MediaSourceInfo? currentMediaSource;
 
   // wrapper functions below
   Future<void> disposePlayer() async {
+    mediaData = [];
+    currentMediaSource = null;
     await player.dispose();
   }
 
@@ -39,7 +41,7 @@ class PlayerManager {
   }) async {
     Duration? runtimeDuration;
 
-    if (player.state.playing == true) {
+    if (mediaSourceId != null) {
       await pause();
     }
 
@@ -55,8 +57,12 @@ class PlayerManager {
         context: context,
         mediaSourceId: (mediaSourceId != null) ? mediaSourceId : null,
       );
-    } else {
-      await addShow(dto, context);
+    } else if (dto.type == BaseItemKind.episode) {
+      await addShow(
+        dto: dto,
+        context: context,
+        mediaSourceId: mediaSourceId,
+      );
     }
 
     if (resume == true) {
@@ -84,10 +90,12 @@ class PlayerManager {
       await player.stream.buffering.firstWhere(
         (value) => value == false,
       );
-      await Provider.of<JellyfinAPI>(
-        context,
-        listen: false,
-      ).startPlayback(dto);
+      if (mediaSourceId == null) {
+        await Provider.of<JellyfinAPI>(
+          context,
+          listen: false,
+        ).startPlayback(dto);
+      }
     } on DioException catch (e) {
       SimpleErrorDiag(
         title: 'Reporting Error',
@@ -108,13 +116,14 @@ class PlayerManager {
     newDto = newDto.copyWith(
       mediaSources: playbackInfo.mediaSources,
     );
+    currentMediaSource = playbackInfo.mediaSources!.first;
 
-    mediaData['BaseList'] ??= [newDto];
+    mediaData = [newDto];
 
     await player.open(playMedia, play: false);
   }
 
-  Future<void> addShow(BaseItemDto dto, BuildContext context) async {
+  Future<void> addShow({required BaseItemDto dto, required BuildContext context, String? mediaSourceId}) async {
     late List<BaseItemDto>? showData;
     try {
       showData = await Provider.of<JellyfinAPI>(context, listen: false).getShowEpisodes(
@@ -132,10 +141,7 @@ class PlayerManager {
       List<Map<String, dynamic>> episodeData = [];
 
       for (BaseItemDto? item in showData! ?? {}) {
-        String? url = Provider.of<JellyfinAPI>(
-          context,
-          listen: false,
-        ).getStreamUrl(dto: item!);
+        String? url = Provider.of<JellyfinAPI>(context, listen: false,).getStreamUrl(dto: item!, mediaSourceId: mediaSourceId);
 
         BaseItemDto newDto = item;
         final playbackInfo = await Provider.of<JellyfinAPI>(context, listen: false).getPlaybackInfo(newDto.id!);
@@ -148,8 +154,7 @@ class PlayerManager {
       }
 
       // add baseitemdto list to class-wide mediaData list
-      mediaData['BaseList'] ??= [];
-      mediaData['BaseList'] = showData!;
+      mediaData = showData!;
       print('mediaData: $mediaData');
 
       playMedia = Playlist(
@@ -196,7 +201,7 @@ class PlayerManager {
         if (player.state.playlist.index - 1 == null) {
           _index = 0;
         }
-        ama.reportPlayback(mediaData['BaseList'][_index], duration);
+        ama.reportPlayback(mediaData[_index], duration);
       }
       await Future.delayed(Duration(seconds: 5));
     }
@@ -219,5 +224,10 @@ class PlayerManager {
   Future<void> setVideoTrack(VideoTrack track) async {
     await Future.delayed(Duration(seconds: 1));
     await player.setVideoTrack(track);
+  }
+
+  Future<void> setAudioTrack(AudioTrack track) async {
+    await Future.delayed(Duration(seconds: 1));
+    await player.setAudioTrack(track);
   }
 }
