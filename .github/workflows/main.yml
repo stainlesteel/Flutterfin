@@ -23,7 +23,7 @@ jobs:
 
       - name: Build web app
         run: |
-          flutter build web --release --pwa-strategy=none --base-href '/Flutterfin'
+          flutter build web --release --pwa-strategy=none --base-href '/Flutterfin/'
 
       - name: upload Artifact
         uses: actions/upload-artifact@v7.0.0
