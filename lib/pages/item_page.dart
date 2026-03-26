@@ -66,6 +66,7 @@ class _ItemPageState extends State<ItemPage> {
     double runTime = viewData.runTimeTicks! / 100000000;
     double? percentage = viewData.userData?.playedPercentage;
 
+    print('${widget.viewData.people}');
 
     Widget _scaffold = Scaffold(
       extendBodyBehindAppBar: true,
@@ -398,6 +399,111 @@ class _ItemPageState extends State<ItemPage> {
                 }
               ),
             ],
+            SizedBox(height: 10),
+            if (viewData.people != null)
+              Text('Cast', style: getTextStyling(1, context)),
+              SizedBox(
+                height: 200,
+                child: CarouselView(
+                  scrollDirection: Axis.horizontal,
+                  itemExtent: 230,
+                  shrinkExtent: 100,
+                  onTap: (int index) {
+                    BaseItemPerson person = viewData.people?[index] ?? BaseItemPerson();
+                    showAnimatedSheet(
+                      context: context,
+                      children: [
+                        Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            SizedBox(
+                              height: 130,
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.vertical(
+                                  top: Radius.circular(20)
+                                ),
+                                child: Stack(
+                                  fit: StackFit.passthrough,
+                                  children: [
+                                    CachedNetworkImage(
+                                      imageUrl: '${ama.serverList[ama.lastUsedServer!].serverURL}/Items/${person.id!}/Images/Primary?tag=${person.primaryImageTag}',
+                                      width: double.infinity,
+                                      fit: BoxFit.cover,
+                                      errorWidget: (context, url, child) => Text(
+                                        ''
+                                      ),
+                                    ),
+                                    Positioned.fill(child: Container(color: Colors.black.withOpacity(0.5))),
+                                    Center(
+                                      child: Text(
+                                        '${person.name}',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 40,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            SizedBox(height: 15),
+                            SingleChildScrollView(
+                              scrollDirection: Axis.horizontal,
+                              child: Wrap(
+                                children: [
+                                  SizedBox(width: 15),
+                                  detailCard(
+                                    text: '${person.role}',
+                                    context: context,
+                                  ),
+                                  SizedBox(width: 20),
+                                  detailCard(
+                                    text: person.type.toString().toUpperCase(),
+                                    context: context,
+                                  ),
+                                  SizedBox(width: 20),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    );
+                  },
+                  children: [
+                    for (BaseItemPerson person in viewData.people ?? []) ...[
+                      Column(
+                        children: [
+                          Expanded(
+                            child: HeroMode(
+                              child: CachedNetworkImage(
+                                imageUrl: '${ama.serverList[ama.lastUsedServer!].serverURL}/Items/${person.id!}/Images/Primary?tag=${person.primaryImageTag}',
+                                width: double.infinity,
+                                height: double.infinity,
+                                fit: BoxFit.cover,
+                                errorWidget: (context, url, child) {
+                                  return Icon(Icons.question_mark);
+                                },
+                              ),
+                            ),
+                          ),
+                          Padding(
+                            padding: EdgeInsets.only(top: 5),
+                            child: Text(
+                              '${person.name}',
+                              style: getTextStyling(4, context),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ]
+                  ],
+                ),
+              ),
           ],
         ),
       ),
