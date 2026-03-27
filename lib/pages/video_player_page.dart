@@ -491,6 +491,7 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
 
     // player theme for both normal and fullscreen
     MaterialVideoControlsThemeData themeData = MaterialVideoControlsThemeData(
+      seekOnDoubleTap: true,
       topButtonBar: [
         InkWell(
           onTap: () async {

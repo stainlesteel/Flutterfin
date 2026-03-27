@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:jellyfin/pages/profile_page.dart';
 import 'package:provider/provider.dart';
 import 'package:jellyfin/providers/providers.dart';
 import 'package:jellyfin/pages/pages.dart';
@@ -235,7 +236,6 @@ class _HomePageState extends State<HomePage> {
                   onTap: (index, AsyncSnapshot snapshot) async {
                     try {
                       await goToItemPage(
-                        index: index,
                         context: context,
                         data: snapshot.data[index],
                       );
@@ -258,6 +258,21 @@ class _HomePageState extends State<HomePage> {
                   [BaseItemKind.series],
                   'Recently Added Series',
                 ),
+                StreamCarousel(
+                  context: context, 
+                  stream: ama.getNextUp(), 
+                  title: 'Next Up',
+                  onTap: (index, AsyncSnapshot snapshot) async {
+                    try {
+                      await goToItemPage(
+                        context: context,
+                        data: snapshot.data[index],
+                      );
+                    } catch (e) {
+                      await Future.delayed(Duration());
+                    }
+                  },
+                ),
               ],
             )
             : errorPage,
@@ -266,7 +281,12 @@ class _HomePageState extends State<HomePage> {
       );
     }
 
-    List<Widget> barPages = [_actualPage(context), FavoritesPage(), SearchPage()];
+    List<Widget> barPages = [
+      _actualPage(context), 
+      FavoritesPage(), 
+      SearchPage(),
+      ProfilePage()
+    ];
 
     return Scaffold(
       bottomNavigationBar: (orientation == Orientation.portrait && userIsOk == true) 
@@ -291,6 +311,13 @@ class _HomePageState extends State<HomePage> {
           NavigationDestination(
             icon: Icon(Icons.search),
             label: 'Search',
+          ),
+          NavigationDestination(
+            icon: SizedBox(
+              height: 30,
+              child: UserAvatar(ama: ama)
+            ),
+            label: 'Profile',
           ),
         ],
       )
@@ -318,6 +345,13 @@ class _HomePageState extends State<HomePage> {
                 NavigationRailDestination(
                   icon: Icon(Icons.search),
                   label: Text('Search'),
+                ),
+                NavigationRailDestination(
+                  icon: SizedBox(
+                    height: 30,
+                    child: UserAvatar(ama: ama)
+                  ),
+                  label: Text('Profile'),
                 ),
               ],
             ),

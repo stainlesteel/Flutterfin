@@ -282,6 +282,45 @@ class _ItemPageState extends State<ItemPage> {
             ],
             SizedBox(height: 30,),
             if (viewData.type == BaseItemKind.episode) ...[
+              Card(
+                child: Stack(
+                  children: [
+                    Positioned.fill(
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.all(Radius.circular(20)),
+                        child: CachedNetworkImage(
+                          imageUrl: '${ama.serverList[ama.lastUsedServer!].serverURL}/Items/${viewData!.seriesId!}/Images/Primary?tag=${viewData.seriesPrimaryImageTag}',
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                    ),
+                    Positioned.fill(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.all(Radius.circular(20)),
+                          color: Colors.black.withOpacity(0.5)
+                        ),
+                      ),
+                    ),
+                    ListTile(
+                      title: PlayerText(
+                        'Series Page: ${viewData.seriesName}',
+                      ),
+                      onTap: () async {
+                        BaseItemDto? seriesData = await ama.getItem(
+                          viewData.seriesId!,
+                        );
+
+                        await goToItemPage(
+                          context: context,
+                          data: seriesData ?? BaseItemDto(),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ),
+
               Text('Other Episodes from Season ${viewData.parentIndexNumber}', style: getTextStyling(1, context)),
               FutureBuilder(
                 future: ama.getShowEpisodes(seriesId: viewData.seriesId!, context: context), 
@@ -302,7 +341,6 @@ class _ItemPageState extends State<ItemPage> {
                         shrinkExtent: 100,
                         onTap: (index) async {
                           await goToItemPage(
-                            index: index,
                             context: context,
                             data: data?[index] ?? BaseItemDto(),
                           );
@@ -377,7 +415,6 @@ class _ItemPageState extends State<ItemPage> {
                             shrinkExtent: 100,
                             onTap: (index) async {
                               await goToItemPage(
-                                index: index,
                                 context: context,
                                 data: data?[index] ?? BaseItemDto(),
                               );

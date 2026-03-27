@@ -62,7 +62,6 @@ class _UserViewPageState extends State<UserViewPage> {
                              return InkWell(
                                onTap: () async {
                                  await goToItemPage(
-                                   index: index,
                                    data: view ?? BaseItemDto(),
                                    context: context,
                                  );

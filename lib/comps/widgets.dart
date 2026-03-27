@@ -248,3 +248,15 @@ Widget StreamCarousel({required BuildContext context, required Stream stream, re
     },
   );
 }
+
+Widget UserAvatar({required JellyfinAPI ama, double? height}) {
+  return CircleAvatar(
+    backgroundColor: Colors.black,
+    radius: height,
+    child: CachedNetworkImage(
+      imageUrl: '${ama.serverList[ama.lastUsedServer!].serverURL}/UserImage?userId=${ama.userID}',
+      fit: BoxFit.cover,
+      errorWidget: (context, url, child) => Text(''),
+    ),
+  );
+}

@@ -125,6 +125,15 @@ extension Misc on JellyfinAPI {
     );
   }
 
+  Future<void> logOut(int index, BuildContext context) async {
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (context) => StartingPage()),
+      (route) => false,
+    );
+    await removeAtServerList(index);
+  }
+
   String? getStreamUrl({required BaseItemDto dto, String? mediaSourceId, int? audioStreamIndex}) {
     String baseUrl = '${serverList[lastUsedServer!].serverURL}/Videos/${dto.id}/stream?Static=true&api_key=${serverList[lastUsedServer!].userData!.accessToken}';
 

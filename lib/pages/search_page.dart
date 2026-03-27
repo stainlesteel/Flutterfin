@@ -7,7 +7,7 @@ import 'package:jellyfin/pages/pages.dart';
 
 Widget JellyfinSearch(JellyfinAPI ama, BuildContext context, ValueNotifier<List<BaseItemDto>?> pageNotifier, TextEditingController controller) {
   return Padding(
-    padding: const EdgeInsets.all(20.0),
+    padding: const EdgeInsets.symmetric(horizontal: 20.0),
     child: SearchBar(
       controller: controller,
       onChanged: (String result) async {
@@ -50,31 +50,33 @@ Widget JellyfinSearch(JellyfinAPI ama, BuildContext context, ValueNotifier<List<
 
 
 Widget getListView(List<BaseItemDto>? list, JellyfinAPI ama) {
-   return GridView.builder(
-      shrinkWrap: true,
-      padding: EdgeInsets.all(15),
-      gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-        maxCrossAxisExtent: 200,
-        crossAxisSpacing: 20,
-        mainAxisSpacing: 20,
-      ),
-      scrollDirection: Axis.vertical,
-      itemCount: list?.length ?? 0,
-      itemBuilder: (context, index) {
-        final view = list![index];
-        return InkWell(
-          onTap: () async {
-            await Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => ItemPage(viewData: list![index]), 
-              ),
-            );
-          },
-          child: builderWidgets(context, view, ama),
-        );
-      },
-    );
+   return (list?.isNotEmpty ?? true)
+   ? GridView.builder(
+     shrinkWrap: true,
+     padding: EdgeInsets.all(15),
+     gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+       maxCrossAxisExtent: 200,
+       crossAxisSpacing: 20,
+       mainAxisSpacing: 20,
+     ),
+     scrollDirection: Axis.vertical,
+     itemCount: list?.length ?? 0,
+     itemBuilder: (context, index) {
+       final view = list![index];
+       return InkWell(
+         onTap: () async {
+           await Navigator.push(
+             context,
+             MaterialPageRoute(
+               builder: (context) => ItemPage(viewData: list![index]), 
+             ),
+           );
+         },
+         child: builderWidgets(context, view, ama),
+       );
+     },
+   )
+   : Text('Your search returned absolutely nothing!');
 }
 
 class SearchPage extends StatefulWidget {

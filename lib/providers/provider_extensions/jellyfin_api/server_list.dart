@@ -12,7 +12,7 @@ extension ServerList on JellyfinAPI {
     notifyListeners();
   }
   
-  Future removeAtServerList(int index) async {
+  Future<void> removeAtServerList(int index) async {
     if (lastUsedServer == index) {
       lastUsedServer = null;
       await box.put('lastUsedServer', null);

@@ -4,7 +4,7 @@ import 'package:jellyfin/pages/pages.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 // this is for carouselView
-Future<void> goToItemPage({required int index, required BaseItemDto data, required BuildContext context}) async {
+Future<void> goToItemPage({required BaseItemDto data, required BuildContext context}) async {
   print('${data}');
   await Navigator.push(
     context,
