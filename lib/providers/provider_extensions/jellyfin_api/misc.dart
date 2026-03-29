@@ -78,11 +78,6 @@ extension Misc on JellyfinAPI {
     ServerObj _base = serverList[index!]!;
 
     appClient = JellyfinDart(
-      dio: Dio(
-        BaseOptions(
-          baseUrl: _base.serverURL!,
-        ),
-      ),
       basePathOverride: _base.serverURL,
     );
 
@@ -118,20 +113,35 @@ extension Misc on JellyfinAPI {
   Future<void> goToHome(int? index, BuildContext context) async {
     lastUsedServer = index;
     await box.put('lastUsedServer', lastUsedServer);
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(builder: (context) => HomePage(index: index)),
-      (route) => false,
+    notifyListeners();
+    Future.microtask(
+      await Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (context) => HomePage(index: index)),
+        (route) => false,
+      )
     );
   }
 
   Future<void> logOut(int index, BuildContext context) async {
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(builder: (context) => StartingPage()),
-      (route) => false,
+    Future.microtask(
+      await Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (context) => StartingPage()),
+        (route) => false,
+      )
     );
-    await removeAtServerList(index);
+
+    if (lastUsedServer == index) {
+      lastUsedServer = null;
+      await box.put('lastUsedServer', null);
+    }
+    serverList[index].userData == null;
+    serverList[index].deviceId == null;
+    serverList[index].lastLogIsQC == null;
+    serverList[index].save();
+    setUser(UserData());
+    notifyListeners();
   }
 
   String? getStreamUrl({required BaseItemDto dto, String? mediaSourceId, int? audioStreamIndex}) {

@@ -2,13 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:jellyfin_dart/jellyfin_dart.dart';
 import 'package:hive/hive.dart';
 import 'package:jellyfin/objects/objects.dart';
-import 'package:dio/dio.dart';
-import 'package:jellyfin/comps/comps.dart';
-import 'package:jellyfin/pages/pages.dart';
-import 'package:jellyfin/providers/providers.dart';
-
-import 'dart:math';
-
 
 class JellyfinAPI extends ChangeNotifier {
   final Box box;

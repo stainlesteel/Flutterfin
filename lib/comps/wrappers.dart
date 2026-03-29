@@ -90,7 +90,8 @@ void showSheet({required BuildContext context, required List<Widget> children, d
 
 void showAnimatedSheet({
   required BuildContext context, 
-  required List<Widget> children, 
+  List<Widget>? children, 
+  Widget? child,
   double widthMultipler = 0.8, 
   double? heightMultipler, 
   Duration? duration,
@@ -114,10 +115,10 @@ void showAnimatedSheet({
           height: (heightMultipler != null) ? MediaQuery.heightOf(context) * heightMultipler : null,
           child: SingleChildScrollView(
             child: Center(
-              child: Column(
+              child: child ?? Column(
                 mainAxisSize: MainAxisSize.min,
                 mainAxisAlignment: MainAxisAlignment.center,
-                children: children,
+                children: children ?? [],
               ),
             ),
           ),

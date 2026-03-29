@@ -95,7 +95,6 @@ class MyApp extends StatelessWidget {
   final Box jellyfinBox;
   const MyApp({super.key, required this.jellyfinBox});
 
-
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
@@ -148,7 +147,7 @@ class _MainRedirectorState extends State<MainRedirector> {
 
           try {
             await Provider.of<JellyfinAPI>(context, listen: false,).makeClient(ama.lastUsedServer);
-            await Provider.of<JellyfinAPI>(context, listen: false).setUser(userData!);
+            Provider.of<JellyfinAPI>(context, listen: false).setUser(userData!);
 
             tempPageValue = HomePage(index: ama.lastUsedServer);
           } catch (e) {

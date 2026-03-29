@@ -27,17 +27,14 @@ class _SettingsSheetState extends State<SettingsSheet> with SingleTickerProvider
     super.initState();
   }
 
-  late final Widget backButton = Positioned.fill(
-    bottom: 0,
-    child: SizedBox(
-      width: MediaQuery.widthOf(context) * 0.75,
-      child: FilledButton.tonal(
-        onPressed: () {
-          print('SettingsSheet(): Updating pageIndex to 0');
-          pageIndex.value = 0;
-        },
-        child: Text('Back'),
-      ),
+  late final Widget backButton =  SizedBox(
+    width: MediaQuery.widthOf(context) * 0.75,
+    child: FilledButton.tonal(
+      onPressed: () {
+        print('SettingsSheet(): Updating pageIndex to 0');
+        pageIndex.value = 0;
+      },
+      child: Text('Back'),
     ),
   );
 
@@ -50,176 +47,171 @@ class _SettingsSheetState extends State<SettingsSheet> with SingleTickerProvider
   @override
   Widget build(BuildContext context) {
 
-    final List<Widget> sheetPages = [
-      Column( // main page
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          ListView(
-            shrinkWrap: true,
-            children: [
-              Card.filled(
-                child: ListTile(
-                  title: Text('Playback Speed'),
-                  onTap: () {
-                    print('SettingsSheet(): Updating pageIndex to 1');
-                    pageIndex.value = 1;
-                  },
-                ),
+    final List<List<Widget>> sheetPages = [
+[
+        ListView(
+          shrinkWrap: true,
+          children: [
+            Card.filled(
+              child: ListTile(
+                title: Text('Playback Speed'),
+                onTap: () {
+                  print('SettingsSheet(): Updating pageIndex to 1');
+                  pageIndex.value = 1;
+                },
               ),
-              SizedBox(height: 7),
-              Card.filled(
-                child: ListTile(
-                  title: Text('Video Tracks'),
-                  onTap: () {
-                    print('SettingsSheet(): Updating pageIndex to 2');
-                    pageIndex.value = 2;
-                  },
-                ),
-              ),
-              Card.filled(
-                child: ListTile(
-                  title: Text('Audio Tracks'),
-                  onTap: () {
-                    print('SettingsSheet(): Updating pageIndex to 3');
-                    pageIndex.value = 3;
-                  },
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-      Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          SizedBox(height: 3,),
-          Text('Playback Speed', style: getTextStyling(2, context),),
-          Text('Wrong positions will not affect the speed'),
-          SizedBox(height: 3,),
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: TextField(
-              decoration: InputDecoration(
-                border: OutlineInputBorder(),
-                filled: true,
-                hintText: 'Type the number here',
-              ),
-              onChanged: (string) async {
-                try {
-                  double rate = double.parse(string);
-            
-                  await widget.player.setRate(rate);
-                  print('Playback rate is now: ${double.parse(string)}');
-                } catch (e) {
-                  print('User gave wrong playback rate');
-                }
-              },
             ),
+            SizedBox(height: 7),
+            Card.filled(
+              child: ListTile(
+                title: Text('Video Tracks'),
+                onTap: () {
+                  print('SettingsSheet(): Updating pageIndex to 2');
+                  pageIndex.value = 2;
+                },
+              ),
+            ),
+            Card.filled(
+              child: ListTile(
+                title: Text('Audio Tracks'),
+                onTap: () {
+                  print('SettingsSheet(): Updating pageIndex to 3');
+                  pageIndex.value = 3;
+                },
+              ),
+            ),
+          ],
+        ),
+      ],
+      [
+        SizedBox(height: 3,),
+        Text('Playback Speed', style: getTextStyling(2, context),),
+        Text('Wrong positions will not affect the speed'),
+        SizedBox(height: 3,),
+        Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: TextField(
+            decoration: InputDecoration(
+              border: OutlineInputBorder(),
+              filled: true,
+              hintText: 'Type the number here',
+            ),
+            onChanged: (string) async {
+              try {
+                double rate = double.parse(string);
+          
+                await widget.player.setRate(rate);
+                print('Playback rate is now: ${double.parse(string)}');
+              } catch (e) {
+                print('User gave wrong playback rate');
+              }
+            },
           ),
-          Wrap(
-            spacing: 5,
-            children: [
-              for (double num in playbackSpeedPresets)
-                InkWell(
-                  onTap: () async {
-                    await widget.player.setRate(num);
-                    print('Playback rate is now: $num');
-                  },
-                  child: Chip( 
-                    label: Text('$num'),
-                  ),
-                )
-            ],
-          ),
-          SizedBox(height: 3,),
-          FilledButton.tonal(
+        ),
+        Wrap(
+          spacing: 5,
+          children: [
+            for (double num in playbackSpeedPresets)
+              InkWell(
+                onTap: () async {
+                  await widget.player.setRate(num);
+                  print('Playback rate is now: $num');
+                },
+                child: Chip( 
+                  label: Text('$num'),
+                ),
+              )
+          ],
+        ),
+        SizedBox(height: 3,),
+        SizedBox(
+          width: MediaQuery.widthOf(context) * 0.75,
+          child: FilledButton.tonal(
             onPressed: () async {
               await widget.player.setRate(1);
             },
             child: Text('Reset to Default'),
           ),
-          backButton,
-        ],
-      ),
-      Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          SizedBox(height: 3,),
-          Text('Video Tracks', style: getTextStyling(2, context),),
-          Text(
-            'Warning: setting a Video track will reset the other audio and subtitle tracks, this is a limitation of MediaKit.'
-          ),
-          ListView.builder(
-            shrinkWrap: true,
-            itemCount: widget.player.mediaData[widget.episodeIndex].mediaSources?.length ?? 0,
-            itemBuilder: (context, index) {
-              MediaSourceInfo data = widget.player.mediaData[widget.episodeIndex].mediaSources![index];
-              return Card.outlined(
-                child: ListTile(
-                  title: Text('${data.name}', style: getTextStyling(1, context),),
-                  subtitle: Text('${data.mediaStreams?.first.videoRange ?? ''}'),
-                  trailing: Text('${data.mediaStreams?.first.codec ?? ''}'),
-                  onTap: () async {
-                    await widget.player.loadMedia(
-                      dto: widget.player.mediaData[widget.episodeIndex], 
-                      context: context, 
-                      resume: false,
-                      mediaSourceId: data.id,
-                    );
-                    widget.player.currentMediaSource = data;
-                  },
-                ),
-              );
-            },
-          ),
-          SizedBox(height: 3,),
-          backButton,
-        ],
-      ),
-      Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          SizedBox(height: 3,),
-          Text('Audio Tracks', style: getTextStyling(2, context),),
-          ListView.builder(
-            shrinkWrap: true,
-            itemCount: audioStreamList?.length ?? 0,
-            itemBuilder: (context, index) {
-              MediaStream data = audioStreamList![index];
-              return Card.outlined(
-                child: ListTile(
-                  title: Text('${data.displayTitle}', style: getTextStyling(1, context),),
-                  trailing: Text('${data.codec ?? ''}'),
-                  onTap: () async {
-                    await widget.player.setAudioTrack(
-                      AudioTrack.uri(
-                        Provider.of<JellyfinAPI>(context, listen: false).getStreamUrl(
-                          dto: widget.player.mediaData[widget.episodeIndex],
-                          audioStreamIndex: data.index,
-                        )!,
-                      ),
-                    );
-                  },
-                ),
-              );
-            },
-          ),
-          SizedBox(height: 3,),
-          backButton,
-        ],
-      ),
+        ),
+        backButton,
+      ],
+       [
+        SizedBox(height: 3,),
+        Text('Video Tracks', style: getTextStyling(2, context),),
+        Text(
+          'Warning: setting a Video track will reset the other audio and subtitle tracks, this is a limitation of MediaKit.'
+        ),
+        ListView.builder(
+          shrinkWrap: true,
+          itemCount: widget.player.mediaData[widget.episodeIndex].mediaSources?.length ?? 0,
+          itemBuilder: (context, index) {
+            MediaSourceInfo data = widget.player.mediaData[widget.episodeIndex].mediaSources![index];
+            return Card.outlined(
+              child: ListTile(
+                title: Text('${data.name}', style: getTextStyling(1, context),),
+                subtitle: Text('${data.mediaStreams?.first.videoRange ?? ''}'),
+                trailing: Text('${data.mediaStreams?.first.codec ?? ''}'),
+                onTap: () async {
+                  await widget.player.loadMedia(
+                    dto: widget.player.mediaData[widget.episodeIndex], 
+                    context: context, 
+                    resume: false,
+                    mediaSourceId: data.id,
+                  );
+                  widget.player.currentMediaSource = data;
+                },
+              ),
+            );
+          },
+        ),
+        SizedBox(height: 3,),
+        backButton,
+      ],
+      [
+        SizedBox(height: 3,),
+        Text('Audio Tracks', style: getTextStyling(2, context),),
+        ListView.builder(
+          shrinkWrap: true,
+          itemCount: audioStreamList?.length ?? 0,
+          itemBuilder: (context, index) {
+            MediaStream data = audioStreamList![index];
+            return Card.outlined(
+              child: ListTile(
+                title: Text('${data.displayTitle}', style: getTextStyling(1, context),),
+                trailing: Text('${data.codec ?? ''}'),
+                onTap: () async {
+                  await widget.player.setAudioTrack(
+                    AudioTrack.uri(
+                      Provider.of<JellyfinAPI>(context, listen: false).getStreamUrl(
+                        dto: widget.player.mediaData[widget.episodeIndex],
+                        audioStreamIndex: data.index,
+                      )!,
+                    ),
+                  );
+                },
+              ),
+            );
+          },
+        ),
+        SizedBox(height: 3,),
+        backButton,
+      ],
     ];
 
     return IconButton(
       onPressed: () {
         showAnimatedSheet(
           context: context,
-          children: [
-            ValueListenableBuilder(
-              valueListenable: pageIndex,
-              builder: (context, value, child) => sheetPages[value],
-            )
-          ],
+          child: ValueListenableBuilder(
+            valueListenable: pageIndex,
+            builder: (context, value, child) {
+              return Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                children: sheetPages[value],
+              );
+            } 
+          ),
         );
       },
       icon: Icon(Icons.settings),
@@ -457,6 +449,33 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
     }
   }
 
+  /// leaving the page
+  Future<void> pop(JellyfinAPI ama) async {
+    int? newPosition = player.player.state.position.inMicroseconds * 10;
+
+    await ama.stopPlayback(
+      player.mediaData[episodeIndex],
+      (newPosition! / player.mediaData[episodeIndex].runTimeTicks! >= 95) ? Duration(seconds: 0) : player.player.state.position,
+    );
+
+    playbackReport.cancel();
+    if (completeTracker != null && trackerForAutonext != null) {
+      completeTracker!.cancel();
+      trackerForAutonext!.cancel();
+    }
+
+    await player.pause();
+    await player.disposePlayer();
+
+
+    await Future.delayed(Duration(milliseconds: 100));
+
+    Navigator.pop(
+      context, 
+      'rebuild',
+    );
+  }
+
   late ValueNotifier<bool> favorited = ValueNotifier<bool>(widget.viewData.userData?.isFavorite ?? false);
   ValueNotifier<String> playerTitle = ValueNotifier('');
 
@@ -495,34 +514,7 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
       topButtonBar: [
         InkWell(
           onTap: () async {
-            try {
-              int? newPosition = player.player.state.position.inMicroseconds * 10;
-
-              await ama.stopPlayback(
-                player.mediaData[episodeIndex],
-                (newPosition! / player.mediaData[episodeIndex].runTimeTicks! >= 95) ? Duration(seconds: 0) : player.player.state.position,
-              );
-
-              playbackReport.cancel();
-              if (completeTracker != null && trackerForAutonext != null) {
-                completeTracker!.cancel();
-                trackerForAutonext!.cancel();
-              }
-
-              await player.pause();
-              await player.disposePlayer();
-
-
-              await Future.delayed(Duration(milliseconds: 100));
-
-              Navigator.pop(
-                context, 
-                'rebuild',
-              );
-
-            } catch (e) {
-              print('back error: ${e}');
-            }
+            await pop(ama);
           },
           child: Row(
             spacing: 3,
@@ -623,24 +615,32 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
       ],
     );
 
-    Widget _scaffold = Scaffold(
-      resizeToAvoidBottomInset: false,
-      body: Center(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            SizedBox(
-              height: MediaQuery.sizeOf(context).height,
-              child: MaterialVideoControlsTheme(
-                normal: themeData,
-                fullscreen: themeData,
-                child: Video(
-                  controller: videoConts,
-                  controls: MaterialVideoControls,
+    Widget _scaffold = PopScope(
+      canPop: true,
+      onPopInvoked: (didPop) async {
+        if (didPop) return;
+
+        await pop(ama);
+      },
+      child: Scaffold(
+        resizeToAvoidBottomInset: false,
+        body: Center(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              SizedBox(
+                height: MediaQuery.sizeOf(context).height,
+                child: MaterialVideoControlsTheme(
+                  normal: themeData,
+                  fullscreen: themeData,
+                  child: Video(
+                    controller: videoConts,
+                    controls: MaterialVideoControls,
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

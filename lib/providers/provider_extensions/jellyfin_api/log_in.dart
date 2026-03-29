@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:jellyfin/providers/providers.dart';
 import 'package:jellyfin/objects/objects.dart';
 import 'package:jellyfin/comps/comps.dart';
@@ -13,7 +14,7 @@ extension LogIn on JellyfinAPI {
     BuildContext context,
     int index
   ) async {
-    late final response;
+    late final Response<AuthenticationResult> response;
     try {
       response = await uAPI.authenticateUserByName(
         authenticateUserByName: AuthenticateUserByName(username: user, pw: pwd),
@@ -42,20 +43,27 @@ extension LogIn on JellyfinAPI {
 
     final token = response.data?.accessToken;
     if (token != null) {
-      appClient.setToken(token);
-      userID = response.data?.sessionInfo.userId;
-      await saveUser(token, userID!, index);
+      await saveUser(token, response.data!.sessionInfo!.userId!, index);
+      setUser(UserData(accessToken: token, userId: response.data!.sessionInfo?.userId));
+      print('APPCLIENT HEADERS: ${
+        appClient.dio.interceptors.firstWhere((i) => i is MediaBrowserAuthInterceptor).token
+      }'); 
+
       return true;
     } else {
       return false;
     }
-
   }
 
-  Future<void> setUser(UserData data) async {
-    appClient.setToken(data.accessToken);
+  void setUser(UserData data) {
+    setToken(data.accessToken);
     userID = data.userId;
-    print('$userID');
+    notifyListeners();
+  }
+
+  void setToken(String? tolkien) {
+    appClient.dio.interceptors.firstWhere((i) => i is MediaBrowserAuthInterceptor).token = tolkien;
+    notifyListeners();
   }
 
   // start: functions related to quick connect
@@ -123,13 +131,41 @@ extension LogIn on JellyfinAPI {
 
     final token = response.data?.accessToken;
     if (token != null) {
-      appClient.setToken(token);
-      userID = response.data?.sessionInfo.userId;
-      await saveUser(token, userID!, index);
+      await saveUser(token, response.data!.user!.id!, index);
+      await appClient.setToken(
+        UserData(
+          accessToken: token, 
+          userId: response.data!.user?.id,
+        )
+      );
+      userID = response.data!.user?.id;
+
+      serverList[index].userData = UserData(
+        accessToken: token, 
+        userId: response.data!.user?.id,
+      );
+      serverList[index].save();
+      print('thy token: $token');
+
+      notifyListeners();
       return true;
     } else {
       return false;
     }
+  }
+  
+  Future<bool> authQC(String code) async {
+    late bool response;
+    try {
+      Response<bool> tempData = await qc.authorizeQuickConnect(code: code, userId: userID);
+      print('authQC(): calling request now!');
+      response = tempData.data!;
+      return response;
+    } on DioException catch (e) {
+      print('authQC(): ${e.message}');
+      return false;
+    }
+    
   }
 
   // end: functions related to quick connect

@@ -46,6 +46,7 @@ Widget BecauseYouWatched(BuildContext context) {
       return Column(
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
         children: [
           if (snapshot.data?.isNotEmpty ?? false || snapshot.data != null) ...[
             Text('Because You Watched ${comparisonItemTitle ?? '...'} ', style: getTextStyling(1, context)),
@@ -102,6 +103,7 @@ Widget RecentlyAdded(BuildContext context, List<BaseItemKind>? includeItemTypes,
       return Column(
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
         children: [
           if (snapshot.data?.isNotEmpty ?? false)
             Text(title, style: getTextStyling(1, context)),
@@ -141,7 +143,19 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
+    Provider.of<JellyfinAPI>(context, listen: false).lastUsedServer = widget.index;
     verifyUser();
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    setState(() {});
   }
 
   int barIndex = 0;
@@ -218,7 +232,7 @@ class _HomePageState extends State<HomePage> {
                 ),
                 StreamCarousel(
                   context: context, 
-                  stream: ama.userViewsStream(), 
+                  stream: ama.userViewsStream(),
                   title: 'My Media',
                   onTap: (int index, AsyncSnapshot snapshot) async {
                     Navigator.push(

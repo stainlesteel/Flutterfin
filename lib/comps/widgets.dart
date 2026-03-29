@@ -234,6 +234,7 @@ Widget StreamCarousel({required BuildContext context, required Stream stream, re
       return Column(
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
         children: [
           if (snapshot.data?.isNotEmpty ?? false) ...[
             SizedBox(height: 10),

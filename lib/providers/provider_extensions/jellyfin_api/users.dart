@@ -18,6 +18,7 @@ extension Users on JellyfinAPI {
     serverList[index!].userData = serverList[index!].userData ?? UserData();
 
     serverList[index].userData = UserData(accessToken: token, userId: userID);
+    lastUsedServer = index;
 
     serverList[index].save();
     // ends saving actual user data

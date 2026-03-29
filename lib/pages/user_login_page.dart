@@ -173,6 +173,7 @@ class _LogInPageState extends State<LogInPage> {
                                               if (response == true) {
                                                 print('logged in!');
                                                 final username = await ama.getCurrentUser();
+                                                ama.lastUsedServer = widget.index;
                                                 await ama.goToHome(
                                                   widget.index,
                                                   context,
