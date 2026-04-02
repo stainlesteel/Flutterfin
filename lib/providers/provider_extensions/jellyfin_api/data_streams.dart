@@ -209,6 +209,7 @@ extension DataStreams on JellyfinAPI {
           includeItemTypes: [
             BaseItemKind.movie,
             BaseItemKind.series,
+            BaseItemKind.episode,
           ],
           enableUserData: true,
           fields: itemFields,

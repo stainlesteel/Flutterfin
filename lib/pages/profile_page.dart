@@ -1,27 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:jellyfin/comps/comps.dart';
 import 'package:jellyfin/main.dart';
 import 'package:jellyfin/pages/pages.dart';
 import 'package:jellyfin_dart/jellyfin_dart.dart';
 import 'package:jellyfin/providers/providers.dart';
 import 'package:provider/provider.dart';
+import 'package:jellyfin/pages/SettingsPages/settings_pages.dart';
 
-Widget EasyTile({required BuildContext context, Widget? leading, Widget? trailing, Widget? title, Widget? subtitle, void Function()? onTap, EdgeInsets? padding}) {
-  return Padding(
-    padding: padding ?? EdgeInsets.symmetric(horizontal: 10),
-    child: Card(
-      color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3),
-      child: ListTile(
-        leading: leading,
-        trailing: trailing,
-        title: title,
-        subtitle: subtitle,
-        onTap: onTap,
-      ),
-    ),
-  );
-}
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -135,8 +120,26 @@ class _ProfilePageState extends State<ProfilePage> {
               EasyTile(
                 context: context,
                 leading: Icon(
+                  Icons.tv,
+                ),
+                title: Text(
+                  'Display',
+                  style: getTextStyling(4, context),
+                ),
+                onTap: () async {
+                  await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => DisplaySettingsPage(),
+                    ),
+                  );
+                } 
+              ),
+              SizedBox(height: 5),
+              EasyTile(
+                context: context,
+                leading: Icon(
                   Icons.question_mark,
-                  color: Colors.red,
                 ),
                 title: Text(
                   'About $appTitle',

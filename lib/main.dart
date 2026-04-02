@@ -12,6 +12,7 @@ import 'package:jellyfin/objects/objects.dart';
 import 'package:jellyfin/comps/comps.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:overlayment/overlayment.dart';
+import 'package:adaptive_theme/adaptive_theme.dart';
 
 final bool debug = false;
 String appTitle = 'Flutterfin';
@@ -62,6 +63,7 @@ void main() async {
 
   Hive.registerAdapter(ServerObjAdapter());
   Hive.registerAdapter(UserDataAdapter());
+  Hive.registerAdapter(SettingsObjAdapter());
 
   jellyBox = await Hive.openBox(
     'jellyBox',
@@ -79,6 +81,9 @@ void main() async {
     FlutterError.dumpErrorToConsole(details);
   };
 
+  // get the saved theme
+  final prevTheme = await AdaptiveTheme.getThemeMode();
+
   runApp(
     MultiProvider(
       providers: [
@@ -86,29 +91,45 @@ void main() async {
           create: (_) => JellyfinAPI(jellyBox),
         ),
       ],
-      child: MyApp(jellyfinBox: jellyBox),
+      child: MyApp(jellyfinBox: jellyBox, theme: prevTheme),
     ),
   );
 }
 
 class MyApp extends StatelessWidget {
   final Box jellyfinBox;
-  const MyApp({super.key, required this.jellyfinBox});
+  final theme;
+  const MyApp({super.key, required this.jellyfinBox, required this.theme});
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     final navgatorKey = GlobalKey<NavigatorState>();
     Overlayment.navigationKey = navgatorKey;
 
-    return MaterialApp(
-      title: 'Flutter Demo',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.green),
+    return AdaptiveTheme(
+      light: ThemeData(
+        brightness: Brightness.light,
+        colorScheme: ColorScheme.fromSeed(
+          brightness: Brightness.light,
+          seedColor: Colors.green
+        ),
       ),
-      scrollBehavior: CustomScrollBehaviour(),
-      navigatorKey: navgatorKey,
-      home: MainRedirector(box: jellyfinBox),
+      dark: ThemeData(
+        brightness: Brightness.dark,
+        colorScheme: ColorScheme.fromSeed(
+          brightness: Brightness.dark,
+          seedColor: Colors.green
+        ),
+      ),
+      initial: theme ?? AdaptiveThemeMode.light,
+      builder: (theme, darkTheme) => MaterialApp(
+        title: 'Flutter Demo',
+        theme: theme,
+        darkTheme: darkTheme,
+        scrollBehavior: CustomScrollBehaviour(),
+        navigatorKey: navgatorKey,
+        home: MainRedirector(box: jellyfinBox),
+      )
     );
   }
 }
@@ -177,7 +198,7 @@ class _MainRedirectorState extends State<MainRedirector> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Flutterfin'),
+        title: Text('$appTitle'),
         centerTitle: true,
       ),
       body: Center(

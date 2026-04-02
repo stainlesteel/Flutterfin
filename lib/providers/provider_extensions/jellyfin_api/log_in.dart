@@ -63,7 +63,6 @@ extension LogIn on JellyfinAPI {
 
   void setToken(String? tolkien) {
     appClient.dio.interceptors.firstWhere((i) => i is MediaBrowserAuthInterceptor).token = tolkien;
-    notifyListeners();
   }
 
   // start: functions related to quick connect

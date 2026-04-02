@@ -96,3 +96,28 @@ class UserDataAdapter extends TypeAdapter<UserData> {
           runtimeType == other.runtimeType &&
           typeId == other.typeId;
 }
+
+class SettingsObjAdapter extends TypeAdapter<SettingsObj> {
+  @override
+  final int typeId = 2;
+
+  @override
+  SettingsObj read(BinaryReader reader) {
+    return SettingsObj();
+  }
+
+  @override
+  void write(BinaryWriter writer, SettingsObj obj) {
+    writer.writeByte(0);
+  }
+
+  @override
+  int get hashCode => typeId.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is SettingsObjAdapter &&
+          runtimeType == other.runtimeType &&
+          typeId == other.typeId;
+}

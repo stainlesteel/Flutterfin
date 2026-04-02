@@ -479,8 +479,6 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
   late ValueNotifier<bool> favorited = ValueNotifier<bool>(widget.viewData.userData?.isFavorite ?? false);
   ValueNotifier<String> playerTitle = ValueNotifier('');
 
-  late Widget settingsSheet = SettingsSheet(player: player, episodeIndex: episodeIndex,);
-
   late int episodeIndex = player.getJellyfinIndex(widget.viewData.indexNumber ?? 0); // the number for skip buttons to use as the base (skip previous: skipInt - 1) (skip next: skipInt + 1)
    // if null, video is probably a movie, in that case, this isn't going to be used
 
@@ -610,7 +608,7 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
         MaterialPlayOrPauseButton(), // play pause
         MaterialPositionIndicator(), // position indicator
         Spacer(), // separate left from right
-        settingsSheet, // this is actually a button leading to setting sheet
+        SettingsSheet(player: player, episodeIndex: episodeIndex),
         MaterialFullscreenButton(), // fullscreen button
       ],
     );

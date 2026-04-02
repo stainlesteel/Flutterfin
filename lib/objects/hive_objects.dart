@@ -56,3 +56,8 @@ class UserData extends HiveObject {
     this.userId
   });
 }
+
+@HiveType(typeId: 2)
+class SettingsObj extends HiveObject {
+  
+}

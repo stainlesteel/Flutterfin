@@ -261,3 +261,19 @@ Widget UserAvatar({required JellyfinAPI ama, double? height}) {
     ),
   );
 }
+
+Widget EasyTile({required BuildContext context, Widget? leading, Widget? trailing, Widget? title, Widget? subtitle, void Function()? onTap, EdgeInsets? padding}) {
+  return Padding(
+    padding: padding ?? EdgeInsets.symmetric(horizontal: 10),
+    child: Card(
+      color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3),
+      child: ListTile(
+        leading: leading,
+        trailing: trailing,
+        title: title,
+        subtitle: subtitle,
+        onTap: onTap,
+      ),
+    ),
+  );
+}

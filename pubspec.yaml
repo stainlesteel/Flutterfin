@@ -50,6 +50,7 @@ dependencies:
   connectivity_plus: 7.0.0
   overlayment: 0.2.1
   url_launcher: 6.3.2
+  adaptive_theme: 3.7.2
 
   # media ket start
   media_kit: ^1.2.6
