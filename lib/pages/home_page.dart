@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:jellyfin/objects/objects.dart';
 import 'package:jellyfin/pages/profile_page.dart';
 import 'package:provider/provider.dart';
 import 'package:jellyfin/providers/providers.dart';
@@ -6,13 +7,70 @@ import 'package:jellyfin/pages/pages.dart';
 import 'package:jellyfin/comps/comps.dart';
 import 'package:jellyfin_dart/jellyfin_dart.dart';
 
+Widget UserViews(BuildContext context) {
+  JellyfinAPI ama = context.read<JellyfinAPI>();
+    
+  return StreamCarousel(
+    context: context, 
+    stream: ama.userViewsStream(),
+    title: 'My Media',
+    onTap: (int index, AsyncSnapshot snapshot) async {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => UserViewPage(userView: snapshot.data[index]),
+        ),
+      );
+    }
+  );
+}
+
+Widget ContinueWatching(BuildContext context) {
+  JellyfinAPI ama = context.read<JellyfinAPI>();
+
+  return StreamCarousel(
+    context: context, 
+    stream: ama.getContinueWatching(), 
+    title: 'Continue Watching',
+    onTap: (index, AsyncSnapshot snapshot) async {
+      try {
+        await goToItemPage(
+          context: context,
+          data: snapshot.data[index],
+        );
+      } catch (e) {
+        await Future.delayed(Duration());
+      }
+    },
+  );
+}
+
+Widget NextUp(BuildContext context) {
+  JellyfinAPI ama = context.read<JellyfinAPI>();
+  
+  return StreamCarousel(
+    context: context, 
+    stream: ama.getNextUp(), 
+    title: 'Next Up',
+    onTap: (index, AsyncSnapshot snapshot) async {
+      try {
+        await goToItemPage(
+          context: context,
+          data: snapshot.data[index],
+        );
+      } catch (e) {
+        await Future.delayed(Duration());
+      }
+    },
+  );
+}
 
 Widget BecauseYouWatched(BuildContext context) {
   JellyfinAPI ama = context.watch<JellyfinAPI>();
   String? comparisonItemTitle;
 
   return StreamBuilder(
-    stream: ama.getSimilarItems(),
+    stream: ama.getSimilarItems().asBroadcastStream(),
     builder: (context, snapshot) {
       late Widget secondWidget;
       if (snapshot.data == null) {
@@ -163,7 +221,7 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     var ama = context.watch<JellyfinAPI>();
-    final base = ama.serverList[widget.index!];
+    SettingsProvider sets = context.watch<SettingsProvider>();
 
     Orientation orientation = MediaQuery.orientationOf(context);
 
@@ -175,13 +233,8 @@ class _HomePageState extends State<HomePage> {
         Text("Please log in and out again, \nthe previous log in data isn't usable."),
         SizedBox(height: 10),
         FilledButton.tonal(
-          onPressed: () {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(
-                builder: (context) => StartingPage(),
-              )
-            );
+          onPressed: () async {
+            await ama.logOut(widget.index!, context);
           },
           child: Text("Ok"),
         ),
@@ -189,6 +242,25 @@ class _HomePageState extends State<HomePage> {
     );
 
     Widget _actualPage(BuildContext context) {
+      // the carousels list is for linking widget functions to enums under the same index
+      Map<HomepageCarousels, Widget> carouselsList = {
+        HomepageCarousels.userViews : UserViews(context),
+        HomepageCarousels.continueWatching : ContinueWatching(context),
+        HomepageCarousels.becauseYouWatched : BecauseYouWatched(context),
+        HomepageCarousels.recentMovies : RecentlyAdded(
+          context,
+          [BaseItemKind.movie],
+          'Recently Added Movies'
+        ),
+        HomepageCarousels.recentShows : RecentlyAdded(
+          context,
+          [BaseItemKind.series],
+          'Recently Added Series',
+        ),
+        HomepageCarousels.nextUp : NextUp(context),
+        HomepageCarousels.none : SizedBox(height: 0, width: 0,),
+      };
+
       if (userIsOk == null) {
         return Scaffold(
           body: Center(
@@ -201,12 +273,8 @@ class _HomePageState extends State<HomePage> {
           title: Text('Jellyfin'),
           centerTitle: true,
           leading: TextButton(
-            onPressed: () {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => StartingPage(),
-                ));
+            onPressed: () async {
+              await ama.logOut(widget.index!, context);
             },
             child: Text('Back'),
           ),
@@ -215,78 +283,24 @@ class _HomePageState extends State<HomePage> {
           child: Center(
             child: userIsOk! ? Column(
               children: [
-                FutureBuilder(
-                  future: ama.getCurrentUser(),
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return CircularProgressIndicator();
-                    } else if (snapshot.hasError) {
-                      return Text('Error getting user name.');
-                    } else {
-                      return Text(
-                        'welcome, ${snapshot.data?.name}',
-                        style: getTextStyling(2, context),
-                      );
+                if (sets.settingsObj!.showUsername == true)
+                  FutureBuilder(
+                    future: ama.getCurrentUser(),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return CircularProgressIndicator();
+                      } else if (snapshot.hasError) {
+                        return Text('Error getting user name.');
+                      } else {
+                        return Text(
+                          'welcome, ${snapshot.data?.name}',
+                          style: getTextStyling(2, context),
+                        );
+                      }
                     }
-                  }
-                ),
-                StreamCarousel(
-                  context: context, 
-                  stream: ama.userViewsStream(),
-                  title: 'My Media',
-                  onTap: (int index, AsyncSnapshot snapshot) async {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => UserViewPage(userView: snapshot.data[index]),
-                      ),
-                    );
-                  }
-                ),
-                StreamCarousel(
-                  context: context, 
-                  stream: ama.getContinueWatching(), 
-                  title: 'Continue Watching',
-                  onTap: (index, AsyncSnapshot snapshot) async {
-                    try {
-                      await goToItemPage(
-                        context: context,
-                        data: snapshot.data[index],
-                      );
-                    } catch (e) {
-                      await Future.delayed(Duration());
-                    }
-                  },
-                ),
-                SizedBox(height: 10),
-                BecauseYouWatched(context),
-                SizedBox(height: 10),
-                RecentlyAdded(
-                  context,
-                  [BaseItemKind.movie],
-                  'Recently Added Movies'
-                ),
-                SizedBox(height: 10),
-                RecentlyAdded(
-                  context,
-                  [BaseItemKind.series],
-                  'Recently Added Series',
-                ),
-                StreamCarousel(
-                  context: context, 
-                  stream: ama.getNextUp(), 
-                  title: 'Next Up',
-                  onTap: (index, AsyncSnapshot snapshot) async {
-                    try {
-                      await goToItemPage(
-                        context: context,
-                        data: snapshot.data[index],
-                      );
-                    } catch (e) {
-                      await Future.delayed(Duration());
-                    }
-                  },
-                ),
+                  ),
+                for (HomepageCarousels carousels in sets.settingsObj!.homepageCarousels)
+                  carouselsList[carousels]!
               ],
             )
             : errorPage,

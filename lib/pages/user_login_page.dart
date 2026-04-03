@@ -126,7 +126,7 @@ class _LogInPageState extends State<LogInPage> {
                                     }
                                   }
                                 },
-                                child: Text('Log In'),
+                                child: Text('Log In', style: _textcolor,),
                               ),
                             ),
                           ),
@@ -158,37 +158,37 @@ class _LogInPageState extends State<LogInPage> {
                                     late final sSub;
                                                   
                                     sSub = ama
-                                        .getQCState(res.secret!)
-                                        .listen(
-                                          (QuickConnectResult? data) async {
-                                            print('$data');
-                                            if (data?.authenticated == true) {
-                                              sSub.cancel();
-                                              final response = await ama
-                                                  .logInByQC(
-                                                    data!.secret!,
-                                                    context,
-                                                    widget.index!,
-                                                  );
-                                              if (response == true) {
-                                                print('logged in!');
-                                                final username = await ama.getCurrentUser();
-                                                ama.lastUsedServer = widget.index;
-                                                await ama.goToHome(
-                                                  widget.index,
-                                                  context,
-                                                );
-                                              } else {
-                                                print('failure!');
-                                              }
-                                            }
-                                          },
-                                          onError: (error) => print('$error'),
-                                          onDone: () => print('done'),
-                                        );
+                                    .getQCState(res.secret!)
+                                    .listen(
+                                      (QuickConnectResult? data) async {
+                                        print('$data');
+                                        if (data?.authenticated == true) {
+                                          sSub.cancel();
+                                          final response = await ama
+                                              .logInByQC(
+                                                data!.secret!,
+                                                context,
+                                                widget.index!,
+                                              );
+                                          if (response == true) {
+                                            print('logged in!');
+                                            final username = await ama.getCurrentUser();
+                                            ama.lastUsedServer = widget.index;
+                                            await ama.goToHome(
+                                              widget.index,
+                                              context,
+                                            );
+                                          } else {
+                                            print('failure!');
+                                          }
+                                        }
+                                      },
+                                      onError: (error) => print('$error'),
+                                      onDone: () => print('done'),
+                                    );
                                   }
                                 },
-                                child: Text('Quick Connect'),
+                                child: Text('Quick Connect', style: _textcolor,),
                                 style: ButtonStyle(
                                   backgroundColor:
                                       WidgetStatePropertyAll<Color>(
@@ -267,7 +267,7 @@ class _LogInPageState extends State<LogInPage> {
                             ),
                           );
                         },
-                        child: Text('Available Users'),
+                        child: Text('Available Users', style: _textcolor,),
                         style: ButtonStyle(
                           backgroundColor: WidgetStatePropertyAll<Color>(
                             Theme.of(context).colorScheme.onPrimaryFixed,

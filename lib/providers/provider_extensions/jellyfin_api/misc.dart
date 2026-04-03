@@ -124,6 +124,17 @@ extension Misc on JellyfinAPI {
   }
 
   Future<void> logOut(int index, BuildContext context) async {
+
+    if (lastUsedServer == index) {
+      lastUsedServer = null;
+      await box.put('lastUsedServer', null);
+    }
+    serverList[index].userData == null;
+    serverList[index].lastLogIsQC == null;
+    serverList[index].save();
+    await box.put(index, serverList[index]);
+    setUser(UserData());
+
     Future.microtask(
       await Navigator.pushAndRemoveUntil(
         context,
@@ -131,16 +142,6 @@ extension Misc on JellyfinAPI {
         (route) => false,
       )
     );
-
-    if (lastUsedServer == index) {
-      lastUsedServer = null;
-      await box.put('lastUsedServer', null);
-    }
-    serverList[index].userData == null;
-    serverList[index].deviceId == null;
-    serverList[index].lastLogIsQC == null;
-    serverList[index].save();
-    setUser(UserData());
     notifyListeners();
   }
 

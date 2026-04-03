@@ -103,12 +103,24 @@ class SettingsObjAdapter extends TypeAdapter<SettingsObj> {
 
   @override
   SettingsObj read(BinaryReader reader) {
-    return SettingsObj();
+    final numOfFields = reader.readByte();
+    final fields = <int, dynamic>{
+      for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
+    };
+    return SettingsObj(
+      homepageCarousels: (fields[0] as List).cast<HomepageCarousels>(),
+      showUsername: fields[1] as bool,
+    );
   }
 
   @override
   void write(BinaryWriter writer, SettingsObj obj) {
-    writer.writeByte(0);
+    writer
+      ..writeByte(2)
+      ..writeByte(0)
+      ..write(obj.homepageCarousels)
+      ..writeByte(1)
+      ..write(obj.showUsername);
   }
 
   @override
@@ -118,6 +130,70 @@ class SettingsObjAdapter extends TypeAdapter<SettingsObj> {
   bool operator ==(Object other) =>
       identical(this, other) ||
       other is SettingsObjAdapter &&
+          runtimeType == other.runtimeType &&
+          typeId == other.typeId;
+}
+
+class HomepageCarouselsAdapter extends TypeAdapter<HomepageCarousels> {
+  @override
+  final int typeId = 3;
+
+  @override
+  HomepageCarousels read(BinaryReader reader) {
+    switch (reader.readByte()) {
+      case 0:
+        return HomepageCarousels.userViews;
+      case 1:
+        return HomepageCarousels.continueWatching;
+      case 2:
+        return HomepageCarousels.becauseYouWatched;
+      case 3:
+        return HomepageCarousels.recentMovies;
+      case 4:
+        return HomepageCarousels.recentShows;
+      case 5:
+        return HomepageCarousels.nextUp;
+      case 6:
+        return HomepageCarousels.none;
+      default:
+        return HomepageCarousels.userViews;
+    }
+  }
+
+  @override
+  void write(BinaryWriter writer, HomepageCarousels obj) {
+    switch (obj) {
+      case HomepageCarousels.userViews:
+        writer.writeByte(0);
+        break;
+      case HomepageCarousels.continueWatching:
+        writer.writeByte(1);
+        break;
+      case HomepageCarousels.becauseYouWatched:
+        writer.writeByte(2);
+        break;
+      case HomepageCarousels.recentMovies:
+        writer.writeByte(3);
+        break;
+      case HomepageCarousels.recentShows:
+        writer.writeByte(4);
+        break;
+      case HomepageCarousels.nextUp:
+        writer.writeByte(5);
+        break;
+      case HomepageCarousels.none:
+        writer.writeByte(6);
+        break;
+    }
+  }
+
+  @override
+  int get hashCode => typeId.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is HomepageCarouselsAdapter &&
           runtimeType == other.runtimeType &&
           typeId == other.typeId;
 }

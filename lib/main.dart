@@ -64,6 +64,7 @@ void main() async {
   Hive.registerAdapter(ServerObjAdapter());
   Hive.registerAdapter(UserDataAdapter());
   Hive.registerAdapter(SettingsObjAdapter());
+  Hive.registerAdapter(HomepageCarouselsAdapter());
 
   jellyBox = await Hive.openBox(
     'jellyBox',
@@ -89,6 +90,9 @@ void main() async {
       providers: [
         ChangeNotifierProvider<JellyfinAPI>(
           create: (_) => JellyfinAPI(jellyBox),
+        ),
+        ChangeNotifierProvider<SettingsProvider>(
+          create: (_) => SettingsProvider(jellyBox),
         ),
       ],
       child: MyApp(jellyfinBox: jellyBox, theme: prevTheme),
@@ -156,6 +160,8 @@ class _MainRedirectorState extends State<MainRedirector> {
   Future<void> starter() async {
     final ama = Provider.of<JellyfinAPI>(context, listen: false);
     final networkStatus = await checkNetwork();
+
+    await Provider.of<SettingsProvider>(context, listen: false).loadSettingsData(context);
 
     late Widget tempPageValue;
 

@@ -25,33 +25,6 @@ class _StartingPageState extends State<StartingPage> {
       appBar: AppBar(
         title: Text('$appTitle'),
         centerTitle: true,
-        actions: [
-          MenuAnchor(
-            controller: menuConts,
-            menuChildren: [
-              MenuItemButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => AboutPage()),
-                  );
-                },
-                child: Text('About'),
-              ),
-            ],
-            builder: (context, menuConts, child) => IconButton(
-              onPressed: () {
-                if (menuConts.isOpen) {
-                  menuConts.close();
-                } else {
-                  menuConts.open();
-                }
-              },
-              icon: Icon(Icons.settings),
-            ),
-          ),
-          SizedBox(width: 9),
-        ],
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () async {
@@ -67,7 +40,13 @@ class _StartingPageState extends State<StartingPage> {
                   Text(
                     'Type in the full http(s) url for your server.\nDo not add a slash (/) at the end of your URL.',
                   ),
-                  TextField(controller: conts),
+                  SizedBox(height: 5,),
+                  TextField(
+                    decoration: InputDecoration(
+                      border: OutlineInputBorder(), 
+                    ),
+                    controller: conts
+                  ),
                 ],
                 actions: [
                   TextButton(

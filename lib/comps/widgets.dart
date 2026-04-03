@@ -206,7 +206,7 @@ Widget builderWidgets(BuildContext context, BaseItemDto view, JellyfinAPI ama) {
 Widget StreamCarousel({required BuildContext context, required Stream stream, required String title, required Function(int index, AsyncSnapshot snapshot) onTap}) {
   JellyfinAPI ama = context.watch<JellyfinAPI>();
   return StreamBuilder(
-    stream: stream,
+    stream: stream.asBroadcastStream(),
     builder: (context, snapshot) {
       late Widget secondWidget;
   

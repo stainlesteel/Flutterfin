@@ -1,6 +1,4 @@
-
 // contains hive objects and data enums
-
 import 'package:hive/hive.dart';
 import 'package:jellyfin_dart/jellyfin_dart.dart';
 
@@ -59,5 +57,54 @@ class UserData extends HiveObject {
 
 @HiveType(typeId: 2)
 class SettingsObj extends HiveObject {
-  
+  // display settings, theme is handled by adaptive_theme
+  @HiveField(0)
+  List<HomepageCarousels> homepageCarousels;
+
+  @HiveField(1)
+  bool showUsername;
+  // end display settings
+
+  SettingsObj({
+    this.homepageCarousels = const [
+      HomepageCarousels.userViews,
+      HomepageCarousels.continueWatching,
+      HomepageCarousels.becauseYouWatched,
+      HomepageCarousels.recentMovies,
+      HomepageCarousels.recentShows,
+      HomepageCarousels.nextUp,
+    ],
+    this.showUsername = true,
+  });
+}
+
+@HiveType(typeId: 3)
+enum HomepageCarousels {
+  @HiveField(0)
+  userViews(name: 'My Media'),
+
+  @HiveField(1)
+  continueWatching(name: 'Continue Watching'),
+
+  @HiveField(2)
+  becauseYouWatched(name: 'Because you Watched'),
+
+  @HiveField(3)
+  recentMovies(name: 'Recently Added Movies'),
+
+  @HiveField(4)
+  recentShows(name: 'Recently Added Shows'),
+
+  @HiveField(5)
+  nextUp(name: 'Next Up'),
+
+  @HiveField(6)
+  none(name: 'None'),
+  ;
+
+  const HomepageCarousels({
+    required this.name,
+  });
+
+  final String name;
 }
