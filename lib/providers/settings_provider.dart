@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:jellyfin/objects/objects.dart';
-import 'package:provider/provider.dart';
 import 'package:flutter/foundation.dart';
 import 'package:hive/hive.dart';
 
@@ -11,7 +10,7 @@ class SettingsProvider extends ChangeNotifier {
 
   SettingsObj? settingsObj;
 
-  Future<void> loadSettingsData(BuildContext context) async {
+  Future<void> loadSettingsData() async {
     final _data = box.get('settings');
 
     if (_data == null) {

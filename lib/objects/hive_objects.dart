@@ -1,4 +1,5 @@
 // contains hive objects and data enums
+import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
 import 'package:jellyfin_dart/jellyfin_dart.dart';
 
@@ -63,6 +64,12 @@ class SettingsObj extends HiveObject {
 
   @HiveField(1)
   bool showUsername;
+
+  @HiveField(2)
+  int themeType; // to avoid making a custom type, this is an index for the getTheme function used by main.dart
+
+  @HiveField(3)
+  int themeMode;
   // end display settings
 
   SettingsObj({
@@ -75,6 +82,8 @@ class SettingsObj extends HiveObject {
       HomepageCarousels.nextUp,
     ],
     this.showUsername = true,
+    this.themeType = 0,
+    this.themeMode = 0,
   });
 }
 

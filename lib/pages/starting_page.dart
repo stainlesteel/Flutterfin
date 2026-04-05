@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:jellyfin/main.dart';
 import 'package:jellyfin/pages/pages.dart';
@@ -28,7 +30,6 @@ class _StartingPageState extends State<StartingPage> {
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () async {
-          final amd = context.read<JellyfinAPI>();
           final conts = TextEditingController();
 
           await showDialog(
@@ -57,9 +58,9 @@ class _StartingPageState extends State<StartingPage> {
                   ),
                   TextButton(
                     onPressed: () async {
-                      if (amd.isVerifyingServer == true) {
+                      if (ama.isVerifyingServer == true) {
                       } else {
-                        final bool result = await amd.verifyServer(
+                        final bool result = await ama.verifyServer(
                           conts.text,
                           context,
                         );
@@ -107,23 +108,13 @@ class _StartingPageState extends State<StartingPage> {
                         child: Card(
                           child: ListTile(
                             onTap: () async {
-                              try {
-                                await ama.makeClient(e.id);
-                                await Future.delayed(Duration(seconds: 1));
-                                await Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => LogInPage(index: e.id),
-                                  ),
+                                await ama.makeClient(e.id, context);
+                                Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => LogInPage(index: e.id),
+                                  )
                                 );
-                              } catch (e) {
-                                SimpleErrorDiag(
-                                  title: 'Connection Error', 
-                                  desc: 'Could not establish any connection to the server.\n This most likely happened because the server is completely down (host inaccessible).', 
-                                  context: context,
-                                );
-                              }
-          
                             },
                             title: Text(
                               '${e.serverName}',

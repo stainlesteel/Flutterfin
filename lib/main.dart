@@ -12,7 +12,6 @@ import 'package:jellyfin/objects/objects.dart';
 import 'package:jellyfin/comps/comps.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:overlayment/overlayment.dart';
-import 'package:adaptive_theme/adaptive_theme.dart';
 
 final bool debug = false;
 String appTitle = 'Flutterfin';
@@ -82,9 +81,6 @@ void main() async {
     FlutterError.dumpErrorToConsole(details);
   };
 
-  // get the saved theme
-  final prevTheme = await AdaptiveTheme.getThemeMode();
-
   runApp(
     MultiProvider(
       providers: [
@@ -92,63 +88,26 @@ void main() async {
           create: (_) => JellyfinAPI(jellyBox),
         ),
         ChangeNotifierProvider<SettingsProvider>(
-          create: (_) => SettingsProvider(jellyBox),
+          create: (_) => SettingsProvider(jellyBox)..loadSettingsData(),
         ),
       ],
-      child: MyApp(jellyfinBox: jellyBox, theme: prevTheme),
+      child: MyApp(jellyfinBox: jellyBox),
     ),
   );
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   final Box jellyfinBox;
-  final theme;
-  const MyApp({super.key, required this.jellyfinBox, required this.theme});
+  const MyApp({super.key, required this.jellyfinBox});
 
   @override
-  Widget build(BuildContext context) {
-    final navgatorKey = GlobalKey<NavigatorState>();
-    Overlayment.navigationKey = navgatorKey;
-
-    return AdaptiveTheme(
-      light: ThemeData(
-        brightness: Brightness.light,
-        colorScheme: ColorScheme.fromSeed(
-          brightness: Brightness.light,
-          seedColor: Colors.green
-        ),
-      ),
-      dark: ThemeData(
-        brightness: Brightness.dark,
-        colorScheme: ColorScheme.fromSeed(
-          brightness: Brightness.dark,
-          seedColor: Colors.green
-        ),
-      ),
-      initial: theme ?? AdaptiveThemeMode.light,
-      builder: (theme, darkTheme) => MaterialApp(
-        title: 'Flutter Demo',
-        theme: theme,
-        darkTheme: darkTheme,
-        scrollBehavior: CustomScrollBehaviour(),
-        navigatorKey: navgatorKey,
-        home: MainRedirector(box: jellyfinBox),
-      )
-    );
-  }
+  State<MyApp> createState() => _MyAppState();
 }
 
-// main-redirector throws user to either server add, or home page depending on their config
-class MainRedirector extends StatefulWidget {
-  final Box box;
-  const MainRedirector({super.key, required this.box});
-
-  @override
-  State<MainRedirector> createState() => _MainRedirectorState();
-}
-
-class _MainRedirectorState extends State<MainRedirector> {
+class _MyAppState extends State<MyApp> {
   Widget? page;
+  late ThemeData theme;
+  late ThemeData darkTheme;
 
   @override
   void initState() {
@@ -161,19 +120,17 @@ class _MainRedirectorState extends State<MainRedirector> {
     final ama = Provider.of<JellyfinAPI>(context, listen: false);
     final networkStatus = await checkNetwork();
 
-    await Provider.of<SettingsProvider>(context, listen: false).loadSettingsData(context);
-
     late Widget tempPageValue;
 
     if (debug == true) {
-      tempPageValue = DebugPage(box: widget.box);
+      tempPageValue = DebugPage(box: widget.jellyfinBox);
     } else {
       if (networkStatus != ConnectivityResult.none) {
         if (ama.lastUsedServer != null) {
           var userData = ama.serverList[ama.lastUsedServer!].userData;
 
           try {
-            await Provider.of<JellyfinAPI>(context, listen: false,).makeClient(ama.lastUsedServer);
+            await Provider.of<JellyfinAPI>(context, listen: false,).makeClient(ama.lastUsedServer, context);
             Provider.of<JellyfinAPI>(context, listen: false).setUser(userData!);
 
             tempPageValue = HomePage(index: ama.lastUsedServer);
@@ -192,24 +149,55 @@ class _MainRedirectorState extends State<MainRedirector> {
     setState(
       () {
         page = tempPageValue;
+        theme = getTheme(
+          index: Provider.of<SettingsProvider>(context, listen: false).settingsObj!.themeType,
+          brightness: Brightness.light,
+        );
+        darkTheme = getTheme(
+          index: Provider.of<SettingsProvider>(context, listen: false).settingsObj!.themeType,
+          brightness: Brightness.dark,
+        );
       }
     );
+
   }
 
   @override
   Widget build(BuildContext context) {
-    if (page != null) {
-      return page!;
-    }
+    final navgatorKey = GlobalKey<NavigatorState>();
+    Overlayment.navigationKey = navgatorKey;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('$appTitle'),
-        centerTitle: true,
-      ),
-      body: Center(
-        child: CircularProgressIndicator()
+    return Consumer<SettingsProvider>(
+      builder: (context, sets, child) {
+        theme = getTheme(
+          index: sets.settingsObj!.themeType,
+          brightness: Brightness.light,
+        );
+        darkTheme = getTheme(
+          index: sets.settingsObj!.themeType,
+          brightness: Brightness.dark,
+        );
+
+        return MaterialApp(
+          title: 'Flutter Demo',
+          theme: theme,
+          darkTheme: darkTheme,
+          themeMode: ThemeMode.values[sets.settingsObj!.themeMode],
+          scrollBehavior: CustomScrollBehaviour(),
+          navigatorKey: navgatorKey,
+          home: child,            
+        );
+      },
+      child: page ?? Scaffold(
+        appBar: AppBar(
+          title: Text('$appTitle'),
+          centerTitle: true,
+        ),
+        body: Center(
+          child: CircularProgressIndicator()
+        ),
       ),
     );
   }
 }
+

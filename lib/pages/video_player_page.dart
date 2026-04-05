@@ -133,6 +133,7 @@ class _SettingsSheetState extends State<SettingsSheet> with SingleTickerProvider
             child: Text('Reset to Default'),
           ),
         ),
+        SizedBox(height: 3,),
         backButton,
       ],
        [

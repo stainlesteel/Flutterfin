@@ -110,17 +110,23 @@ class SettingsObjAdapter extends TypeAdapter<SettingsObj> {
     return SettingsObj(
       homepageCarousels: (fields[0] as List).cast<HomepageCarousels>(),
       showUsername: fields[1] as bool,
+      themeType: fields[2] as int,
+      themeMode: fields[3] as int,
     );
   }
 
   @override
   void write(BinaryWriter writer, SettingsObj obj) {
     writer
-      ..writeByte(2)
+      ..writeByte(4)
       ..writeByte(0)
       ..write(obj.homepageCarousels)
       ..writeByte(1)
-      ..write(obj.showUsername);
+      ..write(obj.showUsername)
+      ..writeByte(2)
+      ..write(obj.themeType)
+      ..writeByte(3)
+      ..write(obj.themeMode);
   }
 
   @override

@@ -51,6 +51,12 @@ class _LogInPageState extends State<LogInPage> {
         iconTheme: IconThemeData(color: Colors.white),
         backgroundColor: Colors.transparent,
         centerTitle: true,
+        leading: IconButton(
+          onPressed: () {
+            Navigator.pop(context);
+          },
+          icon: Icon(Icons.arrow_back),
+        ),
       ),
       backgroundColor: Colors.transparent,
       body: Center(

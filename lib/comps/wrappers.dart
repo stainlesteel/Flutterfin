@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:yaru/yaru.dart';
+import 'package:adwaita/adwaita.dart';
+
 import 'dart:math';
 import 'package:connectivity_plus/connectivity_plus.dart';
 
@@ -69,7 +72,7 @@ void showSheet({required BuildContext context, required List<Widget> children, d
       return Container(
         padding: EdgeInsets.all(2),
         decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.onPrimary,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.all(Radius.circular(20)),
         ),
         width: MediaQuery.widthOf(context) * widthMultipler,
@@ -108,7 +111,7 @@ void showAnimatedSheet({
         child: Container(
           padding: EdgeInsets.all(2),
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.onPrimary,
+            color: Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.all(Radius.circular(20)),
           ),
           width: MediaQuery.widthOf(context) * widthMultipler,
@@ -126,4 +129,36 @@ void showAnimatedSheet({
       );
     }
   );
+}
+
+ThemeData getTheme({required int index, required Brightness brightness}) {
+  if (index == 2) {
+    return (brightness == Brightness.light)
+    ? AdwaitaThemeData.light()
+    : AdwaitaThemeData.dark();
+  } else if (index == 1) {
+    return (brightness == Brightness.light)
+    ? createYaruLightTheme(
+      primaryColor: Colors.green,
+    )
+    : createYaruDarkTheme(
+      primaryColor: Colors.green
+    );   
+  } else {
+    return (brightness == Brightness.light)
+    ? ThemeData(
+        brightness: Brightness.light,
+        colorScheme: ColorScheme.fromSeed(
+          brightness: Brightness.light,
+          seedColor: Colors.green
+        ),
+    )
+    : ThemeData(
+        brightness: Brightness.dark,
+        colorScheme: ColorScheme.fromSeed(
+          brightness: Brightness.dark,
+          seedColor: Colors.green
+        ),
+    );
+  }
 }

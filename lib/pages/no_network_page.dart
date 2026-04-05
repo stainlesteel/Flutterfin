@@ -46,7 +46,7 @@ class _NoNetworkPageState extends State<NoNetworkPage> {
 
                     try {
                       Future.wait([
-                        ama.makeClient(ama.lastUsedServer),
+                        ama.makeClient(ama.lastUsedServer, context),
                       ]);
                       ama.setUser(userData);
                       _widgetPage = HomePage(index: ama.lastUsedServer);

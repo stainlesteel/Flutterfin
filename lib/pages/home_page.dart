@@ -272,12 +272,6 @@ class _HomePageState extends State<HomePage> {
         appBar: AppBar(
           title: Text('Jellyfin'),
           centerTitle: true,
-          leading: TextButton(
-            onPressed: () async {
-              await ama.logOut(widget.index!, context);
-            },
-            child: Text('Back'),
-          ),
         ),
         body: SingleChildScrollView(
           child: Center(

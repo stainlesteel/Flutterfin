@@ -74,7 +74,7 @@ extension Misc on JellyfinAPI {
     }
   }
 
-  Future<void> makeClient(int? index) async {
+  Future<void> makeClient(int? index, BuildContext context) async {
     ServerObj _base = serverList[index!]!;
 
     appClient = JellyfinDart(
@@ -105,8 +105,12 @@ extension Misc on JellyfinAPI {
 
     print('made client, url: ${_base.serverURL}');
 
-    final branding = await appClient.getBrandingApi().getBrandingOptions();
-    logInMsg = branding.data?.loginDisclaimer;
+    try {
+      final branding = await appClient.getBrandingApi().getBrandingOptions();
+      logInMsg = branding.data?.loginDisclaimer;
+    } on DioException catch (e) {
+      ServerConnectErrorDiag(context);
+    }
   }
   
   // this function updates lastUsedServer and pushes to homepage
