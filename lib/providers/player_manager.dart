@@ -135,12 +135,15 @@ class PlayerManager {
       showData == null;
     }
 
+    final playbackInfo = await Provider.of<JellyfinAPI>(context, listen: false).getPlaybackInfo(dto.id!);
+    currentMediaSource = playbackInfo.mediaSources!.first;
+
     if (showData == null) {
       Navigator.pop(context);
     } else {
       List<Map<String, dynamic>> episodeData = [];
 
-      for (BaseItemDto? item in showData! ?? {}) {
+      for (BaseItemDto? item in showData ?? {}) {
         String? url = Provider.of<JellyfinAPI>(context, listen: false,).getStreamUrl(dto: item!, mediaSourceId: mediaSourceId);
 
         BaseItemDto newDto = item;
@@ -149,6 +152,7 @@ class PlayerManager {
           mediaSources: playbackInfo.mediaSources,
         );
         item = newDto;
+
 
         episodeData.add({'url': '$url'});
       }

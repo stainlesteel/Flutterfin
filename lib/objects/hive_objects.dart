@@ -70,6 +70,9 @@ class SettingsObj extends HiveObject {
 
   @HiveField(3)
   int themeMode;
+
+  @HiveField(4)
+  bool keepScreenAwake;
   // end display settings
 
   SettingsObj({
@@ -84,6 +87,7 @@ class SettingsObj extends HiveObject {
     this.showUsername = true,
     this.themeType = 0,
     this.themeMode = 0,
+    this.keepScreenAwake = true,
   });
 }
 

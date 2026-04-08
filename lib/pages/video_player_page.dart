@@ -147,20 +147,30 @@ class _SettingsSheetState extends State<SettingsSheet> with SingleTickerProvider
           itemCount: widget.player.mediaData[widget.episodeIndex].mediaSources?.length ?? 0,
           itemBuilder: (context, index) {
             MediaSourceInfo data = widget.player.mediaData[widget.episodeIndex].mediaSources![index];
-            return Card.outlined(
-              child: ListTile(
-                title: Text('${data.name}', style: getTextStyling(1, context),),
-                subtitle: Text('${data.mediaStreams?.first.videoRange ?? ''}'),
-                trailing: Text('${data.mediaStreams?.first.codec ?? ''}'),
-                onTap: () async {
-                  await widget.player.loadMedia(
-                    dto: widget.player.mediaData[widget.episodeIndex], 
-                    context: context, 
-                    resume: false,
-                    mediaSourceId: data.id,
-                  );
-                  widget.player.currentMediaSource = data;
-                },
+            return SizedBox(
+              width: MediaQuery.widthOf(context) * 0.75,
+              child: Card.outlined(
+                child: ListTile(
+                  title: Text('${data.name}', style: getTextStyling(1, context),),
+                  subtitle: Text('${data.mediaStreams?.first.videoRange ?? ''}'),
+                  trailing: Text('${data.mediaStreams?.first.codec ?? ''}'),
+                  onTap: () async {
+                    if (data == widget.player.currentMediaSource) {
+                      SimpleErrorDiag(
+                        title: 'Same Source',
+                        desc: 'The source you tried to change to is already playing.',
+                        context: context,
+                      );
+                    }
+                    await widget.player.loadMedia(
+                      dto: widget.player.mediaData[widget.episodeIndex], 
+                      context: context, 
+                      resume: false,
+                      mediaSourceId: data.id,
+                    );
+                    widget.player.currentMediaSource = data;
+                  },
+                ),
               ),
             );
           },
@@ -199,7 +209,8 @@ class _SettingsSheetState extends State<SettingsSheet> with SingleTickerProvider
       ],
     ];
 
-    return IconButton(
+    return (widget.player.currentMediaSource != null) 
+      ? IconButton(
       onPressed: () {
         showAnimatedSheet(
           context: context,
@@ -217,7 +228,8 @@ class _SettingsSheetState extends State<SettingsSheet> with SingleTickerProvider
       },
       icon: Icon(Icons.settings),
       color: Colors.white,
-    );
+    )
+    : Text('');
   }
 }
 
@@ -247,6 +259,8 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
 
   String? diagName; // this is for the auto-next dialog, and to stop stream from duplicating it
   double percentage = 0; // this is for the percentage tracking stream
+
+  ValueNotifier<bool> loaded = ValueNotifier(false);
 
   @override
   void initState() {
@@ -344,61 +358,60 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
       );
     }
 
-    // set the episode index here
-
-    // stream for checking position to see if we need to add overlay
-
     await Future.delayed(Duration(seconds: 2));
   }
 
   Future<void> autoPlayBack() async {
     final ama = Provider.of<JellyfinAPI>(context, listen: false);
     try {
-        percentage = 0;
-        diagName = null;
+      percentage = 0;
+      diagName = null;
 
-        if (player.player.state.position.inMicroseconds * 10 ~/ player.mediaData[episodeIndex].runTimeTicks! >= 90 ) {
-          player.mediaData[episodeIndex].copyWith(
-            userData: player.mediaData[episodeIndex].userData?.copyWith(
-              played: true,
-            ),
-          );
-        }
-
-        await player.player.stream.buffering.firstWhere(
-          (value) => value == false,
+      if (player.player.state.position.inMicroseconds * 10 ~/ player.mediaData[episodeIndex].runTimeTicks! >= 90 ) {
+        player.mediaData[episodeIndex].copyWith(
+          userData: player.mediaData[episodeIndex].userData?.copyWith(
+            played: true,
+          ),
         );
-
-        final newDuration = Duration(
-          seconds: (player.mediaData[episodeIndex].userData != null)
-          ? player.mediaData[episodeIndex].userData!.playbackPositionTicks! ~/ 10000000
-          : 0,
-        );
-
-        await player.seek(newDuration);
-
-        await player.player.stream.buffering.firstWhere(
-          (value) => value == false,
-        );
-
-        await ama.stopPlayback(
-          player.mediaData[episodeIndex],
-          player.player.state.position,
-        );
-
-        episodeIndex--;
-
-        await player.skipPrevious();
-
-        await ama.startPlayback(player.mediaData[episodeIndex]);
-
-        await Future.delayed(Duration(seconds: 1));
-
-        playerTitle.value = '${widget.viewData.seriesName} - ${player.mediaData[episodeIndex].name ?? 'Unknown Name'}';
-      } on RangeError catch (e) {
-        print('VideoPlayerPage: Episode limit reached!');
       }
+
+      await player.player.stream.buffering.firstWhere(
+        (value) => value == false,
+      );
+
+      final newDuration = Duration(
+        seconds: (player.mediaData[episodeIndex].userData != null)
+        ? player.mediaData[episodeIndex].userData!.playbackPositionTicks! ~/ 10000000
+        : 0,
+      );
+
+      await player.seek(newDuration);
+
+      await player.player.stream.buffering.firstWhere(
+        (value) => value == false,
+      );
+
+      await ama.stopPlayback(
+        player.mediaData[episodeIndex],
+        player.player.state.position,
+      );
+
+      episodeIndex--;
+
+      await player.skipPrevious();
+
+      final playbackInfo = await Provider.of<JellyfinAPI>(context, listen: false).getPlaybackInfo(player.mediaData[episodeIndex].id!);
+      player.currentMediaSource = playbackInfo.mediaSources!.first;
+
+      await ama.startPlayback(player.mediaData[episodeIndex]);
+
+      await Future.delayed(Duration(seconds: 1));
+
+      playerTitle.value = '${widget.viewData.seriesName} - ${player.mediaData[episodeIndex].name ?? 'Unknown Name'}';
+    } on RangeError catch (e) {
+      print('VideoPlayerPage: Episode limit reached!');
     }
+  }
 
   Future<void> autoPlayNext() async {
     final ama = Provider.of<JellyfinAPI>(context, listen: false);
@@ -438,6 +451,9 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
       await player.player.stream.buffering.firstWhere(
         (value) => value == false,
       );
+
+      final playbackInfo = await Provider.of<JellyfinAPI>(context, listen: false).getPlaybackInfo(player.mediaData[episodeIndex].id!);
+      player.currentMediaSource = playbackInfo.mediaSources!.first;
 
       await ama.startPlayback(player.mediaData[episodeIndex]);
       print('new episodeData: ${player.mediaData[episodeIndex]}');
@@ -487,6 +503,8 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
   Widget build(BuildContext context) {
     var ama = context.watch<JellyfinAPI>();
     VideoController videoConts = VideoController(player.player);
+
+    loaded.value = true;
 
     List<Widget> skipButtonList = [
       IconButton(
@@ -609,7 +627,9 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
         MaterialPlayOrPauseButton(), // play pause
         MaterialPositionIndicator(), // position indicator
         Spacer(), // separate left from right
-        SettingsSheet(player: player, episodeIndex: episodeIndex),
+        loaded.value
+        ? SettingsSheet(player: player, episodeIndex: episodeIndex)
+        : CircularProgressIndicator(),
         MaterialFullscreenButton(), // fullscreen button
       ],
     );

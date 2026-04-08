@@ -12,6 +12,7 @@ import 'package:jellyfin/objects/objects.dart';
 import 'package:jellyfin/comps/comps.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:overlayment/overlayment.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
 
 final bool debug = false;
 String appTitle = 'Flutterfin';
@@ -106,8 +107,6 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   Widget? page;
-  late ThemeData theme;
-  late ThemeData darkTheme;
 
   @override
   void initState() {
@@ -121,6 +120,10 @@ class _MyAppState extends State<MyApp> {
     final networkStatus = await checkNetwork();
 
     late Widget tempPageValue;
+
+    Provider.of<SettingsProvider>(context, listen: false).settingsObj!.keepScreenAwake
+    ? WakelockPlus.enable()
+    : WakelockPlus.disable();
 
     if (debug == true) {
       tempPageValue = DebugPage(box: widget.jellyfinBox);
@@ -149,17 +152,8 @@ class _MyAppState extends State<MyApp> {
     setState(
       () {
         page = tempPageValue;
-        theme = getTheme(
-          index: Provider.of<SettingsProvider>(context, listen: false).settingsObj!.themeType,
-          brightness: Brightness.light,
-        );
-        darkTheme = getTheme(
-          index: Provider.of<SettingsProvider>(context, listen: false).settingsObj!.themeType,
-          brightness: Brightness.dark,
-        );
       }
     );
-
   }
 
   @override
@@ -169,19 +163,16 @@ class _MyAppState extends State<MyApp> {
 
     return Consumer<SettingsProvider>(
       builder: (context, sets, child) {
-        theme = getTheme(
-          index: sets.settingsObj!.themeType,
-          brightness: Brightness.light,
-        );
-        darkTheme = getTheme(
-          index: sets.settingsObj!.themeType,
-          brightness: Brightness.dark,
-        );
-
         return MaterialApp(
           title: 'Flutter Demo',
-          theme: theme,
-          darkTheme: darkTheme,
+          theme: getTheme(
+            index: sets.settingsObj!.themeType,
+            brightness: Brightness.light,
+          ),
+          darkTheme: getTheme(
+            index: sets.settingsObj!.themeType,
+            brightness: Brightness.dark,
+          ),
           themeMode: ThemeMode.values[sets.settingsObj!.themeMode],
           scrollBehavior: CustomScrollBehaviour(),
           navigatorKey: navgatorKey,

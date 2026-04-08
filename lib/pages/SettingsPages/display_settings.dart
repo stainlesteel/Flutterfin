@@ -3,6 +3,8 @@ import 'package:jellyfin/comps/comps.dart';
 import 'package:jellyfin/objects/objects.dart';
 import 'package:jellyfin/providers/settings_provider.dart';
 import 'package:provider/provider.dart';
+import 'package:jellyfin/main.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
 
 class DisplaySettingsPage extends StatefulWidget {
   const DisplaySettingsPage({super.key});
@@ -141,6 +143,24 @@ class _DisplaySettingsPage extends State<DisplaySettingsPage> {
                     context: context
                   );
                 },
+              ),
+              SizedBox(height: 5,),
+              Text('Other', style: getTextStyling(2, context)),
+              SizedBox(height: 5,),
+              EasyTile(
+                title: Text('Keep Screen Awake', style: getTextStyling(4, context),),
+                subtitle: Text("Stop OS from turning off screen by itself while using $appTitle"),
+                trailing: Switch(
+                  value: sets.settingsObj!.keepScreenAwake,
+                  onChanged: (val) async {
+                    sets.settingsObj!.keepScreenAwake = val;
+                    WakelockPlus.toggle(enable: val);
+
+                    await sets.saveData();
+                    sets.notifyListeners();
+                  },
+                ),
+                context: context,
               ),
             ],
           ),

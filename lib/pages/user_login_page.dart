@@ -195,14 +195,6 @@ class _LogInPageState extends State<LogInPage> {
                                   }
                                 },
                                 child: Text('Quick Connect', style: _textcolor,),
-                                style: ButtonStyle(
-                                  backgroundColor:
-                                      WidgetStatePropertyAll<Color>(
-                                        Theme.of(
-                                          context,
-                                        ).colorScheme.onTertiaryFixed,
-                                      ),
-                                ),
                               ),
                             ),
                           ),
@@ -274,11 +266,6 @@ class _LogInPageState extends State<LogInPage> {
                           );
                         },
                         child: Text('Available Users', style: _textcolor,),
-                        style: ButtonStyle(
-                          backgroundColor: WidgetStatePropertyAll<Color>(
-                            Theme.of(context).colorScheme.onPrimaryFixed,
-                          ),
-                        ),
                       ),
                     ),
                     SizedBox(height: 20),

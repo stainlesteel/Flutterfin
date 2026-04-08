@@ -112,13 +112,14 @@ class SettingsObjAdapter extends TypeAdapter<SettingsObj> {
       showUsername: fields[1] as bool,
       themeType: fields[2] as int,
       themeMode: fields[3] as int,
+      keepScreenAwake: fields[4] as bool,
     );
   }
 
   @override
   void write(BinaryWriter writer, SettingsObj obj) {
     writer
-      ..writeByte(4)
+      ..writeByte(5)
       ..writeByte(0)
       ..write(obj.homepageCarousels)
       ..writeByte(1)
@@ -126,7 +127,9 @@ class SettingsObjAdapter extends TypeAdapter<SettingsObj> {
       ..writeByte(2)
       ..write(obj.themeType)
       ..writeByte(3)
-      ..write(obj.themeMode);
+      ..write(obj.themeMode)
+      ..writeByte(4)
+      ..write(obj.keepScreenAwake);
   }
 
   @override
