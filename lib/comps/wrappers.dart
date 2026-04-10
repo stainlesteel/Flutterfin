@@ -137,13 +137,12 @@ ThemeData getTheme({required int index, required Brightness brightness}) {
     ? AdwaitaThemeData.light()
     : AdwaitaThemeData.dark();
   } else if (index == 1) {
-    return (brightness == Brightness.light)
-    ? createYaruLightTheme(
-      primaryColor: Colors.green,
-    )
-    : createYaruDarkTheme(
-      primaryColor: Colors.green
-    );   
+    return createYaruTheme(
+      colorScheme: ColorScheme.fromSeed(
+        brightness: brightness,
+        seedColor: Colors.green,
+      )
+    );
   } else {
     return (brightness == Brightness.light)
     ? ThemeData(

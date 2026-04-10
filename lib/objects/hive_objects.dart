@@ -73,7 +73,25 @@ class SettingsObj extends HiveObject {
 
   @HiveField(4)
   bool keepScreenAwake;
+
+  @HiveField(5)
+  bool useSlidingPageTransition; // only for item pages
   // end display settings
+  
+  // start playback settings
+  @HiveField(6)
+  double persistentPlaybackSpeed;
+  
+  @HiveField(7)
+  bool useHLS;
+
+  @HiveField(8)
+  bool playNextEpisodeAuto;
+
+  @HiveField(9)
+  bool showSkipCreditsDialog;
+
+  // end playback settings
 
   SettingsObj({
     this.homepageCarousels = const [
@@ -88,6 +106,11 @@ class SettingsObj extends HiveObject {
     this.themeType = 0,
     this.themeMode = 0,
     this.keepScreenAwake = true,
+    this.useSlidingPageTransition = true,
+    this.persistentPlaybackSpeed = 1.00,
+    this.useHLS = false,
+    this.playNextEpisodeAuto = true,
+    this.showSkipCreditsDialog = true,
   });
 }
 

@@ -46,6 +46,8 @@ class _SettingsSheetState extends State<SettingsSheet> with SingleTickerProvider
 
   @override
   Widget build(BuildContext context) {
+    SettingsProvider sets = context.watch<SettingsProvider>();
+
 
     final List<List<Widget>> sheetPages = [
 [
@@ -88,25 +90,31 @@ class _SettingsSheetState extends State<SettingsSheet> with SingleTickerProvider
         Text('Playback Speed', style: getTextStyling(2, context),),
         Text('Wrong positions will not affect the speed'),
         SizedBox(height: 3,),
-        Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: TextField(
-            decoration: InputDecoration(
-              border: OutlineInputBorder(),
-              filled: true,
-              hintText: 'Type the number here',
-            ),
-            onChanged: (string) async {
-              try {
-                double rate = double.parse(string);
-          
-                await widget.player.setRate(rate);
-                print('Playback rate is now: ${double.parse(string)}');
-              } catch (e) {
-                print('User gave wrong playback rate');
-              }
-            },
-          ),
+        StreamBuilder(
+          stream: widget.player.player.stream.rate,
+          builder: (context, asyncSnapshot) {
+            return Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: TextField(
+                decoration: InputDecoration(
+                  border: OutlineInputBorder(),
+                  filled: true,
+                  hintText: 'Speed is ${asyncSnapshot.data ?? "unavailable"}',
+                ),
+                onChanged: (string) async {
+                  try {
+                    double rate = double.parse(string);
+
+              
+                    await widget.player.setRate(rate);
+                    print('Playback rate is now: ${double.parse(string)}');
+                  } catch (e) {
+                    print('User gave wrong playback rate');
+                  }
+                },
+              ),
+            );
+          }
         ),
         Wrap(
           spacing: 5,
@@ -115,6 +123,11 @@ class _SettingsSheetState extends State<SettingsSheet> with SingleTickerProvider
               InkWell(
                 onTap: () async {
                   await widget.player.setRate(num);
+
+                  sets.settingsObj!.persistentPlaybackSpeed = 1.00;
+                  await sets.saveData();
+                  sets.notifyListeners();
+
                   print('Playback rate is now: $num');
                 },
                 child: Chip( 
@@ -129,6 +142,9 @@ class _SettingsSheetState extends State<SettingsSheet> with SingleTickerProvider
           child: FilledButton.tonal(
             onPressed: () async {
               await widget.player.setRate(1);
+              sets.settingsObj!.persistentPlaybackSpeed = 1.00;
+              await sets.saveData();
+              sets.notifyListeners();
             },
             child: Text('Reset to Default'),
           ),
@@ -278,11 +294,15 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
   }
 
   Future<void> starter() async {
+    SettingsProvider sets = context.read<SettingsProvider>();
+
     await player.loadMedia(
       dto: widget.viewData, 
       context: context, 
       resume: widget.resume
     );
+
+    await player.setRate(sets.settingsObj!.persistentPlaybackSpeed);
 
     // stream for reporting playback to Jellyfin
     playbackReport = player.reportPlaybackStream(context).listen(
@@ -292,7 +312,7 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
     );
 
     // stream for checking completion 
-    if (widget.viewData.type == BaseItemKind.episode) {
+    if (widget.viewData.type == BaseItemKind.episode && sets.settingsObj!.playNextEpisodeAuto == true) {
       completeTracker =  player.player.stream.completed.listen(
         (value) async {
           if (widget.viewData.type != BaseItemKind.episode) {
@@ -303,7 +323,9 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
           }
         },
       );
-
+    }
+    
+    if (widget.viewData.type == BaseItemKind.episode && sets.settingsObj!.showSkipCreditsDialog == true) {
       trackerForAutonext = player.player.stream.position.listen(
         (value) async {
           await Future.delayed(Duration(seconds: 1));

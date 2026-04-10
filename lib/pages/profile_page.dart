@@ -135,7 +135,26 @@ class _ProfilePageState extends State<ProfilePage> {
                   );
                 } 
               ),
-              SizedBox(height: 5),
+              SizedBox(height: 5,),
+              EasyTile(
+                leading: Icon(
+                  Icons.play_circle
+                ),
+                title: Text(
+                  'Playback',
+                  style: getTextStyling(4, context),
+                ),
+                onTap: () async {
+                  await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => PlaybackSettingsPage()
+                    )
+                  );
+                },
+                context: context
+              ),
+              SizedBox(height: 15),
               EasyTile(
                 context: context,
                 leading: Icon(

@@ -40,6 +40,7 @@ class PlayerManager {
     String? mediaSourceId
   }) async {
     Duration? runtimeDuration;
+    SettingsProvider sets = context.read<SettingsProvider>();
 
     if (mediaSourceId != null) {
       await pause();
@@ -56,12 +57,14 @@ class PlayerManager {
         dto: dto, 
         context: context,
         mediaSourceId: (mediaSourceId != null) ? mediaSourceId : null,
+        useHLS: sets.settingsObj!.useHLS,
       );
     } else if (dto.type == BaseItemKind.episode) {
       await addShow(
         dto: dto,
         context: context,
         mediaSourceId: mediaSourceId,
+        useHLS: sets.settingsObj!.useHLS,
       );
     }
 
@@ -106,10 +109,14 @@ class PlayerManager {
     }
   }
 
-  Future<void> addMovie({required BaseItemDto dto, required BuildContext context, String? mediaSourceId}) async {
+  Future<void> addMovie({required BaseItemDto dto, required BuildContext context, String? mediaSourceId, bool? useHLS}) async {
     BaseItemDto newDto = dto;
 
-    final url = Provider.of<JellyfinAPI>(context, listen: false).getStreamUrl(dto: newDto, mediaSourceId: mediaSourceId);
+    final url = Provider.of<JellyfinAPI>(context, listen: false).getStreamUrl(
+      dto: newDto, 
+      mediaSourceId: mediaSourceId,
+      useHLS: useHLS,
+    );
     playMedia = Media(url!);
 
     final playbackInfo = await Provider.of<JellyfinAPI>(context, listen: false).getPlaybackInfo(newDto.id!);
@@ -123,7 +130,7 @@ class PlayerManager {
     await player.open(playMedia, play: false);
   }
 
-  Future<void> addShow({required BaseItemDto dto, required BuildContext context, String? mediaSourceId}) async {
+  Future<void> addShow({required BaseItemDto dto, required BuildContext context, String? mediaSourceId, bool? useHLS}) async {
     late List<BaseItemDto>? showData;
     try {
       showData = await Provider.of<JellyfinAPI>(context, listen: false).getShowEpisodes(
@@ -144,7 +151,11 @@ class PlayerManager {
       List<Map<String, dynamic>> episodeData = [];
 
       for (BaseItemDto? item in showData ?? {}) {
-        String? url = Provider.of<JellyfinAPI>(context, listen: false,).getStreamUrl(dto: item!, mediaSourceId: mediaSourceId);
+        String? url = Provider.of<JellyfinAPI>(context, listen: false,).getStreamUrl(
+          dto: item!, 
+          mediaSourceId: mediaSourceId,
+          useHLS: useHLS,
+        );
 
         BaseItemDto newDto = item;
         final playbackInfo = await Provider.of<JellyfinAPI>(context, listen: false).getPlaybackInfo(newDto.id!);

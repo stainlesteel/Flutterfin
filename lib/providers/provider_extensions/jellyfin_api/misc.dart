@@ -149,8 +149,10 @@ extension Misc on JellyfinAPI {
     notifyListeners();
   }
 
-  String? getStreamUrl({required BaseItemDto dto, String? mediaSourceId, int? audioStreamIndex}) {
-    String baseUrl = '${serverList[lastUsedServer!].serverURL}/Videos/${dto.id}/stream?Static=true&api_key=${serverList[lastUsedServer!].userData!.accessToken}';
+  String? getStreamUrl({required BaseItemDto dto, String? mediaSourceId, int? audioStreamIndex, bool? useHLS}) {
+    String baseUrl = (useHLS ?? false) 
+    ? '${serverList[lastUsedServer!].serverURL}/Videos/${dto.id}/main.m3u8?Static=false&api_key=${serverList[lastUsedServer!].userData!.accessToken}'
+    : '${serverList[lastUsedServer!].serverURL}/Videos/${dto.id}/stream?Static=true&api_key=${serverList[lastUsedServer!].userData!.accessToken}';
 
     if (mediaSourceId != null) {
       baseUrl = '$baseUrl&MediaSourceId=$mediaSourceId';
