@@ -92,6 +92,19 @@ class SettingsObj extends HiveObject {
   bool showSkipCreditsDialog;
 
   // end playback settings
+  
+  // start subtitle settings
+  @HiveField(10)
+  double subtitleHeight;
+
+  @HiveField(11)
+  double subtitleFontSize;
+
+  @HiveField(12)
+  double subtitleWordSpacing;
+
+  @HiveField(13)
+  int fontWeightIndex;
 
   SettingsObj({
     this.homepageCarousels = const [
@@ -111,6 +124,10 @@ class SettingsObj extends HiveObject {
     this.useHLS = false,
     this.playNextEpisodeAuto = true,
     this.showSkipCreditsDialog = true,
+    this.subtitleHeight = 1.4,
+    this.subtitleFontSize = 32.0,
+    this.subtitleWordSpacing = 0,
+    this.fontWeightIndex = 0,
   });
 }
 

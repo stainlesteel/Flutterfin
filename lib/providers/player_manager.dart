@@ -245,4 +245,9 @@ class PlayerManager {
     await Future.delayed(Duration(seconds: 1));
     await player.setAudioTrack(track);
   }
+
+  Future<void> setSubtitleTrack(SubtitleTrack track) async {
+    await Future.delayed(Duration(seconds: 1));
+    await player.setSubtitleTrack(track);
+  }
 }

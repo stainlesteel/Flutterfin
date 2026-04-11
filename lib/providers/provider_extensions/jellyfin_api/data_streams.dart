@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:jellyfin/providers/providers.dart';
-import 'package:jellyfin/objects/objects.dart';
 import 'package:jellyfin/comps/comps.dart';
 import 'package:dio/dio.dart';
 import 'package:jellyfin_dart/jellyfin_dart.dart';
-import 'package:jellyfin/pages/pages.dart';
 
 import 'dart:math';
 
@@ -283,5 +281,32 @@ extension DataStreams on JellyfinAPI {
   Future<PlaybackInfoResponse> getPlaybackInfo(String itemId) async {
     final data = await MIapi.getPlaybackInfo(itemId: itemId, userId: userID);
     return data.data!;
+  }
+
+  Future<String?> getRemoteSubtitles({required String itemID, required BuildContext context}) async {
+    final SubtitleApi sAPI = appClient.getSubtitleApi();
+
+    try {
+      final data = await sAPI.getRemoteSubtitles(
+        subtitleId: itemID
+      );
+
+      final subs = String.fromCharCodes(data.data ?? []);
+      return subs;
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 403) {
+        SimpleErrorDiag(
+          title: 'Subtitle Error',
+          desc: 
+          """
+          HTTP 403
+          Server did not want to give a external subtitle for this item,
+          most likely you did not set up the provider for subtitles (i.e. OpenSubtitles) or it is down.
+          """,
+          context: context,
+        );
+      }
+      return null;
+    }
   }
 }

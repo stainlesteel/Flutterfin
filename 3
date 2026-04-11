@@ -8,7 +8,6 @@ import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 import 'package:jellyfin/providers/providers.dart';
 import 'package:jellyfin/comps/comps.dart';
-import 'package:file_picker/file_picker.dart';
 
 class SettingsSheet extends StatefulWidget {
   final PlayerManager player;
@@ -240,81 +239,31 @@ class _SettingsSheetState extends State<SettingsSheet> with SingleTickerProvider
       [
         SizedBox(height: 3,),
         Text('Subtitle Tracks', style: getTextStyling(2, context),),
-        if (subtitleStreamList?.isEmpty ?? true) ...[
-          SizedBox(height: 5),
-          Text('No Subtitles Available...'),
-        ]
-        else
-          ListView.builder(
-            shrinkWrap: true,
-            itemCount: subtitleStreamList?.length ?? 0,
-            itemBuilder: (context, index) {
-              MediaStream data = subtitleStreamList![index];
-              return Card.outlined(
-                child: ListTile(
-                  title: Text('${data.displayTitle}', style: getTextStyling(1, context),),
-                  trailing: Text('${data.codec ?? ''}'),
-                  onTap: () async {
-                    await widget.player.setSubtitleTrack(
-                      SubtitleTrack.uri(
-                        Provider.of<JellyfinAPI>(context, listen: false).getSubtitleUrl(
-                          id: widget.player.mediaData[widget.episodeIndex].id!,
-                          subtitleIndex: subtitleStreamList![index].index!,
-                          mediaSourceID: widget.player.currentMediaSource!.id!,
-                        )!,
-                      ),
-                    );
-                  },
-                ),
-              );
-            },
-          ),
+        ListView.builder(
+          shrinkWrap: true,
+          itemCount: subtitleStreamList?.length ?? 0,
+          itemBuilder: (context, index) {
+            MediaStream data = subtitleStreamList![index];
+            return Card.outlined(
+              child: ListTile(
+                title: Text('${data.displayTitle}', style: getTextStyling(1, context),),
+                trailing: Text('${data.codec ?? ''}'),
+                onTap: () async {
+                  await widget.player.setSubtitleTrack(
+                    SubtitleTrack.uri(
+                      Provider.of<JellyfinAPI>(context, listen: false).getSubtitleUrl(
+                        id: widget.player.mediaData[widget.episodeIndex].id!,
+                        subtitleIndex: subtitleStreamList![index].index!,
+                        mediaSourceID: widget.player.currentMediaSource.id!,
+                      )!,
+                    ),
+                  );
+                },
+              ),
+            );
+          },
+        ),
         SizedBox(height: 3,),
-        SizedBox(
-          width: MediaQuery.widthOf(context) * 0.75,
-          child: FilledButton.tonal(
-            onPressed: () async {
-              await widget.player.setSubtitleTrack(
-                SubtitleTrack.data(
-                  await Provider.of<JellyfinAPI>(context, listen: false).getRemoteSubtitles(
-                    itemID: widget.player.mediaData[widget.episodeIndex].id!,
-                    context: context,
-                  ) ?? '',
-                ),
-              );
-            },
-            child: Text('Get Remote Subtitles'),
-          ),
-        ),
-        SizedBox(
-          width: MediaQuery.widthOf(context) * 0.75,
-          child: FilledButton.tonal(
-            onPressed: () async {
-              FilePickerResult? result = await FilePicker.pickFiles(
-                allowMultiple: false,
-                type: FileType.custom,
-                allowedExtensions: ['.srt', '.vtt', '.ssa', '.sub', '.dfxp', '.scc'],
-              );
-
-              if (result != null) {
-                String path = result.files.single.path!;
-
-                await widget.player.setSubtitleTrack(
-                  SubtitleTrack.uri(
-                    'file://$path',
-                  ),
-                );
-              } else {
-                SimpleErrorDiag(
-                  title: 'FilePicker Error',
-                  desc: 'You did not give a subtitle file.',
-                  context: context,
-                );
-              }
-            },
-            child: Text('Upload File'),
-          ),
-        ),
         backButton,
       ],
     ];
@@ -365,7 +314,7 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
   StreamSubscription? trackerForAutonext;
   late StreamSubscription playbackReport;
 
-  late dynamic player;
+  late PlayerManager player;
 
   String? diagName; // this is for the auto-next dialog, and to stop stream from duplicating it
   double percentage = 0; // this is for the percentage tracking stream
@@ -384,8 +333,6 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
   @override
   void dispose() {
     Overlay.of(context).dispose();
-    player.disposePlayer();
-    player = null;
     super.dispose();
   }
 
@@ -600,9 +547,10 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
     }
 
     await player.pause();
+    await player.disposePlayer();
 
 
-    await Future.delayed(Duration(milliseconds: 1000));
+    await Future.delayed(Duration(milliseconds: 100));
 
     Navigator.pop(
       context, 
@@ -688,7 +636,7 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
                 UserItemDataDto? userDto = player.mediaData[episodeIndex].userData;
                 if (userDto?.isFavorite == true) {
                   await ama.unmarkFavorite(player.mediaData[player.getJellyfinIndex(episodeIndex)].id!);
-                  player.mediaData[episodeIndex] = dto!.copyWith(
+                  player.mediaData[episodeIndex] = dto.copyWith(
                     userData: userDto?.copyWith(
                       isFavorite: false,
                     ),
@@ -697,7 +645,7 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
                   favorited.value = false;
                 } else {
                   await ama.markFavorite(player.mediaData[player.getJellyfinIndex(episodeIndex)].id!);
-                  player.mediaData[episodeIndex] = dto!.copyWith(
+                  player.mediaData[episodeIndex] = dto.copyWith(
                     userData: userDto?.copyWith(
                       isFavorite: true,
                     ),
