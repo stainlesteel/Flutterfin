@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:jellyfin/objects/objects.dart';
-import 'package:flutter/foundation.dart';
 import 'package:hive/hive.dart';
 
 class SettingsProvider extends ChangeNotifier {
@@ -9,6 +8,9 @@ class SettingsProvider extends ChangeNotifier {
   SettingsProvider(this.box);
 
   SettingsObj? settingsObj;
+
+  // list of custom settings lists
+  List<TextAlign> textAlignments = [TextAlign.left, TextAlign.right, TextAlign.center];
 
   Future<void> loadSettingsData() async {
     final _data = box.get('settings');
@@ -32,4 +34,10 @@ class SettingsProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  // PLEASE don't use this until you have popped to StartingPage
+  Future<void> wipeItAll() async {
+    settingsObj = SettingsObj();
+    await box.flush();
+    await box.clear();
+  }
 }

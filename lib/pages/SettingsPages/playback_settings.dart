@@ -68,7 +68,7 @@ class _PlaybackSettingsPage extends State<PlaybackSettingsPage> {
                   trailing: SizedBox(
                     width: 100,
                     child: Switch(
-                      value: sets.settingsObj!.useHLS,
+                      value: sets.settingsObj!.useHLS!,
                       onChanged: (val) async {
                         sets.settingsObj!.useHLS = val;
                         sets.notifyListeners();
@@ -83,7 +83,7 @@ class _PlaybackSettingsPage extends State<PlaybackSettingsPage> {
                   trailing: SizedBox(
                     width: 100,
                     child: Switch(
-                      value: sets.settingsObj!.playNextEpisodeAuto,
+                      value: sets.settingsObj!.playNextEpisodeAuto!,
                       onChanged: (val) async {
                         sets.settingsObj!.playNextEpisodeAuto = val;
                         sets.notifyListeners();
@@ -98,7 +98,7 @@ class _PlaybackSettingsPage extends State<PlaybackSettingsPage> {
                   trailing: SizedBox(
                     width: 100,
                     child: Switch(
-                      value: sets.settingsObj!.showSkipCreditsDialog,
+                      value: sets.settingsObj!.showSkipCreditsDialog!,
                       onChanged: (val) async {
                         sets.settingsObj!.showSkipCreditsDialog = val;
                         sets.notifyListeners();

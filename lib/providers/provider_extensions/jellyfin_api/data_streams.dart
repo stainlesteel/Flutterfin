@@ -283,15 +283,15 @@ extension DataStreams on JellyfinAPI {
     return data.data!;
   }
 
-  Future<String?> getRemoteSubtitles({required String itemID, required BuildContext context}) async {
+  Future<String?> getRemoteSubtitles({required int id, required BuildContext context}) async {
     final SubtitleApi sAPI = appClient.getSubtitleApi();
 
     try {
       final data = await sAPI.getRemoteSubtitles(
-        subtitleId: itemID
+        subtitleId: id.toString()
       );
 
-      final subs = String.fromCharCodes(data.data ?? []);
+      final subs = String.fromCharCodes(data.data!);
       return subs;
     } on DioException catch (e) {
       if (e.response?.statusCode == 403) {

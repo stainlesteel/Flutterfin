@@ -173,6 +173,25 @@ class _ProfilePageState extends State<ProfilePage> {
                 },
                 context: context
               ),
+              SizedBox(height: 5,),
+              EasyTile(
+                leading: Icon(
+                  Icons.storage
+                ),
+                title: Text(
+                  'Storage',
+                  style: getTextStyling(4, context),
+                ),
+                onTap: () async {
+                  await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => StorageSettings(),
+                    ),
+                  );
+                },
+                context: context
+              ),
               SizedBox(height: 15),
               EasyTile(
                 context: context,

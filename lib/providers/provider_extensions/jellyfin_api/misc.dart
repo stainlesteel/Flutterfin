@@ -167,4 +167,17 @@ extension Misc on JellyfinAPI {
   String? getSubtitleUrl({required String id, required int subtitleIndex, required String mediaSourceID}) {
     return '${serverList[lastUsedServer!].serverURL}/Videos/$id/$mediaSourceID/Subtitles/$subtitleIndex/subtitles.m3u8';
   }
+
+  // PLEASE do not use before you popped to StartingPage
+  void wipeItAll() {
+    serverList = [];
+    lastUsedServer = null;
+    appClient = null;
+
+    logInMsg = null;
+    userID = null;
+
+    isVerifyingServer = false;
+    notifyListeners();
+  }
 }

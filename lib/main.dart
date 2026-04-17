@@ -38,8 +38,18 @@ class CustomScrollBehaviour extends MaterialScrollBehavior {
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  final _fss = const FlutterSecureStorage();
+  if (debug) {
+    runApp(
+      MaterialApp(
+        navigatorKey: GlobalKey<NavigatorState>(),
+        title: 'Flutter Demo',
+        scrollBehavior: CustomScrollBehaviour(),
+        home: DebugPage(),            
+      )
+    );
+  }
 
+  final _fss = const FlutterSecureStorage();
 
   String? _eKey = await _fss.read(key: 'encryptor'); // find encryptor
   dynamic _hiveKey = Hive.generateSecureKey(); // hive secure key
@@ -112,6 +122,11 @@ class _MyAppState extends State<MyApp> {
   void initState() {
     super.initState();
     Provider.of<JellyfinAPI>(context, listen: false).loadAppData();
+
+    Provider.of<SettingsProvider>(context, listen: false).settingsObj!.keepScreenAwake!
+    ? WakelockPlus.enable()
+    : WakelockPlus.disable();
+
     starter();
   }
 
@@ -121,12 +136,8 @@ class _MyAppState extends State<MyApp> {
 
     late Widget tempPageValue;
 
-    Provider.of<SettingsProvider>(context, listen: false).settingsObj!.keepScreenAwake
-    ? WakelockPlus.enable()
-    : WakelockPlus.disable();
-
     if (debug == true) {
-      tempPageValue = DebugPage(box: widget.jellyfinBox);
+      tempPageValue = DebugPage();
     } else {
       if (networkStatus != ConnectivityResult.none) {
         if (ama.lastUsedServer != null) {
@@ -166,14 +177,14 @@ class _MyAppState extends State<MyApp> {
         return MaterialApp(
           title: 'Flutter Demo',
           theme: getTheme(
-            index: sets.settingsObj!.themeType,
+            index: sets.settingsObj!.themeType!,
             brightness: Brightness.light,
           ),
           darkTheme: getTheme(
-            index: sets.settingsObj!.themeType,
+            index: sets.settingsObj!.themeType!,
             brightness: Brightness.dark,
           ),
-          themeMode: ThemeMode.values[sets.settingsObj!.themeMode],
+          themeMode: ThemeMode.values[sets.settingsObj!.themeMode!],
           scrollBehavior: CustomScrollBehaviour(),
           navigatorKey: navgatorKey,
           home: child,            

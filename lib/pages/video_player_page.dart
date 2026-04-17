@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:jellyfin/pages/SettingsPages/settings_pages.dart';
 import 'package:overlayment/overlayment.dart';
 import 'package:provider/provider.dart';
 import 'package:jellyfin_dart/jellyfin_dart.dart';
@@ -52,7 +53,7 @@ class _SettingsSheetState extends State<SettingsSheet> with SingleTickerProvider
   @override
   Widget build(BuildContext context) {
     SettingsProvider sets = context.watch<SettingsProvider>();
-
+    JellyfinAPI ama = context.watch<JellyfinAPI>();
 
     final List<List<Widget>> sheetPages = [
 [
@@ -174,7 +175,9 @@ class _SettingsSheetState extends State<SettingsSheet> with SingleTickerProvider
         ),
         ListView.builder(
           shrinkWrap: true,
-          itemCount: widget.player.mediaData[widget.episodeIndex].mediaSources?.length ?? 0,
+          itemCount: (widget.player.mediaData[widget.episodeIndex].mediaSources?.isEmpty ?? true)
+          ? widget.player.mediaData[widget.episodeIndex].mediaSources?.length ?? 0
+          : 0,
           itemBuilder: (context, index) {
             MediaSourceInfo data = widget.player.mediaData[widget.episodeIndex].mediaSources![index];
             return SizedBox(
@@ -223,7 +226,7 @@ class _SettingsSheetState extends State<SettingsSheet> with SingleTickerProvider
                 onTap: () async {
                   await widget.player.setAudioTrack(
                     AudioTrack.uri(
-                      Provider.of<JellyfinAPI>(context, listen: false).getStreamUrl(
+                      ama.getStreamUrl(
                         dto: widget.player.mediaData[widget.episodeIndex],
                         audioStreamIndex: data.index,
                       )!,
@@ -257,7 +260,7 @@ class _SettingsSheetState extends State<SettingsSheet> with SingleTickerProvider
                   onTap: () async {
                     await widget.player.setSubtitleTrack(
                       SubtitleTrack.uri(
-                        Provider.of<JellyfinAPI>(context, listen: false).getSubtitleUrl(
+                        ama.getSubtitleUrl(
                           id: widget.player.mediaData[widget.episodeIndex].id!,
                           subtitleIndex: subtitleStreamList![index].index!,
                           mediaSourceID: widget.player.currentMediaSource!.id!,
@@ -274,22 +277,6 @@ class _SettingsSheetState extends State<SettingsSheet> with SingleTickerProvider
           width: MediaQuery.widthOf(context) * 0.75,
           child: FilledButton.tonal(
             onPressed: () async {
-              await widget.player.setSubtitleTrack(
-                SubtitleTrack.data(
-                  await Provider.of<JellyfinAPI>(context, listen: false).getRemoteSubtitles(
-                    itemID: widget.player.mediaData[widget.episodeIndex].id!,
-                    context: context,
-                  ) ?? '',
-                ),
-              );
-            },
-            child: Text('Get Remote Subtitles'),
-          ),
-        ),
-        SizedBox(
-          width: MediaQuery.widthOf(context) * 0.75,
-          child: FilledButton.tonal(
-            onPressed: () async {
               FilePickerResult? result = await FilePicker.pickFiles(
                 allowMultiple: false,
                 type: FileType.custom,
@@ -298,6 +285,7 @@ class _SettingsSheetState extends State<SettingsSheet> with SingleTickerProvider
 
               if (result != null) {
                 String path = result.files.single.path!;
+                print(path);
 
                 await widget.player.setSubtitleTrack(
                   SubtitleTrack.uri(
@@ -383,9 +371,6 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
 
   @override
   void dispose() {
-    Overlay.of(context).dispose();
-    player.disposePlayer();
-    player = null;
     super.dispose();
   }
 
@@ -600,14 +585,11 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
     }
 
     await player.pause();
-
+    await player.stop();
+    Overlay.of(context).dispose();
 
     await Future.delayed(Duration(milliseconds: 1000));
 
-    Navigator.pop(
-      context, 
-      'rebuild',
-    );
   }
 
   late ValueNotifier<bool> favorited = ValueNotifier<bool>(widget.viewData.userData?.isFavorite ?? false);
@@ -618,8 +600,12 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
 
   @override
   Widget build(BuildContext context) {
-    var ama = context.watch<JellyfinAPI>();
-    VideoController videoConts = VideoController(player.player);
+    JellyfinAPI ama = context.watch<JellyfinAPI>();
+    SettingsProvider sets = context.watch<SettingsProvider>();
+
+    VideoController videoConts = VideoController(
+      player.player,
+    );
 
     loaded.value = true;
 
@@ -649,6 +635,10 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
         InkWell(
           onTap: () async {
             await pop(ama);
+            Navigator.pop(
+              context, 
+              'rebuild',
+            );
           },
           child: Row(
             spacing: 3,
@@ -744,9 +734,14 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
         MaterialPlayOrPauseButton(), // play pause
         MaterialPositionIndicator(), // position indicator
         Spacer(), // separate left from right
-        loaded.value
-        ? SettingsSheet(player: player, episodeIndex: episodeIndex)
-        : CircularProgressIndicator(),
+        ValueListenableBuilder(
+          valueListenable: loaded,
+          builder: (context, value, child) {
+            return (value) 
+            ? SettingsSheet(player: player, episodeIndex: episodeIndex)
+            : CircularProgressIndicator();
+          }
+        ),
         MaterialFullscreenButton(), // fullscreen button
       ],
     );
@@ -755,8 +750,8 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
       canPop: true,
       onPopInvoked: (didPop) async {
         if (didPop) return;
-
         await pop(ama);
+        Navigator.pop(context, 'rebuild');
       },
       child: Scaffold(
         resizeToAvoidBottomInset: false,
@@ -770,6 +765,17 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
                   normal: themeData,
                   fullscreen: themeData,
                   child: Video(
+                    subtitleViewConfiguration: SubtitleViewConfiguration(
+                      visible: true,
+                      textAlign: sets.textAlignments[sets.settingsObj!.subtitleAlignIndex],
+                      style: TextStyle(
+                        height: sets.settingsObj!.subtitleHeight,
+                        fontSize: sets.settingsObj!.subtitleFontSize,
+                        wordSpacing: sets.settingsObj!.subtitleWordSpacing,
+                        fontWeight: sets.settingsObj!.fontIsBold ? FontWeight.bold : FontWeight.normal,
+                        color: Colors.white,
+                      ),
+                    ),
                     controller: videoConts,
                     controls: MaterialVideoControls,
                   ),

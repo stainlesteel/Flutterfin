@@ -194,6 +194,11 @@ class PlayerManager {
     await player.pause();
   }
 
+  Future<void> stop() async {
+    Future.delayed(Duration(seconds: 1));
+    await player.stop();
+  }
+
   Future<void> skipNext() async {
     Future.delayed(Duration(seconds: 1));
     await player.next();

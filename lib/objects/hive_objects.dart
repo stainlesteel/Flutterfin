@@ -104,8 +104,12 @@ class SettingsObj extends HiveObject {
   double subtitleWordSpacing;
 
   @HiveField(13)
-  int fontWeightIndex;
+  bool fontIsBold;
 
+  @HiveField(14)
+  int subtitleAlignIndex;
+  // end subtitle settings
+  
   SettingsObj({
     this.homepageCarousels = const [
       HomepageCarousels.userViews,
@@ -125,9 +129,10 @@ class SettingsObj extends HiveObject {
     this.playNextEpisodeAuto = true,
     this.showSkipCreditsDialog = true,
     this.subtitleHeight = 1.4,
-    this.subtitleFontSize = 32.0,
+    this.subtitleFontSize = 32,
     this.subtitleWordSpacing = 0,
-    this.fontWeightIndex = 0,
+    this.fontIsBold = false,
+    this.subtitleAlignIndex = 2,
   });
 }
 

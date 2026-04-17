@@ -118,13 +118,18 @@ class SettingsObjAdapter extends TypeAdapter<SettingsObj> {
       useHLS: fields[7] as bool,
       playNextEpisodeAuto: fields[8] as bool,
       showSkipCreditsDialog: fields[9] as bool,
+      subtitleHeight: fields[10] as double,
+      subtitleFontSize: fields[11] as double,
+      subtitleWordSpacing: fields[12] as double,
+      fontIsBold: fields[13] as bool,
+      subtitleAlignIndex: fields[14] as int,
     );
   }
 
   @override
   void write(BinaryWriter writer, SettingsObj obj) {
     writer
-      ..writeByte(10)
+      ..writeByte(15)
       ..writeByte(0)
       ..write(obj.homepageCarousels)
       ..writeByte(1)
@@ -144,7 +149,17 @@ class SettingsObjAdapter extends TypeAdapter<SettingsObj> {
       ..writeByte(8)
       ..write(obj.playNextEpisodeAuto)
       ..writeByte(9)
-      ..write(obj.showSkipCreditsDialog);
+      ..write(obj.showSkipCreditsDialog)
+      ..writeByte(10)
+      ..write(obj.subtitleHeight)
+      ..writeByte(11)
+      ..write(obj.subtitleFontSize)
+      ..writeByte(12)
+      ..write(obj.subtitleWordSpacing)
+      ..writeByte(13)
+      ..write(obj.fontIsBold)
+      ..writeByte(14)
+      ..write(obj.subtitleAlignIndex);
   }
 
   @override

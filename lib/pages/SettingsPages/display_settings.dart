@@ -102,7 +102,7 @@ class _DisplaySettingsPage extends State<DisplaySettingsPage> {
                   title: Text('Show Username', style: getTextStyling(4, context),),
                   subtitle: Text("This shows the 'welcome, user' text on the Home Page"),
                   trailing: Switch(
-                    value: sets.settingsObj!.showUsername,
+                    value: sets.settingsObj!.showUsername!,
                     onChanged: (val) async {
                       sets.settingsObj!.showUsername = val;
                       sets.notifyListeners();
@@ -122,12 +122,12 @@ class _DisplaySettingsPage extends State<DisplaySettingsPage> {
                       trailing: Padding(
                         padding: const EdgeInsets.all(8.0),
                         child: DropdownMenu<HomepageCarousels>(
-                          initialSelection: sets.settingsObj!.homepageCarousels[index],
+                          initialSelection: sets.settingsObj!.homepageCarousels![index],
                           onSelected: (HomepageCarousels? carousel) async {
                             if (carousel == null) {
                               return;
                             }
-                            sets.settingsObj!.homepageCarousels[index] = carousel;
+                            sets.settingsObj!.homepageCarousels![index] = carousel;
                               
                             await sets.saveData();
                             sets.notifyListeners();
@@ -152,7 +152,7 @@ class _DisplaySettingsPage extends State<DisplaySettingsPage> {
                   title: Text('Keep Screen Awake', style: getTextStyling(4, context),),
                   subtitle: Text("Stop OS from turning off screen by itself while using $appTitle. Some OS's may ignore this setting."),
                   trailing: Switch(
-                    value: sets.settingsObj!.keepScreenAwake,
+                    value: sets.settingsObj!.keepScreenAwake!,
                     onChanged: (val) async {
                       sets.settingsObj!.keepScreenAwake = val;
                       WakelockPlus.toggle(enable: val);
@@ -167,7 +167,7 @@ class _DisplaySettingsPage extends State<DisplaySettingsPage> {
                   title: Text('Use Sliding Transition for Pages', style: getTextStyling(4, context),),
                   subtitle: Text("This will change only the transition for moving to or out of an Item, if selected the slide + fade transition is used"),
                   trailing: Switch(
-                    value: sets.settingsObj!.useSlidingPageTransition,
+                    value: sets.settingsObj!.useSlidingPageTransition!,
                     onChanged: (val) async {
                       sets.settingsObj!.useSlidingPageTransition = val;
       

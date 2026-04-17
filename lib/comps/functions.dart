@@ -11,7 +11,7 @@ Future<void> goToItemPage({required BaseItemDto data, required BuildContext cont
 
   await Navigator.push(
     context,
-    sets.settingsObj!.useSlidingPageTransition
+    sets.settingsObj!.useSlidingPageTransition!
     ? PageRouteBuilder(
       pageBuilder: (context, __, ___) => ItemPage(viewData: data),
       transitionsBuilder: (context, animation, animation2, child) {
