@@ -47,6 +47,7 @@ void main() async {
         home: DebugPage(),            
       )
     );
+    return;
   }
 
   final _fss = const FlutterSecureStorage();
@@ -96,10 +97,13 @@ void main() async {
     MultiProvider(
       providers: [
         ChangeNotifierProvider<JellyfinAPI>(
-          create: (_) => JellyfinAPI(jellyBox),
+          create: (_) => JellyfinAPI(jellyBox)..loadAppData(),
         ),
         ChangeNotifierProvider<SettingsProvider>(
           create: (_) => SettingsProvider(jellyBox)..loadSettingsData(),
+        ),
+        ChangeNotifierProvider<DownloaderManager>(
+          create: (_) => DownloaderManager()..init(),
         ),
       ],
       child: MyApp(jellyfinBox: jellyBox),
@@ -121,7 +125,6 @@ class _MyAppState extends State<MyApp> {
   @override
   void initState() {
     super.initState();
-    Provider.of<JellyfinAPI>(context, listen: false).loadAppData();
 
     Provider.of<SettingsProvider>(context, listen: false).settingsObj!.keepScreenAwake!
     ? WakelockPlus.enable()
@@ -159,7 +162,7 @@ class _MyAppState extends State<MyApp> {
         tempPageValue = NoNetworkPage();
       }
     }
-    
+
     setState(
       () {
         page = tempPageValue;

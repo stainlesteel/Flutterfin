@@ -33,6 +33,26 @@ class _SubtitleSettingsState extends State<SubtitleSettings> {
           child: Center(
             child: Column(
               children: [
+                SizedBox(height: 5),
+                Stack(
+                  children: [
+                    Positioned.fill(child: Container(color: Colors.black.withOpacity(0.5))),
+                    Center(
+                      child: Text(
+                        'Subtitles will look like this',
+                        textAlign: sets.textAlignments[sets.settingsObj!.subtitleAlignIndex],
+                        style: TextStyle(
+                          height: sets.settingsObj!.subtitleHeight,
+                          fontSize: sets.settingsObj!.subtitleFontSize,
+                          wordSpacing: sets.settingsObj!.subtitleWordSpacing,
+                          fontWeight: sets.settingsObj!.fontIsBold ? FontWeight.bold : FontWeight.normal,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 10),
                 EasyTile(
                   title: Text('Subtitle Text Height', style: getTextStyling(4, context),),
                   subtitle: Text('Setting an incorrect number will do nothing'),

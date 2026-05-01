@@ -1,10 +1,232 @@
+import 'package:background_downloader/background_downloader.dart';
 import 'package:flutter/material.dart';
+import 'package:jellyfin/main.dart';
 import 'package:jellyfin_dart/jellyfin_dart.dart';
 import 'package:provider/provider.dart';
 import 'package:jellyfin/providers/providers.dart';
 import 'package:jellyfin/pages/pages.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:jellyfin/comps/comps.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:open_file/open_file.dart';
+
+class DownloadDialog extends StatefulWidget {
+  final BaseItemDto viewData;
+
+  DownloadDialog({super.key, required this.viewData});
+
+  @override
+  State<DownloadDialog> createState() => _DownloadDialogState();
+}
+
+class _DownloadDialogState extends State<DownloadDialog> {
+
+  @override
+  void initState() {
+    super.initState();
+  }
+
+
+  late List<MediaStream>? audioStreamList = widget.viewData.mediaSources!.first.mediaStreams!
+  .where((MediaStream stream) => stream.type == MediaStreamType.audio)
+  .toList();
+
+  late Map<String, dynamic> streamParametersList = 
+  {
+    'MediaSourceId': widget.viewData.mediaSources!.first.id, 
+    'Container': widget.viewData.mediaSources!.first.container, 
+    'AudioStreamIndex': audioStreamList!.first.index, 
+    'VideoBitrate': widget.viewData.mediaSources!.first.bitrate,
+  };
+  // for any null values, the getStreamUrl method will ignore it and not use it
+
+  @override
+  Widget build(BuildContext context) {
+    bool readyToDownload = false;
+    String? path;
+
+    BaseItemDto viewData = widget.viewData;
+
+    JellyfinAPI ama = context.watch<JellyfinAPI>();
+    DownloaderManager dwm = context.watch<DownloaderManager>();
+
+    return FloatingActionButton(
+       heroTag: null,
+       onPressed: 
+       () async {
+         showAnimatedSheet(
+           context: context,
+           child: StatefulBuilder(
+            builder: (context, setSheetState) {
+              return Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text('Download ${viewData.name}', style: getTextStyling(1, context),),
+                    SizedBox(height: 5),
+                    Text('Path: ${path ?? 'Not Added'}'),
+                    SizedBox(height: 5),
+                    FilledButton(
+                      onPressed: () async {
+                        String? result = await FilePicker.getDirectoryPath(
+                          dialogTitle: '$appTitle',
+                        );
+                        
+                        setSheetState(() {
+                          path = result;
+                          readyToDownload = true;
+                        });
+                      },
+                      child: Text('Select Path'),
+                    ),
+                    SizedBox(height: 5),
+                    EasyTile(
+                      title: Text('Video Track', style: getTextStyling(4, context)),
+                      trailing: SizedBox(
+                        width: MediaQuery.widthOf(context) * 0.3,
+                        child: DropdownMenu(
+                          initialSelection: '${viewData.mediaSources!.first.id}',
+                          onSelected: (id) {
+                            setSheetState(
+                              () {
+                                streamParametersList['MediaSourceId'] = id;
+                              }
+                            );
+                          },
+                          dropdownMenuEntries: [
+                            for (MediaSourceInfo mediaSource in viewData.mediaSources ?? [])
+                              DropdownMenuEntry(
+                                value: mediaSource.id,
+                                label: mediaSource.name ?? 'Unknown Track',
+                              ),
+                          ],
+                        ),
+                      ),
+                      context: context
+                    ),
+                    SizedBox(height: 5),
+                    EasyTile(
+                      title: Text('Audio Tracks', style: getTextStyling(4, context)),
+                      trailing: SizedBox(
+                        width: MediaQuery.widthOf(context) * 0.3,
+                        child: DropdownMenu(
+                          initialSelection: audioStreamList!.first.index,
+                          onSelected: (id) {
+                            setSheetState(
+                              () {
+                                streamParametersList['AudioStreamIndex'] = id;
+                              }
+                            );
+                          },
+                          dropdownMenuEntries: [
+                            for (MediaStream mediaStream in audioStreamList ?? [])
+                              DropdownMenuEntry(
+                                value: mediaStream.index,
+                                label: mediaStream.displayTitle ?? 'Unknown Track',
+                              ),
+                          ],
+                        ),
+                      ),
+                      context: context
+                    ),
+                    SizedBox(height: 5),
+                    EasyTile(
+                      title: Text('Container', style: getTextStyling(4, context)),
+                      trailing: SizedBox(
+                        width: MediaQuery.widthOf(context) * 0.3,
+                        child: DropdownMenu(
+                          initialSelection: '${viewData.mediaSources!.first.container}',
+                          onSelected: (container) {
+                            setSheetState(
+                              () {
+                                streamParametersList['Container'] = container;
+                              }
+                            );
+                          },
+                          dropdownMenuEntries: [
+                            for (String container in [viewData.mediaSources!.first!.container ?? 'Original Unknown', 'webm', 'ogv', 'mp4', 'm4v', 'mkv', 'mpeg', 'avi', 'mov'])
+                              DropdownMenuEntry(
+                                value: container,
+                                label: container,
+                              ),
+                          ],
+                        ),
+                      ),
+                      context: context
+                    ),
+                    SizedBox(height: 5),
+                    EasyTile(
+                      title: Text('Video Quality', style: getTextStyling(4, context)),
+                      subtitle: Text('Default will be used if not entered in manually'),
+                      trailing: SizedBox(
+                        width: MediaQuery.widthOf(context) * 0.3,
+                        child: TextFormField(
+                          onChanged: (value) {
+                            final intValue = int.tryParse(value);
+                        
+                            if (intValue != null) {
+                              setSheetState(
+                                () {
+                                  streamParametersList['VideoBitrate'] = intValue;
+                                }
+                              );
+                            }
+                          },
+                          // fetch bitrate of mediasource that contains id stored above, else return first
+                          initialValue: '${viewData.mediaSources!.firstWhere(
+                            orElse: () {
+                              return viewData.mediaSources!.first;
+                            },
+                          (source) => source.id == streamParametersList['MediaSourceId'])
+                          .bitrate}',
+                        ),
+                      ),
+                      context: context
+                    ),
+                    SizedBox(height: 5),
+                    FilledButton.tonal(
+                      onPressed: readyToDownload
+                      ? () async {
+                        DownloadTask task = DownloadTask(
+                          url: ama.getStreamUrl(
+                            dto: viewData,
+                            mediaSourceId: streamParametersList['MediaSourceId'],
+                            audioStreamIndex: streamParametersList['AudioStreamIndex'],
+                            container: streamParametersList['Container'],
+                            videoBitrate: streamParametersList['VideoBitrate'],
+                          )!,
+                          taskId: '${viewData.id}',
+                          displayName: '${viewData.name}',
+                          baseDirectory: BaseDirectory.root,
+                          filename: '${viewData.name}.${streamParametersList['Container']}',
+                          updates: Updates.statusAndProgress,
+                          retries: 5,
+                          allowPause: true,
+                          metaData: '${viewData.name}',
+                          directory: path!,
+                        );
+
+                        final result = await dwm.fileDownloader!.enqueue(task);
+
+                        Navigator.pop(context);
+                        showScaffold('Download started!', context);
+                      }
+                      : null,
+                      child: Text('Download'),
+                    ),
+                  ],
+                ),
+              );
+            },
+           ),
+         );
+       },
+       child: Icon(
+         Icons.download
+       ),
+    );
+  }
+}
 
 class ItemPage extends StatefulWidget {
   BaseItemDto viewData;
@@ -65,8 +287,6 @@ class _ItemPageState extends State<ItemPage> {
 
     double runTime = viewData.runTimeTicks! / 100000000;
     double? percentage = viewData.userData?.playedPercentage;
-
-    print('${widget.viewData.people}');
 
     Widget _scaffold = Scaffold(
       extendBodyBehindAppBar: true,
@@ -132,6 +352,7 @@ class _ItemPageState extends State<ItemPage> {
             ),
             SizedBox(height: 15),
             SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
               child: Row(
                 spacing: 10,
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -150,6 +371,7 @@ class _ItemPageState extends State<ItemPage> {
                       },
                       child: Icon(Icons.play_arrow),
                     ),
+                    DownloadDialog(viewData: viewData),
                   ],
                   FloatingActionButton(
                     heroTag: null,
@@ -394,6 +616,7 @@ class _ItemPageState extends State<ItemPage> {
                   }
                 },
               ),
+              
               ValueListenableBuilder(
                 valueListenable: episodesIndex,
                 builder: (context, value, child) {

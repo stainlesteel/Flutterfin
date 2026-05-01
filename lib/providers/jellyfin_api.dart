@@ -43,3 +43,4 @@ class JellyfinAPI extends ChangeNotifier {
   // there is nothing here, this is because everything for this ChangeNotifier is in provider_extensions/jellyfin_api/
   // and everything is an extension
 }
+

@@ -175,9 +175,9 @@ class _SettingsSheetState extends State<SettingsSheet> with SingleTickerProvider
         ),
         ListView.builder(
           shrinkWrap: true,
-          itemCount: (widget.player.mediaData[widget.episodeIndex].mediaSources?.isEmpty ?? true)
-          ? widget.player.mediaData[widget.episodeIndex].mediaSources?.length ?? 0
-          : 0,
+          itemCount: (widget.player.mediaData.isEmpty)
+          ? 0
+          : widget.player.mediaData[widget.episodeIndex].mediaSources?.length ?? 0,
           itemBuilder: (context, index) {
             MediaSourceInfo data = widget.player.mediaData[widget.episodeIndex].mediaSources![index];
             return SizedBox(
@@ -586,7 +586,6 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
 
     await player.pause();
     await player.stop();
-    Overlay.of(context).dispose();
 
     await Future.delayed(Duration(milliseconds: 1000));
 
@@ -653,7 +652,6 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
               ),
             ],
           ),
-          
         ),
         Spacer(),
         ValueListenableBuilder(
@@ -734,6 +732,24 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
         MaterialPlayOrPauseButton(), // play pause
         MaterialPositionIndicator(), // position indicator
         Spacer(), // separate left from right
+        InkWell(
+          onTap: () async {
+            showAnimatedSheet(context: context);
+          },
+          child: Row(
+            spacing: 3,
+            children: [
+              Icon(Icons.play_circle, color: Colors.white),
+              Text(
+                'Episodes',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+        ),
         ValueListenableBuilder(
           valueListenable: loaded,
           builder: (context, value, child) {

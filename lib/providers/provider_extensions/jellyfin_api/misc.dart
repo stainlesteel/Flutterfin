@@ -5,6 +5,7 @@ import 'package:jellyfin/comps/comps.dart';
 import 'package:dio/dio.dart';
 import 'package:jellyfin_dart/jellyfin_dart.dart';
 import 'package:jellyfin/pages/pages.dart';
+import 'package:provider/provider.dart';
 
 extension Misc on JellyfinAPI {
   Future<void> loadAppData() async {
@@ -128,6 +129,13 @@ extension Misc on JellyfinAPI {
   }
 
   Future<void> logOut(int index, BuildContext context) async {
+    Future.microtask(
+      await Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (context) => StartingPage()),
+        (route) => false,
+      )
+    );
 
     if (lastUsedServer == index) {
       lastUsedServer = null;
@@ -139,17 +147,18 @@ extension Misc on JellyfinAPI {
     await box.put(index, serverList[index]);
     setUser(UserData());
 
-    Future.microtask(
-      await Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(builder: (context) => StartingPage()),
-        (route) => false,
-      )
-    );
     notifyListeners();
   }
 
-  String? getStreamUrl({required BaseItemDto dto, String? mediaSourceId, int? audioStreamIndex, bool? useHLS}) {
+  String? getStreamUrl
+  ({
+  required BaseItemDto dto, 
+  String? mediaSourceId, 
+  int? audioStreamIndex, 
+  String? container,
+  int? videoBitrate,
+  bool? useHLS
+  }) {
     String baseUrl = (useHLS ?? false) 
     ? '${serverList[lastUsedServer!].serverURL}/Videos/${dto.id}/main.m3u8?Static=false&api_key=${serverList[lastUsedServer!].userData!.accessToken}'
     : '${serverList[lastUsedServer!].serverURL}/Videos/${dto.id}/stream?Static=true&api_key=${serverList[lastUsedServer!].userData!.accessToken}';
@@ -159,6 +168,12 @@ extension Misc on JellyfinAPI {
     }
     if (audioStreamIndex != null) {
       baseUrl = '$baseUrl&AudioStreamIndex=$audioStreamIndex';
+    }
+    if (container != null) {
+      baseUrl = '$baseUrl&container=$container';
+    }
+    if (videoBitrate != null) {
+      baseUrl = '$baseUrl&videoBitrate=$videoBitrate';
     }
 
     return baseUrl;

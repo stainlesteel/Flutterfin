@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:jellyfin/comps/comps.dart';
 import 'package:jellyfin/objects/objects.dart';
 import 'package:jellyfin/pages/pages.dart';
+import 'package:jellyfin/providers/downloader_manager.dart';
 import 'package:jellyfin/providers/jellyfin_api.dart';
 import 'package:jellyfin/providers/provider_extensions/jellyfin_api/jellyfin_api.dart';
 import 'package:jellyfin/providers/settings_provider.dart';
@@ -93,6 +94,21 @@ class _StorageSettings extends State<StorageSettings> {
 
                     await Future.delayed(Durations.medium1);
                     sets.notifyListeners();
+                  },
+                  context: context,
+                ),
+                SizedBox(height: 5),
+                EasyTile(
+                  leading: Icon(
+                    Icons.download
+                  ),
+                  title: Text(
+                    'Delete Downloads Data',
+                    style: getTextStyling(4, context),
+                  ),
+                  subtitle: Text('This cannot delete the actual video files, only the records stored by the app.'),
+                  onTap: () async {
+                    await Provider.of<DownloaderManager>(context, listen: false).fileDownloader!.database.deleteAllRecords();
                   },
                   context: context,
                 ),

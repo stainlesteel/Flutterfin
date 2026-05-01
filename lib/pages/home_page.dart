@@ -230,6 +230,7 @@ class _HomePageState extends State<HomePage> {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         Text('Error', style: getTextStyling(5, context),),
+        Text('Server: ${ama.serverList[ama.lastUsedServer!].serverName}'),
         Text("Please log in and out again, \nthe previous log in data isn't usable."),
         SizedBox(height: 10),
         FilledButton.tonal(
@@ -307,7 +308,7 @@ class _HomePageState extends State<HomePage> {
       _actualPage(context), 
       FavoritesPage(), 
       SearchPage(),
-      ProfilePage()
+      ProfilePage(),
     ];
 
     return Scaffold(

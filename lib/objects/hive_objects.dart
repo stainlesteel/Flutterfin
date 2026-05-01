@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
 import 'package:jellyfin_dart/jellyfin_dart.dart';
+import 'package:background_downloader/background_downloader.dart';
 
 part 'hive_objects.g.dart';
 
