@@ -732,24 +732,25 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
         MaterialPlayOrPauseButton(), // play pause
         MaterialPositionIndicator(), // position indicator
         Spacer(), // separate left from right
-        InkWell(
-          onTap: () async {
-            showAnimatedSheet(context: context);
-          },
-          child: Row(
-            spacing: 3,
-            children: [
-              Icon(Icons.play_circle, color: Colors.white),
-              Text(
-                'Episodes',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
+        if (widget.viewData.type == BaseItemKind.episode)
+          InkWell(
+            onTap: () async {
+              showAnimatedSheet(context: context);
+            },
+            child: Row(
+              spacing: 3,
+              children: [
+                Icon(Icons.play_circle, color: Colors.white),
+                Text(
+                  'Episodes',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
         ValueListenableBuilder(
           valueListenable: loaded,
           builder: (context, value, child) {

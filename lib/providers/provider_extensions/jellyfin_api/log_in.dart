@@ -45,9 +45,6 @@ extension LogIn on JellyfinAPI {
     if (token != null) {
       await saveUser(token, response.data!.sessionInfo!.userId!, index);
       setUser(UserData(accessToken: token, userId: response.data!.sessionInfo?.userId));
-      print('APPCLIENT HEADERS: ${
-        appClient.dio.interceptors.firstWhere((i) => i is MediaBrowserAuthInterceptor).token
-      }'); 
 
       return true;
     } else {

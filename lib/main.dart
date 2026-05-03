@@ -175,6 +175,16 @@ class _MyAppState extends State<MyApp> {
     final navgatorKey = GlobalKey<NavigatorState>();
     Overlayment.navigationKey = navgatorKey;
 
+    Widget pageVal = page ?? Scaffold(
+      appBar: AppBar(
+        title: Text('$appTitle'),
+        centerTitle: true,
+      ),
+      body: Center(
+        child: CircularProgressIndicator()
+      ),
+    );
+
     return Consumer<SettingsProvider>(
       builder: (context, sets, child) {
         return MaterialApp(
@@ -190,18 +200,9 @@ class _MyAppState extends State<MyApp> {
           themeMode: ThemeMode.values[sets.settingsObj!.themeMode!],
           scrollBehavior: CustomScrollBehaviour(),
           navigatorKey: navgatorKey,
-          home: child,            
+          home: pageVal,
         );
       },
-      child: page ?? Scaffold(
-        appBar: AppBar(
-          title: Text('$appTitle'),
-          centerTitle: true,
-        ),
-        body: Center(
-          child: CircularProgressIndicator()
-        ),
-      ),
     );
   }
 }

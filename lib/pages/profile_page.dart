@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:jellyfin/comps/comps.dart';
 import 'package:jellyfin/main.dart';
+import 'package:jellyfin/pages/AdminPages/primary_page.dart';
 import 'package:jellyfin/pages/pages.dart';
 import 'package:jellyfin_dart/jellyfin_dart.dart';
 import 'package:jellyfin/providers/providers.dart';
@@ -40,6 +41,20 @@ class _ProfilePageState extends State<ProfilePage> {
     return Scaffold(
       appBar: AppBar(
         title: Text('Profile'),
+        actions: [
+          if (userDto?.policy?.isAdministrator ?? false)
+          TextButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => PrimaryAdminPage()
+                )
+              );
+            },
+            child: Text('Admin Page'),
+          ),
+        ],
         centerTitle: true,
       ),
       body: Center(

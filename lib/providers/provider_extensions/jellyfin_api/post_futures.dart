@@ -86,4 +86,31 @@ extension PostFutures on JellyfinAPI {
 
     return _data.data;
   }
+
+  Future<DioException?> scanLibrary() async {
+    try {
+      final _data = await lAPI.refreshLibrary();
+      return null;
+    } on DioException catch (e) {
+      return e;
+    }
+  }
+
+  Future<DioException?> restartServer() async {
+    try {
+      final _data = await appClient.getSystemApi().restartApplication();
+      return null;
+    } on DioException catch (e) {
+      return e;
+    }
+  }
+
+  Future<DioException?> shutDownServer() async {
+    try {
+      final _data = await appClient.getSystemApi().shutdownApplication();
+      return null;
+    } on DioException catch (e) {
+      return e;
+    }
+  }
 }

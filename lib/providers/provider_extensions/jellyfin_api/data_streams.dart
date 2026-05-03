@@ -309,4 +309,44 @@ extension DataStreams on JellyfinAPI {
       return null;
     }
   }
+
+  Stream<List<SessionInfoDto>?> getSessionsStream() async* {
+    while (true) {
+      try {
+        final Response<List<SessionInfoDto>> data = await appClient.getSessionApi().getSessions(
+          controllableByUserId: userID,
+        );
+        yield data.data;
+        await Future.delayed(Duration(seconds: 9));
+      } on DioException catch (e) {
+        print('getSessionsStream error: ${e.response}');
+        yield null;
+      }
+    }
+  }
+
+  Stream<List<ActivityLogEntry>?> getActivityStream() async* {
+    while (true) {
+      try {
+        final Response<ActivityLogEntryQueryResult> data = await appClient.getActivityLogApi().getLogEntries(
+          limit: 6,
+        );
+        yield data.data?.items;
+        await Future.delayed(Duration(seconds: 9));
+      } on DioException catch (e) {
+        print('getActivityStream error: ${e.response}');
+        yield null;
+      }
+    }
+  }
+
+  Future<SystemInfo?> getSystemInfo() async {
+    try {
+      final Response<SystemInfo> data = await appClient.getSystemApi().getSystemInfo();
+      return data.data;
+    } on DioException catch (e) {
+      print('getActivityStream error: ${e.response}');
+      return null;
+    }
+  }
 }

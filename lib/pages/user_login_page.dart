@@ -97,6 +97,9 @@ class _LogInPageState extends State<LogInPage> {
                         child: Padding(
                           padding: EdgeInsets.all(10.0),
                           child: TextFormField(
+                            obscureText: true,
+                            enableSuggestions: false,
+                            autocorrect: false,
                             controller: pwdCont,
                             validator: (String? value) {
                               return null;
