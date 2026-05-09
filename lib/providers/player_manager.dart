@@ -210,19 +210,24 @@ class PlayerManager {
     await player.previous();
   }
 
+  Future<void> jump(int to) async {
+    Future.delayed(Duration(seconds: 1));
+    await player.jump(to);
+  }
+
   Stream<void> reportPlaybackStream(BuildContext context) async* {
     JellyfinAPI ama = context.read<JellyfinAPI>();
-    int _index = player.state.playlist.index;
 
     await Future.delayed(Duration(seconds: 2));
     while (true) {
       if (player.state.duration == Duration.zero || !player.state.playing) {
       } else {
+        int index = player.state.playlist.index;
         Duration duration = player.state.position;
-        if (player.state.playlist.index - 1 == null) {
-          _index = 0;
+        if (player.state.playlist.index - 1 == -1) {
+          index = 0;
         }
-        ama.reportPlayback(mediaData[_index], duration);
+        ama.reportPlayback(mediaData[index], duration);
       }
       await Future.delayed(Duration(seconds: 5));
     }

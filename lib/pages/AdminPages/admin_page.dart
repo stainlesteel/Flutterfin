@@ -1,1 +1,16 @@
+import 'package:flutter/material.dart';
+import 'package:jellyfin_dart/jellyfin_dart.dart';
+import 'package:provider/provider.dart';
+import 'package:jellyfin/comps/comps.dart';
+import 'package:jellyfin/providers/providers.dart';
+
 export 'primary_page.dart';
+export 'general_page.dart';
+
+Future<void> adminCheck(BuildContext context) async {
+  UserDto? result = await Provider.of<JellyfinAPI>(context, listen: false).getCurrentUser();
+  if (result?.policy?.isAdministrator == false) {
+    Navigator.pop(context);
+    showScaffold('User with normal privileges tried to access Admin Page', context);
+  }
+}

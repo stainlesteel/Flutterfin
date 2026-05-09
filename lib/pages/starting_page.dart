@@ -68,6 +68,7 @@ class _StartingPageState extends State<StartingPage> {
                         if (result == true) {
                           print('Server is real! Name: ${conts.text}');
                         }
+                        Navigator.pop(context);
                       }
                     },
                     child: Text('Ok'),
@@ -98,7 +99,6 @@ class _StartingPageState extends State<StartingPage> {
                     return Dismissible(
                         background: Container(
                           color: Colors.redAccent,
-                          child: Text('Remove'),
                         ),
                         key: ValueKey<ServerObj>(ama.serverList[index]),
                         direction: DismissDirection.endToStart,
@@ -108,6 +108,11 @@ class _StartingPageState extends State<StartingPage> {
                         child: Card(
                           child: ListTile(
                             onTap: () async {
+                              if (ama.isVerifyingServer) return;
+
+                              bool verification = await ama.verifyServer(e.serverURL!, context, doNotMakeClient: true);
+                              if (verification == false) {
+                              } else {
                                 await ama.makeClient(e.id, context);
                                 Navigator.push(
                                     context,
@@ -115,6 +120,7 @@ class _StartingPageState extends State<StartingPage> {
                                       builder: (context) => LogInPage(index: e.id),
                                   )
                                 );
+                              }
                             },
                             title: Text(
                               '${e.serverName}',

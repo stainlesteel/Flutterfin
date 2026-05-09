@@ -21,7 +21,7 @@ extension Misc on JellyfinAPI {
     notifyListeners();
   }
 
-  Future<bool> verifyServer(String url, BuildContext context) async {
+  Future<bool> verifyServer(String url, BuildContext context, {bool doNotMakeClient = false}) async {
     try {
       final dio = await Dio().get('$url/System/Info/Public');
       final conType = dio.headers.value('content-type') ?? '';
@@ -38,13 +38,20 @@ extension Misc on JellyfinAPI {
                 "Can connect to server but can't access it's ServerName.\nIf the URL is working for you, check if you're getting redirected to the correct URL by the server.",
               ),
             ],
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                },
+                child: Text('Ok'),
+              ),
+            ],
           ),
         );
         return false;
       } else {
-        await addServer(url, dio.data['Version'], dio.data['ServerName']);
+        if (doNotMakeClient == false) await addServer(url, dio.data['Version'], dio.data['ServerName']);
         notifyListeners();
-        Navigator.pop(context);
         return true;
       }
     } on DioException catch (e) {
@@ -60,14 +67,22 @@ extension Misc on JellyfinAPI {
       } else {
         text = 'Unknown Error.';
       }
-      Navigator.pop(context);
       showDialog(
         context: context,
-        builder: (context) =>
-            popUpDiag(title: 'Server Verify Error', content: [Text('$text')]),
+        builder: (context) => popUpDiag(
+          title: 'Server Verify Error', 
+          content: [Text('$text')],
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+              },
+              child: Text('Ok'),
+            ),
+          ],
+        ),
       );
 
-      await Future.delayed(Duration(seconds: 2));
       return false;
     } finally {
       isVerifyingServer = false;
@@ -92,6 +107,7 @@ extension Misc on JellyfinAPI {
       version: '${_base.version}',
     );
 
+
     uAPI = await appClient.getUserApi();
     qc = await appClient.getQuickConnectApi();
     uvAPI = await appClient.getUserViewsApi();
@@ -111,6 +127,8 @@ extension Misc on JellyfinAPI {
       logInMsg = branding.data?.loginDisclaimer;
     } on DioException catch (e) {
       ServerConnectErrorDiag(context);
+      notifyListeners();
+      return;
     }
   }
   

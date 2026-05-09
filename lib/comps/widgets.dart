@@ -275,3 +275,19 @@ Widget EasyTile({required BuildContext context, Widget? leading, Widget? trailin
     ),
   );
 }
+
+Widget EasyTextField({String? initialValue, void Function(String)? onChanged, String? labelText, double paddingValue = 10}) {
+  return Padding(
+    padding: EdgeInsets.symmetric(horizontal: paddingValue),
+    child: TextFormField(
+      onChanged: onChanged,
+      initialValue: initialValue,
+      decoration: InputDecoration(
+        labelText: labelText,
+        isDense: true,
+        border: OutlineInputBorder(),
+        filled: true,
+      ),
+    ),
+  );
+}

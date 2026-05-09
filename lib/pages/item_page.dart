@@ -254,13 +254,13 @@ class _ItemPageState extends State<ItemPage> {
       ),
     );
     if (result != null) {
-      List<BaseItemDto> newViewData = await ama.getItemsbyId(
-         [viewData.id!],
+      BaseItemDto? newViewData = await ama.getItem(
+         viewData.id!,
       );
       setState(
         () {
           print('Updating ITEMPAGE');
-          viewData = newViewData[0];
+          viewData = newViewData ?? viewData;
         },
       );
     }
@@ -357,7 +357,7 @@ class _ItemPageState extends State<ItemPage> {
                 spacing: 10,
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  if (viewData.type != BaseItemKind.series) ...[
+                  if (viewData.type != BaseItemKind.series && viewData.userData?.playbackPositionTicks != 0) ...[
                     FloatingActionButton.extended(
                       heroTag: null,
                       onPressed: gotoVideoPlayerPage,
@@ -443,11 +443,13 @@ class _ItemPageState extends State<ItemPage> {
                     text: '${viewData.productionYear ?? ''}',
                     context: context,
                   ),
-                  SizedBox(width: 20),
-                  detailCard(
-                    text: '${getTime(runTime.round())}',
-                    context: context,
-                  ),
+                  if (viewData.type != BaseItemKind.series) ... [
+                    SizedBox(width: 20),
+                    detailCard(
+                      text: '${getTime(runTime.round())}',
+                      context: context,
+                    )
+                  ],
                   if (viewData.officialRating != null) ...[
                     SizedBox(width: 20),
                     detailCard(

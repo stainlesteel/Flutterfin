@@ -6,6 +6,7 @@ Widget popUpDiag({
   List<Widget> actions = const [],
 }) {
   return AlertDialog(
+    scrollable: true,
     title: Text(title, style: TextStyle(color: Colors.black)),
     content: content.isNotEmpty
         ? Column(mainAxisSize: MainAxisSize.min, children: content)

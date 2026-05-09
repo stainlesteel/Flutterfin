@@ -10,6 +10,7 @@ import 'package:media_kit_video/media_kit_video.dart';
 import 'package:jellyfin/providers/providers.dart';
 import 'package:jellyfin/comps/comps.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class SettingsSheet extends StatefulWidget {
   final PlayerManager player;
@@ -40,11 +41,11 @@ class _SettingsSheetState extends State<SettingsSheet> with SingleTickerProvider
     ),
   );
 
-  late List<MediaStream>? audioStreamList = widget.player.currentMediaSource!.mediaStreams!
+  late List<MediaStream> audioStreamList = widget.player.currentMediaSource?.mediaStreams ?? <MediaStream>[]
   .where((MediaStream stream) => stream.type == MediaStreamType.audio)
   .toList();
 
-  late List<MediaStream>? subtitleStreamList = widget.player.currentMediaSource!.mediaStreams!
+  late List<MediaStream> subtitleStreamList = widget.player.currentMediaSource?.mediaStreams ?? <MediaStream>[]
   .where((MediaStream stream) => stream.type == MediaStreamType.subtitle)
   .toList();
 
@@ -54,6 +55,8 @@ class _SettingsSheetState extends State<SettingsSheet> with SingleTickerProvider
   Widget build(BuildContext context) {
     SettingsProvider sets = context.watch<SettingsProvider>();
     JellyfinAPI ama = context.watch<JellyfinAPI>();
+
+    print('$subtitleStreamList');
 
     final List<List<Widget>> sheetPages = [
 [
@@ -216,9 +219,9 @@ class _SettingsSheetState extends State<SettingsSheet> with SingleTickerProvider
         Text('Audio Tracks', style: getTextStyling(2, context),),
         ListView.builder(
           shrinkWrap: true,
-          itemCount: audioStreamList?.length ?? 0,
+          itemCount: audioStreamList.length,
           itemBuilder: (context, index) {
-            MediaStream data = audioStreamList![index];
+            MediaStream data = audioStreamList[index];
             return Card.outlined(
               child: ListTile(
                 title: Text('${data.displayTitle}', style: getTextStyling(1, context),),
@@ -243,16 +246,16 @@ class _SettingsSheetState extends State<SettingsSheet> with SingleTickerProvider
       [
         SizedBox(height: 3,),
         Text('Subtitle Tracks', style: getTextStyling(2, context),),
-        if (subtitleStreamList?.isEmpty ?? true) ...[
+        if (subtitleStreamList.isEmpty) ...[
           SizedBox(height: 5),
           Text('No Subtitles Available...'),
-        ]
-        else
+        ],
+        if (subtitleStreamList.isNotEmpty)
           ListView.builder(
             shrinkWrap: true,
-            itemCount: subtitleStreamList?.length ?? 0,
+            itemCount: subtitleStreamList.isNotEmpty ? subtitleStreamList.length : 0,
             itemBuilder: (context, index) {
-              MediaStream data = subtitleStreamList![index];
+              MediaStream data = subtitleStreamList[index];
               return Card.outlined(
                 child: ListTile(
                   title: Text('${data.displayTitle}', style: getTextStyling(1, context),),
@@ -385,6 +388,14 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
 
     await player.setRate(sets.settingsObj!.persistentPlaybackSpeed);
 
+    await buildStream();
+
+    await Future.delayed(Duration(seconds: 2));
+  }
+
+  Future<void> buildStream() async {
+    SettingsProvider sets = context.read<SettingsProvider>();
+
     // stream for reporting playback to Jellyfin
     playbackReport = player.reportPlaybackStream(context).listen(
       (event) {
@@ -460,8 +471,6 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
         }
       );
     }
-
-    await Future.delayed(Duration(seconds: 2));
   }
 
   Future<void> autoPlayBack() async {
@@ -539,6 +548,7 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
       print('Episode Index: $episodeIndex');
       await player.skipNext();
 
+
       final newDuration = Duration(
         seconds: (player.mediaData[episodeIndex].userData != null)
         ? player.mediaData[episodeIndex].userData!.playbackPositionTicks! ~/ 10000000
@@ -569,6 +579,51 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
     }
   }
 
+  Future<void> moveTo(int index) async {
+    final ama = Provider.of<JellyfinAPI>(context, listen: false);
+
+    percentage = 0;
+    diagName = null;
+
+    if (player.player.state.position.inMicroseconds * 10 ~/ player.mediaData[episodeIndex].runTimeTicks! >= 90) {
+      player.mediaData[episodeIndex].copyWith(
+        userData: player.mediaData[episodeIndex].userData?.copyWith(
+          played: true,
+        ),
+      );
+    }
+
+    await ama.stopPlayback(
+      player.mediaData[episodeIndex],
+      player.player.state.position,
+    );
+
+    setState(() {
+      episodeIndex = index;
+    });
+    print('Episode Index: $episodeIndex');
+    await player.jump(index);
+
+    final newDuration = Duration(
+      seconds: (player.mediaData[episodeIndex].userData != null)
+      ? player.mediaData[episodeIndex].userData!.playbackPositionTicks! ~/ 10000000
+      : 0,
+    );
+
+    await player.player.stream.buffering.firstWhere(
+      (value) => value == false,
+    );
+
+    await player.seek(newDuration);
+
+    final playbackInfo = await Provider.of<JellyfinAPI>(context, listen: false).getPlaybackInfo(player.mediaData[episodeIndex].id!);
+    player.currentMediaSource = playbackInfo.mediaSources!.first;
+
+    await ama.startPlayback(player.mediaData[episodeIndex]);
+
+    playerTitle.value = '${widget.viewData.seriesName} - ${player.mediaData[episodeIndex].name ?? 'Unknown Episode'}';
+  }
+
   /// leaving the page
   Future<void> pop(JellyfinAPI ama) async {
     int? newPosition = player.player.state.position.inMicroseconds * 10;
@@ -589,6 +644,7 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
 
     await Future.delayed(Duration(milliseconds: 1000));
 
+    player = null;
   }
 
   late ValueNotifier<bool> favorited = ValueNotifier<bool>(widget.viewData.userData?.isFavorite ?? false);
@@ -735,12 +791,82 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
         if (widget.viewData.type == BaseItemKind.episode)
           InkWell(
             onTap: () async {
-              showAnimatedSheet(context: context);
+              showAnimatedSheet(
+                child: StreamBuilder(
+                  stream: Stream.fromFuture( ama.getShowEpisodes(seriesId: widget.viewData.seriesId!, context: context)),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return CircularProgressIndicator();
+                    } else if (snapshot.hasError) {
+                      return Column(
+                        children: [
+                          Text('Could not get episodes'),
+                        ],
+                      );
+                    } else {
+                      return Column(
+                        children: [
+                          Text('Season ${widget.viewData.parentIndexNumber}', style: getTextStyling(2, context)),
+                          Text('Due to an unknown bug, selecting a new episode will not have auto-play.'),
+                          if (MediaQuery.orientationOf(context) == Orientation.portrait)
+                            ListView.builder(
+                              shrinkWrap: true,
+                              itemCount: player.mediaData.length,
+                              itemBuilder: (context, index) {
+                                BaseItemDto view = player.mediaData[index];
+                                return EasyTile(
+                                  leading: CachedNetworkImage(
+                                    imageUrl: '${ama.serverList[ama.lastUsedServer!].serverURL}/Items/${view!.id!}/Images/Primary?tag=${view!.imageTags?['Primary']}',
+                                    fit: BoxFit.cover,
+                                  ),
+                                  title: Text('${view.name}', style: getTextStyling(4, context)),
+                                  trailing: Text(
+                                    '${
+                                      (view.userData?.playedPercentage != null) 
+                                      ? view.userData!.playedPercentage!.round().toDouble()
+                                      : '0'
+                                    }%',
+                                  ),
+                                  onTap: () async {
+                                    await moveTo(index);
+                                  },
+                                  context: context,
+                                );
+                              },
+                            ),
+                          if (MediaQuery.orientationOf(context) == Orientation.landscape)
+                            SizedBox(
+                              height: 200,
+                              child: CarouselView.builder(
+                                shrinkExtent: 100,
+                                itemExtent: 200,
+                                itemCount: player.mediaData.length,
+                                itemBuilder: (context, index) {
+                                  BaseItemDto view = player.mediaData[index];
+                                  return Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 5.0),
+                                    child: InkWell(
+                                      onTap: () async {
+                                        moveTo(index);
+                                      },
+                                      child: builderWidgets(context, view, ama),
+                                    ),
+                                  );
+                                },
+                              ),
+                            )
+                        ],
+                      );
+                    }
+                  },
+                ),
+                context: context
+              );
             },
             child: Row(
               spacing: 3,
               children: [
-                Icon(Icons.play_circle, color: Colors.white),
+                Icon(Icons.newspaper, color: Colors.white),
                 Text(
                   'Episodes',
                   style: TextStyle(
@@ -751,6 +877,7 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
               ],
             ),
           ),
+        SizedBox(width: 5),
         ValueListenableBuilder(
           valueListenable: loaded,
           builder: (context, value, child) {
