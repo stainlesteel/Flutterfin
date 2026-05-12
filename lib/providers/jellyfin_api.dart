@@ -16,6 +16,7 @@ class JellyfinAPI extends ChangeNotifier {
   // server data collected for later use
   String? logInMsg;
   String? userID;
+  ServerConfiguration? serverConfiguration;
   final List<ItemFields> itemFields = [
     ItemFields.overview,
     ItemFields.taglines,

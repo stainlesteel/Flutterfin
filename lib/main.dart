@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:jellyfin_dart/jellyfin_dart.dart';
 import 'package:provider/provider.dart';
 import 'package:jellyfin/providers/providers.dart';
 import 'package:jellyfin/pages/pages.dart';
@@ -121,6 +123,7 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   Widget? page;
+  StreamSubscription<dynamic>? configurationStream;
 
   @override
   void initState() {
@@ -150,6 +153,28 @@ class _MyAppState extends State<MyApp> {
             await Provider.of<JellyfinAPI>(context, listen: false,).makeClient(ama.lastUsedServer, context);
             Provider.of<JellyfinAPI>(context, listen: false).setUser(userData!);
 
+            ama.serverConfiguration = await ama.getConfiguration();
+            configurationStream = ama.getConfigurationStream().listen(
+              (ServerConfiguration? data) {
+                if (data == null) {
+                  print('getConfigurationStream: server config is null, issue?');
+                  return;
+                }
+                if (data == ama.serverConfiguration) {
+                  return;
+                } else {
+                  ama.serverConfiguration = data;
+                  ama.serverList[ama.lastUsedServer!].serverName = data.serverName;
+
+                  ama.serverList[ama.lastUsedServer!].save();
+                  ama.updateServerList();
+
+                  print('getConfigurationStream: caught new config, rebuilding..');
+                  ama.notifyListeners();
+                }
+              },
+            );
+
             tempPageValue = HomePage(index: ama.lastUsedServer);
           } catch (e) {
             tempPageValue = StartingPage();
@@ -168,6 +193,7 @@ class _MyAppState extends State<MyApp> {
         page = tempPageValue;
       }
     );
+
   }
 
   @override

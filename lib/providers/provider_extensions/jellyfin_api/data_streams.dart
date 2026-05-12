@@ -345,8 +345,31 @@ extension DataStreams on JellyfinAPI {
       final Response<SystemInfo> data = await appClient.getSystemApi().getSystemInfo();
       return data.data;
     } on DioException catch (e) {
-      print('getActivityStream error: ${e.response}');
+      print('getSystemInfo error: ${e.response}');
       return null;
+    }
+  }
+
+  Future<ServerConfiguration?> getConfiguration() async {
+    try {
+      final Response<ServerConfiguration> data = await appClient.getConfigurationApi().getConfiguration();
+      return data.data;
+    } on DioException catch (e) {
+      print('getConfiguration error: ${e}');
+      return null;
+    }
+  }
+
+  Stream<ServerConfiguration?> getConfigurationStream() async* {
+    while (true) {
+      try {
+        final Response<ServerConfiguration> data = await appClient.getConfigurationApi().getConfiguration();
+        yield data.data;
+      } on DioException catch (e) {
+        print('getConfiguration error: ${e}');
+        yield null;
+      }
+      await Future.delayed(Duration(seconds: 15));
     }
   }
 }

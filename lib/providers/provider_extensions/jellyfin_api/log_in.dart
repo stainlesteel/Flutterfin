@@ -46,6 +46,7 @@ extension LogIn on JellyfinAPI {
       await saveUser(token, response.data!.sessionInfo!.userId!, index);
       setUser(UserData(accessToken: token, userId: response.data!.sessionInfo?.userId));
 
+      serverConfiguration = await getConfiguration();
       return true;
     } else {
       return false;
@@ -141,7 +142,8 @@ extension LogIn on JellyfinAPI {
         userId: response.data!.user?.id,
       );
       serverList[index].save();
-      print('thy token: $token');
+
+      serverConfiguration = await getConfiguration();
 
       notifyListeners();
       return true;

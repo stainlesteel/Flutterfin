@@ -113,4 +113,14 @@ extension PostFutures on JellyfinAPI {
       return e;
     }
   }
+
+  Future<void> updateConfiguration(ServerConfiguration config) async { 
+    try {
+      final _data = await appClient.getConfigurationApi().updateConfiguration(
+        serverConfiguration: config,
+      );
+    } on DioException catch (e) {
+      print('updateConfiguration: ${e.message}');
+    }
+  }
 }

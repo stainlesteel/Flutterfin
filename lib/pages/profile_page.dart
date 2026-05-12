@@ -77,6 +77,7 @@ class _ProfilePageState extends State<ProfilePage> {
               Wrap(
                 spacing: 15,
                 children: [
+                  if (ama.serverConfiguration!.quickConnectAvailable == true ?? false)
                   FilledButton.tonal(
                     onPressed: () async {
                       showAnimatedSheet(

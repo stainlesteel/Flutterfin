@@ -7,11 +7,9 @@ Widget popUpDiag({
 }) {
   return AlertDialog(
     scrollable: true,
-    title: Text(title, style: TextStyle(color: Colors.black)),
-    content: content.isNotEmpty
-        ? Column(mainAxisSize: MainAxisSize.min, children: content)
-        : null,
-    actions: actions.isNotEmpty ? actions : null,
+    title: Text(title),
+    content: Column(mainAxisSize: MainAxisSize.min, children: content),
+    actions: actions,
   );
 }
 

@@ -286,7 +286,9 @@ class _PrimaryAdminPageState extends State<PrimaryAdminPage> {
           });
         },
         children: [
-          Text('Server'),
+          Center(
+            child: Text('Server', style: getTextStyling(4, context))
+          ),
           NavigationDrawerDestination(
             icon: Icon(Icons.home),
             label: Text('Dashboard'),
