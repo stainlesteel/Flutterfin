@@ -1,5 +1,8 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:jellyfin/providers/providers.dart';
+import 'package:jellyfin/providers/provider_extensions/jellyfin_api/jellyfin_api.dart';
 import 'package:jellyfin/objects/objects.dart';
 import 'package:jellyfin/comps/comps.dart';
 import 'package:dio/dio.dart';
@@ -121,6 +124,24 @@ extension PostFutures on JellyfinAPI {
       );
     } on DioException catch (e) {
       print('updateConfiguration: ${e.message}');
+    }
+  }
+
+  Future<void> updateBrandingConfiguration(BrandingOptionsDto config) async { 
+    try {
+      final _data = await appClient.getConfigurationApi().updateBrandingConfiguration(
+        brandingOptionsDto: config,
+      );
+    } on DioException catch (e) {
+      print('updateBrandingConfiguration: ${e.message}');
+    }
+  }
+
+  Future<void> deleteCustomSplashscreen() async { 
+    try {
+      final _data = await appClient.getImageApi().deleteCustomSplashscreen();
+    } on DioException catch (e) {
+      print('deleteCustomSplashscreen: ${e.message}');
     }
   }
 }

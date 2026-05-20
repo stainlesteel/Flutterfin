@@ -32,6 +32,19 @@ extension DataStreams on JellyfinAPI {
     }
   }
 
+  Future<List<BaseItemDto>?> getUserViews() async {
+    try {
+      final data = await uvAPI.getUserViews(
+        userId: userID,
+      );
+      return data.data?.items;
+      await Future.delayed(Duration(seconds: 9));
+    } on DioException catch (e) {
+      print('getUserViews error: ${e}');
+      return null;
+    }
+  }
+
   Stream<List<BaseItemDto>?> getContinueWatching() async* {
     int attempts = 0;
 
@@ -371,5 +384,10 @@ extension DataStreams on JellyfinAPI {
       }
       await Future.delayed(Duration(seconds: 15));
     }
+  }
+
+  Future<BrandingOptionsDto?> getBrandingOptions() async {
+    final Response<BrandingOptionsDto?> data = await appClient.getBrandingApi().getBrandingOptions();
+    return data.data;
   }
 }

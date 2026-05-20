@@ -255,7 +255,7 @@ Widget UserAvatar({required JellyfinAPI ama, double? height}) {
     child: CachedNetworkImage(
       imageUrl: '${ama.serverList[ama.lastUsedServer!].serverURL}/UserImage?userId=${ama.userID}',
       fit: BoxFit.cover,
-      errorWidget: (context, url, child) => Text(''),
+      errorWidget: (context, url, child) => Icon(Icons.question_mark),
     ),
   );
 }

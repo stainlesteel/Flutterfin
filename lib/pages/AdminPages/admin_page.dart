@@ -6,6 +6,7 @@ import 'package:jellyfin/providers/providers.dart';
 
 export 'primary_page.dart';
 export 'general_page.dart';
+export 'branding_page.dart';
 
 Future<void> adminCheck(BuildContext context) async {
   UserDto? result = await Provider.of<JellyfinAPI>(context, listen: false).getCurrentUser();
