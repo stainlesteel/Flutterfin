@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:jellyfin/providers/providers.dart';
 import 'package:jellyfin/comps/comps.dart';
@@ -389,5 +391,31 @@ extension DataStreams on JellyfinAPI {
   Future<BrandingOptionsDto?> getBrandingOptions() async {
     final Response<BrandingOptionsDto?> data = await appClient.getBrandingApi().getBrandingOptions();
     return data.data;
+  }
+
+  Future<List<UserDto>?> getUsers() async {
+    try {
+      final data = await appClient.getUserApi().getUsers();
+      return data.data;
+    } on DioException catch (e) {
+      print('getUsers: $e');
+      return null;
+    }
+  }
+
+  String getUserImageUrl({required String userId}) {
+    return '${serverList[lastUsedServer!].serverURL}/UserImage?userId=$userId';
+  }
+
+  Future<List<DeviceInfoDto>?> getDevices() async {
+    try {
+      final Response<DeviceInfoDtoQueryResult> data = await appClient.getDevicesApi().getDevices(
+        userId: userID,
+      );
+      return data.data?.items;
+    } on DioException catch (e) {
+      print('getDevices: $e');
+      return null;
+    }
   }
 }

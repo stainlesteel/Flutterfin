@@ -338,7 +338,7 @@ class _HomePageState extends State<HomePage> {
           NavigationDestination(
             icon: SizedBox(
               height: 30,
-              child: UserAvatar(ama: ama)
+              child: UserAvatar(ama: ama, context: context)
             ),
             label: 'Profile',
           ),
@@ -372,7 +372,7 @@ class _HomePageState extends State<HomePage> {
                 NavigationRailDestination(
                   icon: SizedBox(
                     height: 30,
-                    child: UserAvatar(ama: ama)
+                    child: UserAvatar(ama: ama, context: context)
                   ),
                   label: Text('Profile'),
                 ),

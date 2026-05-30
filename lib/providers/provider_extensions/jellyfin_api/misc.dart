@@ -5,7 +5,7 @@ import 'package:jellyfin/comps/comps.dart';
 import 'package:dio/dio.dart';
 import 'package:jellyfin_dart/jellyfin_dart.dart';
 import 'package:jellyfin/pages/pages.dart';
-import 'package:provider/provider.dart';
+import 'dart:io';
 
 extension Misc on JellyfinAPI {
   Future<void> loadAppData() async {
@@ -105,8 +105,11 @@ extension Misc on JellyfinAPI {
     appClient.setMediaBrowserAuth(
       deviceId: serverList[index!].deviceId ?? randrStr,
       version: '${_base.version}',
+      client: 'Flutterfin',
+      device: Platform.operatingSystem,
     );
 
+    appClient.setClient('Flutterfin'); // in case above function fails
 
     uAPI = await appClient.getUserApi();
     qc = await appClient.getQuickConnectApi();

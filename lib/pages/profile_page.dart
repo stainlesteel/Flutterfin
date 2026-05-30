@@ -68,7 +68,8 @@ class _ProfilePageState extends State<ProfilePage> {
                 children: [
                   UserAvatar(
                     ama: ama,
-                    height: 50
+                    height: 50,
+                    context: context,
                   ),
                   Text('${userDto!.name}', style: getTextStyling(0, context),),
                 ],

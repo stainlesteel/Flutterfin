@@ -248,14 +248,20 @@ Widget StreamCarousel({required BuildContext context, required Stream stream, re
   );
 }
 
-Widget UserAvatar({required JellyfinAPI ama, double? height}) {
-  return CircleAvatar(
-    backgroundColor: Colors.black,
-    radius: height,
-    child: CachedNetworkImage(
-      imageUrl: '${ama.serverList[ama.lastUsedServer!].serverURL}/UserImage?userId=${ama.userID}',
-      fit: BoxFit.cover,
-      errorWidget: (context, url, child) => Icon(Icons.question_mark),
+Widget UserAvatar({required JellyfinAPI ama, required BuildContext context, double? height}) {
+  return FittedBox(
+    fit: BoxFit.contain,
+    child: CircleAvatar(
+      backgroundColor: Colors.black,
+      radius: height,
+      child: FittedBox(
+        fit: BoxFit.contain,
+        child: CachedNetworkImage(
+          imageUrl: '${ama.serverList[ama.lastUsedServer!].serverURL}/UserImage?userId=${ama.userID}',
+          fit: BoxFit.cover,
+          errorWidget: (context, url, child) => Icon(Icons.person),
+        ),
+      ),
     ),
   );
 }
@@ -276,11 +282,25 @@ Widget EasyTile({required BuildContext context, Widget? leading, Widget? trailin
   );
 }
 
-Widget EasyTextField({String? initialValue, void Function(String)? onChanged, String? labelText, double paddingValue = 10}) {
+Widget EasyTextField(
+{String? initialValue, 
+void Function(String)? onChanged, 
+String? labelText, 
+double paddingValue = 10, 
+TextEditingController? controller,
+String? Function(String?)? validator,
+TextStyle? style,
+bool passwordSafe = false,}) {
   return Padding(
     padding: EdgeInsets.symmetric(horizontal: paddingValue),
     child: TextFormField(
       onChanged: onChanged,
+      style: style,
+      validator: validator,
+      obscureText: passwordSafe,
+      autocorrect: passwordSafe,
+      enableSuggestions: passwordSafe ? false : true,
+      controller: controller,
       initialValue: initialValue,
       decoration: InputDecoration(
         labelText: labelText,

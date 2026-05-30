@@ -144,4 +144,58 @@ extension PostFutures on JellyfinAPI {
       print('deleteCustomSplashscreen: ${e.message}');
     }
   }
+
+  Future<void> makeUser({required String name, String? pwd, bool enableAllFolders = false, List<BaseItemDto>? enabledFolderIds}) async {
+    List<String> foldersIds = []; 
+
+    if (enabledFolderIds != null) {
+      enabledFolderIds!.forEach(
+        (dto) {
+          foldersIds.add(dto.id!);
+        }
+      );
+    }
+
+    try {
+      final Response<UserDto> _data = await appClient.getUserApi().createUserByName(
+        createUserByName: CreateUserByName(name: name, password: pwd),
+      );
+
+      await updateUser(
+        dto: _data.data!.copyWith(
+          policy: _data.data!.policy!.copyWith(
+            enableAllFolders: enableAllFolders,
+            enabledFolders: foldersIds,
+          ),
+        ),
+      );
+    } on DioException catch (e) {
+      print('makeUser: ${e.message}');
+    }
+
+    pwd = null;
+  }
+
+  Future<DioException?> updateUser({required UserDto dto}) async {
+    try {
+      final _data = await appClient.getUserApi().updateUser(
+        userId: dto.id,
+        userDto: dto,
+      );
+    } on DioException catch (e) {
+      print('updateUserPolicy: ${e.response}');
+      return e;
+    }
+  }
+
+  Future<DioException?> deleteUser({required String userId}) async { 
+    try {
+      final _data = await appClient.getUserApi().deleteUser(
+        userId: userId,
+      );
+    } on DioException catch (e) {
+      print('deleteUser: ${e.message}');
+      return e;
+    }
+  }
 }

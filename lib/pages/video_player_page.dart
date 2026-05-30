@@ -188,16 +188,8 @@ class _SettingsSheetState extends State<SettingsSheet> with SingleTickerProvider
               child: Card.outlined(
                 child: ListTile(
                   title: Text('${data.name}', style: getTextStyling(1, context),),
-                  subtitle: Text('${data.mediaStreams?.first.videoRange ?? ''}'),
-                  trailing: Text('${data.mediaStreams?.first.codec ?? ''}'),
+                  subtitle: Text('${data.mediaStreams?.first.videoRange ?? ''}, ${data.mediaStreams?.first.codec ?? ''}'),
                   onTap: () async {
-                    if (data == widget.player.currentMediaSource) {
-                      SimpleErrorDiag(
-                        title: 'Same Source',
-                        desc: 'The source you tried to change to is already playing.',
-                        context: context,
-                      );
-                    }
                     await widget.player.loadMedia(
                       dto: widget.player.mediaData[widget.episodeIndex], 
                       context: context, 

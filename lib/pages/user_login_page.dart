@@ -71,46 +71,34 @@ class _LogInPageState extends State<LogInPage> {
                   children: [
                     Text('Log In', style: getTextStyling(2, context)),
                     SizedBox(height: 10),
-                    Container(
-                      width: MediaQuery.of(context).size.width - 100,
-                      child: Card.filled(
-                        child: Padding(
-                          padding: EdgeInsets.all(10.0),
-                          child: TextFormField(
-                            controller: userCont,
-                            validator: (String? value) {
-                              if (value == null || value.isEmpty) {
-                                return 'Username cannot be empty.';
-                              }
-                              return null;
-                            },
-                            style: TextStyle(color: Colors.black),
-                            decoration: InputDecoration(labelText: 'Username'),
-                          ),
-                        ),
+                    SizedBox(
+                      width: MediaQuery.of(context).size.width - 120,
+                      child: EasyTextField(
+                        labelText: 'Username',
+                        controller: userCont,
+                        validator: (String? value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Username cannot be empty.';
+                          }
+                          return null;
+                        },
+                        style: TextStyle(color: Colors.black),
                       ),
                     ),
-                    SizedBox(height: 5),
-                    Container(
-                      width: MediaQuery.of(context).size.width - 100,
-                      child: Card.filled(
-                        child: Padding(
-                          padding: EdgeInsets.all(10.0),
-                          child: TextFormField(
-                            obscureText: true,
-                            enableSuggestions: false,
-                            autocorrect: false,
-                            controller: pwdCont,
-                            validator: (String? value) {
-                              return null;
-                            },
-                            style: TextStyle(color: Colors.black),
-                            decoration: InputDecoration(labelText: 'Password'),
-                          ),
-                        ),
+                    SizedBox(height: 10),
+                    SizedBox(
+                      width: MediaQuery.of(context).size.width - 120,
+                      child: EasyTextField(
+                        labelText: 'Password',
+                        passwordSafe: true,
+                        controller: pwdCont,
+                        validator: (String? value) {
+                          return null;
+                        },
+                        style: TextStyle(color: Colors.black),
                       ),
                     ),
-                    SizedBox(height: 5),
+                    SizedBox(height: 10),
                     SizedBox(
                       width: MediaQuery.widthOf(context) - 120, 
                       child: Row(
