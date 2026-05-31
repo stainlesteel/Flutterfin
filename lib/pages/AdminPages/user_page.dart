@@ -66,6 +66,8 @@ class _UserPageState extends State<UserPage> {
              children: [
                Text('Users', style: getTextStyling(2, context)),
                SizedBox(height: 5),
+               Text('While editing a user, no changes will apply unless you manually save.'),
+               SizedBox(height: 5),
                FilledButton(
                  onPressed: () async {
                    final result = await Navigator.push(

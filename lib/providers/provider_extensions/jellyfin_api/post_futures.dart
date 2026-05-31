@@ -168,6 +168,10 @@ extension PostFutures on JellyfinAPI {
             enabledFolders: foldersIds,
           ),
         ),
+        policy: _data.data!.policy!.copyWith(
+          enableAllFolders: enableAllFolders,
+          enabledFolders: foldersIds,
+        ),
       );
     } on DioException catch (e) {
       print('makeUser: ${e.message}');
@@ -176,14 +180,18 @@ extension PostFutures on JellyfinAPI {
     pwd = null;
   }
 
-  Future<DioException?> updateUser({required UserDto dto}) async {
+  Future<DioException?> updateUser({required UserDto dto, required UserPolicy policy}) async {
     try {
-      final _data = await appClient.getUserApi().updateUser(
+      await appClient.getUserApi().updateUser(
         userId: dto.id,
         userDto: dto,
       );
+      await appClient.getUserApi().updateUserPolicy(
+        userId: dto.id!, 
+        userPolicy: policy,
+      );
     } on DioException catch (e) {
-      print('updateUserPolicy: ${e.response}');
+      print('updateUserPolicy: ${e.message}');
       return e;
     }
   }

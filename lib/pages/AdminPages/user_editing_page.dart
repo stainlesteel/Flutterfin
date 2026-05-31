@@ -38,9 +38,28 @@ class _UserEditingPageState extends State<UserEditingPage> with TickerProviderSt
     initialIndex: startingTab,
   );
 
+  Map<String, UnratedItem> unratedItems = {
+    'Movies': UnratedItem.movie,
+    'Trailers': UnratedItem.trailer,
+    'Series': UnratedItem.series,
+    'Music': UnratedItem.music,
+    'Books': UnratedItem.book,
+    'Channels': UnratedItem.channelContent,
+    'Live TV': UnratedItem.liveTvChannel,
+  };
+
+
   @override
   Widget build(BuildContext context) {
     JellyfinAPI ama = context.watch<JellyfinAPI>();
+
+    Future<void> save() async {
+      setState(() {
+        widget.dto = dto;
+      });
+
+      await ama.updateUser(dto: dto, policy: dto.policy!);
+    }
 
     return Scaffold(
       appBar: AppBar(
@@ -273,10 +292,11 @@ class _UserEditingPageState extends State<UserEditingPage> with TickerProviderSt
                   labelText: 'Maximum number of user sessions at once',
                   initialValue: dto.policy!.maxActiveSessions!.toString(),
                   onChanged: (String value) {
+                    int number = int.tryParse(value) ?? 0;
                     setState(() {
                       dto = dto!.copyWith(
                         policy: dto!.policy!.copyWith(
-                          maxActiveSessions: int.tryParse(value),
+                          maxActiveSessions: number,
                         ),
                       );
                     });
@@ -286,14 +306,7 @@ class _UserEditingPageState extends State<UserEditingPage> with TickerProviderSt
                 Text('If set to 0, this user can have unlimited sessions at once'),
                 SizedBox(height: 10),
                 FilledButton.tonal(
-                  onPressed: () async {
-                    await ama.updateUser(
-                      dto: dto,
-                    );
-                    setState(() {
-                      widget.dto = dto;
-                    });
-                  },
+                  onPressed: () async => await save(),
                   child: Text('Save'),
                 ),
               ],
@@ -433,14 +446,7 @@ class _UserEditingPageState extends State<UserEditingPage> with TickerProviderSt
                       ],
                       SizedBox(height: 10),
                       FilledButton.tonal(
-                        onPressed: () async {
-                          await ama.updateUser(
-                            dto: dto
-                          );
-                          setState(() {
-                            widget.dto = dto;
-                          });
-                        },
+                        onPressed: () async => await save(),
                         child: Text('Save'),
                       ),
                     ],
@@ -450,32 +456,186 @@ class _UserEditingPageState extends State<UserEditingPage> with TickerProviderSt
             ),
           ),
           tabWrapper(
-            child: FutureBuilder(
-                future: Future.wait([
-                ],
-                eagerError: true,
-              ),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return CircularProgressIndicator();
-                }
-                if (snapshot.hasError) {
-                  return Column(
-                    children: [
-                      Text('Failed trying to fetch either libraries or devices.'),
-                      Text('${snapshot.error}'),
-                    ],
-                  );
-                }
-            
-                return StatefulBuilder(
-                  builder: (context, setPageState) => Column(
-                    children: [
-
-                    ],
+            child: Column(
+              children: [
+                SizedBox(height: 5),
+                Text('Parental Controls', style: getTextStyling(1, context)),
+                SizedBox(height: 10),
+                Text('Block items with no or unrated rating', style: getTextStyling(1, context)),
+                SizedBox(height: 5),
+                for (MapEntry<String, UnratedItem> item in unratedItems.entries)
+                  EasyTile(
+                    title: Text('${item.key}', style: getTextStyling(4, context)),
+                    trailing: Switch(
+                      value: dto.policy!.blockUnratedItems!.contains(item.value),
+                      onChanged: (bool value) {
+                        if (value == true) {
+                          setState(() {
+                            dto = dto!.copyWith(
+                              policy: dto.policy!.copyWith(
+                                blockUnratedItems: List<UnratedItem>.from
+                                (dto.policy!.blockUnratedItems!)..add(item.value),
+                              ),
+                            );
+                          });
+                        } else {
+                          setState(() {
+                            dto = dto!.copyWith(
+                              policy: dto.policy!.copyWith(
+                                blockUnratedItems: List<UnratedItem>.from
+                                (dto.policy!.blockUnratedItems!)..remove( item.value),
+                              ),
+                            );
+                          });
+                        }
+                      },
+                    ),
+                    context: context
                   ),
-                );
-              },
+                SizedBox(height: 10),
+                Text('Allowed tags', style: getTextStyling(1, context)),
+                Wrap(
+                  children: [
+                    if (dto.policy!.allowedTags?.isNotEmpty ?? false)
+                      for (String string in dto.policy!.allowedTags!)
+                        Chip(
+                          label: Text(string),
+                          deleteIcon: Icon(Icons.delete),
+                          onDeleted: () {
+                            setState(() {
+                              dto = dto!.copyWith(
+                                policy: dto.policy!.copyWith(
+                                  allowedTags: List<String>.from
+                                  (dto.policy!.allowedTags!)..remove(string),
+                                ),
+                              );
+                            });
+                          },
+                        )
+                    else
+                      Text('No allowed tags yet.'),
+                  ],
+                ),
+                SizedBox(height: 10),
+                EasyTile(
+                  title: Text('Add tag for allowed items', style: getTextStyling(4, context)),
+                  subtitle: Text('When you add a tag, any items with it will be allowed for this user.'),
+                  trailing: Icon(Icons.open_in_browser),
+                  onTap: () async {
+                    TextEditingController controller = TextEditingController();
+
+                    showDialog(
+                      context: context,
+                      builder: (context) => popUpDiag(
+                        title: 'Add a Tag',
+                        content: [
+                          EasyTextField(
+                            controller: controller,
+                            labelText: 'Tag',
+                          ),
+                        ],
+                        actions: [
+                          TextButton(
+                            onPressed: () {
+                              Navigator.pop(context);
+                            },
+                            child: Text('Cancel'),
+                          ),
+                          TextButton(
+                            onPressed: () {
+                              setState(() {
+                                dto = dto!.copyWith(
+                                  policy: dto.policy!.copyWith(
+                                    allowedTags: List<String>.from
+                                    (dto.policy!.allowedTags!)..add(controller.value.text),
+                                  ),
+                                );
+                              });
+                              Navigator.pop(context);
+                            },
+                            child: Text('Continue'),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                  context: context
+                ),
+                SizedBox(height: 10),
+                Text('Blocked tags', style: getTextStyling(1, context)),
+                Wrap(
+                  children: [
+                    if (dto.policy!.blockedTags?.isNotEmpty ?? false)
+                      for (String string in dto.policy!.blockedTags!)
+                        Chip(
+                          label: Text(string),
+                          deleteIcon: Icon(Icons.delete),
+                          onDeleted: () {
+                            setState(() {
+                              dto = dto!.copyWith(
+                                policy: dto.policy!.copyWith(
+                                  blockedTags: List<String>.from
+                                  (dto.policy!.blockedTags!)..remove(string),
+                                ),
+                              );
+                            });
+                          },
+                        )
+                    else
+                      Text('No blocked tags yet.'),
+                  ],
+                ),
+                SizedBox(height: 10),
+                EasyTile(
+                  title: Text('Add tag for blocked items', style: getTextStyling(4, context)),
+                  subtitle: Text('When you add a tag, any items with it will be hidden for this user.'),
+                  trailing: Icon(Icons.open_in_browser),
+                  onTap: () async {
+                    TextEditingController controller = TextEditingController();
+
+                    showDialog(
+                      context: context,
+                      builder: (context) => popUpDiag(
+                        title: 'Add a Tag',
+                        content: [
+                          EasyTextField(
+                            controller: controller,
+                            labelText: 'Tag',
+                          ),
+                        ],
+                        actions: [
+                          TextButton(
+                            onPressed: () {
+                              Navigator.pop(context);
+                            },
+                            child: Text('Cancel'),
+                          ),
+                          TextButton(
+                            onPressed: () {
+                              setState(() {
+                                dto = dto!.copyWith(
+                                  policy: dto.policy!.copyWith(
+                                    blockedTags: List<String>.from
+                                    (dto.policy!.blockedTags!)..add(controller.value.text),
+                                  ),
+                                );
+                              });
+                              Navigator.pop(context);
+                            },
+                            child: Text('Continue'),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                  context: context
+                ),
+                SizedBox(height: 10),
+                FilledButton(
+                  onPressed: () async => await save(),
+                  child: Text('Save'),
+                ),
+              ],
             ),
           ),
         ],
