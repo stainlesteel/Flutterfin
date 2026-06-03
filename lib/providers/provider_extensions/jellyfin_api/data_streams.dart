@@ -332,11 +332,11 @@ extension DataStreams on JellyfinAPI {
           controllableByUserId: userID,
         );
         yield data.data;
-        await Future.delayed(Duration(seconds: 9));
       } on DioException catch (e) {
         print('getSessionsStream error: ${e.response}');
         yield null;
       }
+      await Future.delayed(Duration(seconds: 9));
     }
   }
 
@@ -347,11 +347,11 @@ extension DataStreams on JellyfinAPI {
           limit: 6,
         );
         yield data.data?.items;
-        await Future.delayed(Duration(seconds: 9));
       } on DioException catch (e) {
         print('getActivityStream error: ${e.response}');
         yield null;
       }
+      await Future.delayed(Duration(seconds: 9));
     }
   }
 

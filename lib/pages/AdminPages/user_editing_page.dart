@@ -48,12 +48,19 @@ class _UserEditingPageState extends State<UserEditingPage> with TickerProviderSt
     'Live TV': UnratedItem.liveTvChannel,
   };
 
+  TextEditingController currentPasswordField = TextEditingController();
+  TextEditingController newPasswordField = TextEditingController();
+  TextEditingController newPasswordConfirmField = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
     JellyfinAPI ama = context.watch<JellyfinAPI>();
 
     Future<void> save() async {
+      if (widget.dto == dto) {
+        showScaffold('Nothing had changed, skipping unnecessary save.', context);
+        return;
+      }
       setState(() {
         widget.dto = dto;
       });
@@ -634,6 +641,70 @@ class _UserEditingPageState extends State<UserEditingPage> with TickerProviderSt
                 FilledButton(
                   onPressed: () async => await save(),
                   child: Text('Save'),
+                ),
+              ],
+            ),
+          ),
+          tabWrapper(
+            child: Column(
+              children: [
+                SizedBox(height: 10),
+                if (dto.hasPassword!) ...[
+                  EasyTextField(
+                    passwordSafe: true,
+                    controller: currentPasswordField,
+                    labelText: 'Current Password',
+                  ),
+                  SizedBox(height: 5),
+                ],
+                EasyTextField(
+                  passwordSafe: true,
+                  controller: newPasswordField,
+                  labelText: 'New Password',
+                ),
+                SizedBox(height: 5),
+                EasyTextField(
+                  passwordSafe: true,
+                  controller: newPasswordConfirmField,
+                  labelText: 'New Password Confirm',
+                ),
+                SizedBox(height: 10),
+                FilledButton(
+                  onPressed: () async {
+                    if (newPasswordField.text != newPasswordConfirmField.text) {
+                      showScaffold('new Password needs to be the same in the 2 text fields.', context);
+                      return;
+                    }
+
+                    if (currentPasswordField.text.isEmpty) {
+                      showScaffold('You need to add your current Password.', context);
+                      return;
+                    }
+
+                    final DioException? result = await ama.updateUserPassword(
+                      currentPw: dto.hasPassword! ? currentPasswordField.text : null,
+                      newPw: newPasswordField.text,
+                      userId: dto.id!
+                    );
+
+                    if (result != null) {
+                      SimpleErrorDiag(
+                        title: 'Save Error', 
+                        desc: "Could not save Password. \n HTTP Code: ${result.response?.statusCode ?? 'Unknown'}", 
+                        context: context
+                      );
+                      return;
+                    } else {
+                      setState(() {
+                        dto = dto!.copyWith(
+                          hasPassword: true,
+                        );
+                      });
+                      showScaffold('New password for ${dto.name!} saved!', context);
+                    }
+
+                  },
+                  child: Text('Save Password'),
                 ),
               ],
             ),

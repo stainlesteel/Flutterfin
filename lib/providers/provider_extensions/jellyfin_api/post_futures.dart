@@ -206,4 +206,19 @@ extension PostFutures on JellyfinAPI {
       return e;
     }
   }
+
+  Future<DioException?> updateUserPassword({required String newPw, String? currentPw, required String userId}) async {
+    try {
+      final _data = await appClient.getUserApi().updateUserPassword(
+        updateUserPassword: UpdateUserPassword(
+          newPw: newPw,
+        ),
+        userId: userId,
+      );
+      return null;
+    } on DioException catch (e) {
+      print('deleteUser: ${e.response?.data}');
+      return e;
+    }
+  }
 }
