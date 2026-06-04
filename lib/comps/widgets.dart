@@ -311,3 +311,42 @@ bool passwordSafe = false,}) {
     ),
   );
 }
+
+Widget TableWidgets({
+  required BuildContext context,
+  Widget? leading,
+  Widget? trailing,
+  List<Widget>? trailingChildren,
+  required List<Widget> children,
+}) {
+  if (trailing != null && trailingChildren != null) {
+    throw Exception(
+      'TableWidgets: You cannot have both a trailing widget and a trailing widgets list, pick one.'
+    );
+  }
+
+  return Card(
+    color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3),
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Row(
+          children: [
+            if (leading != null) leading,
+            Spacer(),
+            if (trailing != null) trailing,
+            if (trailingChildren != null) Row(
+              mainAxisSize: MainAxisSize.min,
+              children: trailingChildren,
+            ),
+          ],
+        ),
+        SizedBox(height: 5),
+        Column(
+          mainAxisSize: MainAxisSize.min,
+          children: children,
+        ),
+      ],
+    ),
+  );
+}

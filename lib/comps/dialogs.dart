@@ -42,6 +42,7 @@ void SimpleErrorDiag({
   required String title,
   required String desc,
   required BuildContext context,
+  bool doublePop = false,
 }) {
   showDialog(
     context: context,
@@ -52,6 +53,7 @@ void SimpleErrorDiag({
         TextButton(
           onPressed: () {
             Navigator.pop(context);
+            if (doublePop) Navigator.pop(context);
           },
           child: Text('Ok'),
         ),

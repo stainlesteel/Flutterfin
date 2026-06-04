@@ -174,7 +174,7 @@ Widget actualPage(ServerObj serverObj, JellyfinAPI ama, BuildContext context) {
                              SizedBox(height: 5),
                              Text('Version ${session?.applicationVersion}', style: getTextStyling(4, context)),
                              SizedBox(height: 5),
-                             Text('Last activity: ${session?.lastActivityDate?.year}:${session?.lastActivityDate?.month}:${session?.lastActivityDate?.day}, ${TimeOfDay.fromDateTime(session!.lastActivityDate!.toLocal()).format(context)}', style: getTextStyling(4, context)),
+                             Text('Last activity: ${getDeviceTime(session!.lastActivityDate!, context)}', style: getTextStyling(4, context)),
                            ],
                          ),
                        );
@@ -226,6 +226,7 @@ enum DrawerPages {
   generalPage(name: 'General', icon: Icons.settings),
   brandingPage(name: 'Branding', icon: Icons.image),
   userPage(name: 'Users', icon: Icons.supervised_user_circle),
+  devicesPage(name: 'Devices', icon: Icons.devices_sharp),
   ;
 
   const DrawerPages({
@@ -264,15 +265,14 @@ class _PrimaryAdminPageState extends State<PrimaryAdminPage> {
     ServerObj serverObj = context.read<JellyfinAPI>().serverList[ama.lastUsedServer!];
 
     GlobalKey<ScaffoldState> globalKey = GlobalKey<ScaffoldState>();
-    Orientation orientation = MediaQuery.orientationOf(context);
-
-
+    Size size = MediaQuery.sizeOf(context);
 
     List<Widget> drawerPages = [
       actualPage(serverObj, ama, context),
       GeneralPage(),
       BrandingPage(),
       UserPage(),
+      DevicesPage(),
     ];
 
     return Scaffold(
@@ -283,7 +283,7 @@ class _PrimaryAdminPageState extends State<PrimaryAdminPage> {
         leading: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (orientation == Orientation.portrait)
+            if (size.width <= 700)
               IconButton(
                 onPressed: () {
                   globalKey.currentState!.openDrawer();
@@ -299,7 +299,7 @@ class _PrimaryAdminPageState extends State<PrimaryAdminPage> {
           ],
         ),
       ),
-      drawer: (orientation == Orientation.portrait) 
+      drawer: (size.width <= 700) 
       ? NavigationDrawer(
         header: Text('${serverObj.serverName}', style: getTextStyling(2, context)),
         selectedIndex: pageIndex,
@@ -321,11 +321,11 @@ class _PrimaryAdminPageState extends State<PrimaryAdminPage> {
         ],
       )
       : null,
-      body: (orientation == Orientation.portrait)
+      body: (size.width <= 700)
       ? drawerPages[pageIndex]
       : Row(
         children: [
-          if (orientation == Orientation.landscape) ...[
+          if (size.width <= 700) ...[
             NavigationRail(
               leading: Text('${serverObj.serverName}', style: getTextStyling(2, context)),
               extended: (MediaQuery.heightOf(context) >= 400),

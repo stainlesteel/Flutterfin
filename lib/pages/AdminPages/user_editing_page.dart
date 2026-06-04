@@ -5,14 +5,7 @@ import 'package:jellyfin/main.dart';
 import 'package:jellyfin/providers/providers.dart';
 import 'package:provider/provider.dart';
 import 'package:jellyfin_dart/jellyfin_dart.dart';
-
-Widget tabWrapper({required Widget child}) {
-  return SingleChildScrollView(
-    child: Center(
-      child: child
-    ),
-  );
-}
+import 'package:jellyfin/pages/AdminPages/admin_page.dart';
 
 class UserEditingPage extends StatefulWidget {
   UserDto? dto;
