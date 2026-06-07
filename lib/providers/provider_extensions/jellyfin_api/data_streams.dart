@@ -340,18 +340,16 @@ extension DataStreams on JellyfinAPI {
     }
   }
 
-  Stream<List<ActivityLogEntry>?> getActivityStream() async* {
-    while (true) {
-      try {
-        final Response<ActivityLogEntryQueryResult> data = await appClient.getActivityLogApi().getLogEntries(
-          limit: 6,
-        );
-        yield data.data?.items;
-      } on DioException catch (e) {
-        print('getActivityStream error: ${e.response}');
-        yield null;
-      }
-      await Future.delayed(Duration(seconds: 9));
+  Future<List<ActivityLogEntry>?> getActivity({int? limit, bool? hasUserId}) async {
+    try {
+      final Response<ActivityLogEntryQueryResult> data = await appClient.getActivityLogApi().getLogEntries(
+        limit: limit,
+        hasUserId: hasUserId,
+      );
+      return data.data?.items;
+    } on DioException catch (e) {
+      print('getActivityStream error: ${e.response}');
+      return null;
     }
   }
 

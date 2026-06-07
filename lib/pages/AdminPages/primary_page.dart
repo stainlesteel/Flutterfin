@@ -187,8 +187,8 @@ Widget actualPage(ServerObj serverObj, JellyfinAPI ama, BuildContext context) {
             ),
             SizedBox(height: 10),
             Text('Activity', style: getTextStyling(1, context)),
-            StreamBuilder(
-              stream: ama.getActivityStream().asBroadcastStream(),
+            FutureBuilder(
+              future: ama.getActivity(limit: 6),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return CircularProgressIndicator();

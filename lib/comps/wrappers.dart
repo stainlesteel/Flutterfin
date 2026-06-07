@@ -46,6 +46,10 @@ String getTime(int ticks) {
   return '${duration.inHours % 24}h ${duration.inMinutes % 60}m';
 }
 
+String getDeviceTime(DateTime obj, BuildContext context) {
+  return '${obj.year}/${obj.month}/${obj.day}, ${TimeOfDay.fromDateTime(obj.toLocal()).format(context)}';
+}
+
 /*
   0: unlimited data (wifi, ethernet)
   1: limited data (mobile)

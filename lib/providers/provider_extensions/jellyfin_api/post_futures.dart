@@ -224,11 +224,12 @@ extension PostFutures on JellyfinAPI {
 
   Future<DioException?> deleteDevice(String id) async {
     try {
-      final _data = await JellyfinDart().getDevicesApi().deleteDevice(id: id);
+      final _data = await appClient.getDevicesApi().deleteDevice(id: id);
       return null;
     } on DioException catch (e) {
-      print('deleteUser: ${e.response?.data}');
+      print('deleteUser: ${e.message}');
       return e;
     }
   }
+
 }

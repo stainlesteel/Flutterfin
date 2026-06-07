@@ -24,14 +24,16 @@ class _DevicesPageState extends State<DevicesPage> with TickerProviderStateMixin
     super.initState();
   }
 
+  late TabController tabController = TabController(
+    length: 2,
+    vsync: this
+  );
+
+  int activityPageIndex = 0;
 
   @override
   Widget build(BuildContext context) {
     JellyfinAPI ama = context.watch<JellyfinAPI>();
-    TabController tabController = TabController(
-      length: 2,
-      vsync: this
-    );
 
     return Scaffold(
       appBar: AppBar(
@@ -44,6 +46,10 @@ class _DevicesPageState extends State<DevicesPage> with TickerProviderStateMixin
             Tab(
               icon: Icon(Icons.devices_sharp),
               text: 'Recent Devices',
+            ),
+            Tab(
+              icon: Icon(Icons.person),
+              text: 'Recent Activity',
             ),
           ],
         ),
@@ -68,8 +74,27 @@ class _DevicesPageState extends State<DevicesPage> with TickerProviderStateMixin
                     return TableWidgets(
                       context: context,
                       leading: FilledButton.tonal(
-                        onPressed: () {},
-                        child: Text('lorem ipsum'),
+                        onPressed: () async {
+                          for (DeviceInfoDto device in devices) {
+                            if (device.id == ama.serverList[ama.lastUsedServer!].deviceId) continue;
+
+                            final result = await ama.deleteDevice(device.id!);
+                            if (result != null) {
+                              SimpleErrorDiag(
+                                title: 'Deletion Error for User ${device.name}',
+                                desc: 'Could not delete user (${device.name}). Error: ${result.message}',
+                                doublePop: true,
+                                context: context,
+                              );
+                              return;
+                            }
+                            devices.remove(device);
+                          }
+                          setState(() {
+                            devices = devices;
+                          });
+                        },
+                        child: Text('Delete All'),
                       ),
                       children: [
                         SizedBox(height: 5),
@@ -103,12 +128,12 @@ class _DevicesPageState extends State<DevicesPage> with TickerProviderStateMixin
                                     ),
                                     TextButton(
                                       onPressed: () async {
-                                        final result = await ama.deleteDevice(device.id!);
+                                        final  result = await ama.deleteDevice(device.id!);
 
                                         if (result != null) {
                                           SimpleErrorDiag(
                                             title: 'Deletion Error',
-                                            desc: 'Could not delete user. Error: ${result.error}',
+                                            desc: 'Could not delete user. Error: ${result.message}',
                                             doublePop: true,
                                             context: context,
                                           );
@@ -137,7 +162,85 @@ class _DevicesPageState extends State<DevicesPage> with TickerProviderStateMixin
           ),
           tabWrapper(
             child: Column(
-              children: [],
+              children: [
+                SizedBox(height: 10),
+                Text('Activity', style: getTextStyling(1, context)),
+                SizedBox(height: 10),
+                FutureBuilder(
+                  future: Future.wait([
+                    ama.getActivity(),
+                    ama.getActivity(hasUserId: true),
+                    ama.getActivity(hasUserId: false),
+                  ]),
+                  builder: (context, asyncSnapshot) {
+                    if (asyncSnapshot.connectionState == ConnectionState.waiting) return CircularProgressIndicator();
+                    if (asyncSnapshot.hasError) return Text("Failed getting devices due to error. \n Error: ${asyncSnapshot.error}");
+                
+                    List<List<ActivityLogEntry>?> listofLogs = asyncSnapshot.data!;
+                
+                    return TableWidgets(
+                      context: context,
+                      leading: Row(
+                        children: List<Widget>.generate(3, (index) {
+                          List<String> temp = ['All', 'User', 'System'];
+                          return ChoiceChip(
+                            label: Text(temp[index]),
+                            selected: (index == activityPageIndex),
+                            onSelected: (bool value) {
+                              setState(
+                                () {
+                                  activityPageIndex = index;
+                                }
+                              );
+                            },
+                          );
+                        }),
+                      ),
+                      children: [
+                        SizedBox(height: 5),
+                        Row(
+                          children: [
+                            SizedBox(width: 5),
+                            Text('Time, Date, Name', style: getTextStyling(4, context)),
+                            Spacer(),
+                            Text('Level', style: getTextStyling(4, context)),
+                            SizedBox(width: 5),
+                          ],
+                        ),
+                        SizedBox(height: 5),
+                        for (ActivityLogEntry acticity in listofLogs[activityPageIndex] ?? [])
+                          EasyTile(
+                            title: Text(getDeviceTime(acticity.date!, context), style: getTextStyling(4, context)),
+                            subtitle: Text('${acticity.name}'),
+                            trailing: Badge(label: Text(acticity.severity!.value),),
+                            onTap: () {
+                              showDialog(
+                                context: context,
+                                builder: (context) => popUpDiag(
+                                  title: 'Activity Details',
+                                  content: [
+                                    Text('Level: ${acticity.severity}'),
+                                    Text('Name: ${acticity.name}'),
+                                    Text('Date and Time: ${getDeviceTime(acticity.date!, context)}'),
+                                    Text('Overview: ${acticity.shortOverview ?? 'Unavailable'}'),
+                                    Text('Type: ${acticity.type}'),
+                                  ],
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () => Navigator.pop(context),
+                                      child: Text('Cancel'),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
+                            context: context
+                          )
+                      ],
+                    );
+                  }
+                ),
+              ],
             )
           ),
         ],

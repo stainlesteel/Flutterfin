@@ -27,6 +27,3 @@ Future<void> adminCheck(BuildContext context) async {
   }
 }
 
-String getDeviceTime(DateTime obj, BuildContext context) {
-  return '${obj.year}:${obj.month}:${obj.day}, ${TimeOfDay.fromDateTime(obj.toLocal()).format(context)}';
-}
