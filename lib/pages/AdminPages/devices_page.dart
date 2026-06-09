@@ -1,13 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:jellyfin/comps/comps.dart';
-import 'package:jellyfin/objects/objects.dart';
-import 'package:jellyfin/pages/AdminPages/user_page.dart';
-import 'package:jellyfin/pages/starting_page.dart';
 import 'package:jellyfin/providers/providers.dart';
-import 'package:media_kit_video/media_kit_video.dart';
 import 'package:provider/provider.dart';
 import 'package:jellyfin_dart/jellyfin_dart.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:jellyfin/pages/AdminPages/admin_page.dart';
 
 class DevicesPage extends StatefulWidget {
@@ -28,6 +23,7 @@ class _DevicesPageState extends State<DevicesPage> with TickerProviderStateMixin
     length: 2,
     vsync: this
   );
+
 
   int activityPageIndex = 0;
 
@@ -169,14 +165,19 @@ class _DevicesPageState extends State<DevicesPage> with TickerProviderStateMixin
                 FutureBuilder(
                   future: Future.wait([
                     ama.getActivity(),
-                    ama.getActivity(hasUserId: true),
                     ama.getActivity(hasUserId: false),
                   ]),
                   builder: (context, asyncSnapshot) {
                     if (asyncSnapshot.connectionState == ConnectionState.waiting) return CircularProgressIndicator();
                     if (asyncSnapshot.hasError) return Text("Failed getting devices due to error. \n Error: ${asyncSnapshot.error}");
                 
-                    List<List<ActivityLogEntry>?> listofLogs = asyncSnapshot.data!;
+                    List<List<ActivityLogEntry>?> listofLogs = [
+                      asyncSnapshot.data![0],
+                      asyncSnapshot.data![0]!.where(
+                        (act) => act.userId != null
+                      ).toList(),
+                      asyncSnapshot.data![1],
+                    ];
                 
                     return TableWidgets(
                       context: context,
@@ -208,34 +209,40 @@ class _DevicesPageState extends State<DevicesPage> with TickerProviderStateMixin
                           ],
                         ),
                         SizedBox(height: 5),
-                        for (ActivityLogEntry acticity in listofLogs[activityPageIndex] ?? [])
-                          EasyTile(
-                            title: Text(getDeviceTime(acticity.date!, context), style: getTextStyling(4, context)),
-                            subtitle: Text('${acticity.name}'),
-                            trailing: Badge(label: Text(acticity.severity!.value),),
-                            onTap: () {
-                              showDialog(
-                                context: context,
-                                builder: (context) => popUpDiag(
-                                  title: 'Activity Details',
-                                  content: [
-                                    Text('Level: ${acticity.severity}'),
-                                    Text('Name: ${acticity.name}'),
-                                    Text('Date and Time: ${getDeviceTime(acticity.date!, context)}'),
-                                    Text('Overview: ${acticity.shortOverview ?? 'Unavailable'}'),
-                                    Text('Type: ${acticity.type}'),
-                                  ],
-                                  actions: [
-                                    TextButton(
-                                      onPressed: () => Navigator.pop(context),
-                                      child: Text('Cancel'),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            },
-                            context: context
-                          )
+                        ListView.builder(
+                          shrinkWrap: true,
+                          itemCount: listofLogs[activityPageIndex]!.length,
+                          itemBuilder: (context, index) {
+                            ActivityLogEntry activity = listofLogs[activityPageIndex]![index];
+                            return EasyTile(
+                              title: Text(getDeviceTime(activity.date!, context), style: getTextStyling(4, context)),
+                              subtitle: Text('${activity.name}'),
+                              trailing: Badge(label: Text(activity.severity!.value),),
+                              onTap: () {
+                                showDialog(
+                                  context: context,
+                                  builder: (context) => popUpDiag(
+                                    title: 'Activity Details',
+                                    content: [
+                                      Text('Level: ${activity.severity}'),
+                                      Text('Name: ${activity.name}'),
+                                      Text('Date and Time: ${getDeviceTime(activity.date!, context)}'),
+                                      Text('Overview: ${activity.shortOverview ?? 'Unavailable'}'),
+                                      Text('Type: ${activity.type}'),
+                                    ],
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () => Navigator.pop(context),
+                                        child: Text('Cancel'),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
+                              context: context
+                            );
+                          },
+                        ),
                       ],
                     );
                   }
