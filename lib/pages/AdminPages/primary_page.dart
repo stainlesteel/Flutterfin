@@ -2,10 +2,8 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:jellyfin/comps/comps.dart';
 import 'package:jellyfin/objects/objects.dart';
-import 'package:jellyfin/pages/AdminPages/user_page.dart';
 import 'package:jellyfin/pages/starting_page.dart';
 import 'package:jellyfin/providers/providers.dart';
-import 'package:media_kit_video/media_kit_video.dart';
 import 'package:provider/provider.dart';
 import 'package:jellyfin_dart/jellyfin_dart.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -222,20 +220,23 @@ Widget actualPage(ServerObj serverObj, JellyfinAPI ama, BuildContext context) {
 }
 
 enum DrawerPages {
-  actualPage(name: 'Dashboard', icon: Icons.home),
-  generalPage(name: 'General', icon: Icons.settings),
-  brandingPage(name: 'Branding', icon: Icons.image),
-  userPage(name: 'Users', icon: Icons.supervised_user_circle),
-  devicesPage(name: 'Devices', icon: Icons.devices_sharp),
+  actualPage(name: 'Dashboard', icon: Icons.home, advanced: false),
+  generalPage(name: 'General', icon: Icons.settings, advanced: false),
+  brandingPage(name: 'Branding', icon: Icons.image, advanced: false),
+  userPage(name: 'Users', icon: Icons.supervised_user_circle, advanced: false),
+  devicesPage(name: 'Devices', icon: Icons.devices_sharp, advanced: false),
+  apiKeysPage(name: 'API Keys', icon: Icons.key, advanced: true),
   ;
 
   const DrawerPages({
     required this.name,
     required this.icon,
+    required this.advanced,
   });
 
   final String name;
   final IconData icon;
+  final bool advanced;
 }
 
 class PrimaryAdminPage extends StatefulWidget {
@@ -273,6 +274,7 @@ class _PrimaryAdminPageState extends State<PrimaryAdminPage> {
       BrandingPage(),
       UserPage(),
       DevicesPage(),
+      ApikeysPage(),
     ];
 
     return Scaffold(
@@ -313,7 +315,23 @@ class _PrimaryAdminPageState extends State<PrimaryAdminPage> {
           Center(
             child: Text('Server', style: getTextStyling(4, context))
           ),
-          for (var page in DrawerPages.values)
+          for (
+            var page in DrawerPages.values.where(
+              (page) => page.advanced == false
+            )
+          )
+            NavigationDrawerDestination(
+              icon: Icon(page.icon),
+              label: Text(page.name),
+            ),
+          Center(
+            child: Text('Advanced', style: getTextStyling(4, context))
+          ),
+          for (
+            var page in DrawerPages.values.where(
+              (page) => page.advanced == true
+            )
+          )
             NavigationDrawerDestination(
               icon: Icon(page.icon),
               label: Text(page.name),

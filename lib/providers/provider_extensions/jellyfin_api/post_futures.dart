@@ -217,7 +217,7 @@ extension PostFutures on JellyfinAPI {
       );
       return null;
     } on DioException catch (e) {
-      print('deleteUser: ${e.response?.data}');
+      print('updateUserPassword: ${e.response?.data}');
       return e;
     }
   }
@@ -227,9 +227,28 @@ extension PostFutures on JellyfinAPI {
       final _data = await appClient.getDevicesApi().deleteDevice(id: id);
       return null;
     } on DioException catch (e) {
-      print('deleteUser: ${e.message}');
+      print('deleteDevice: ${e.message}');
       return e;
     }
   }
 
+  Future<DioException?> deleteApiKey(String id) async {
+    try {
+      final _data = await appClient.getApiKeyApi().revokeKey(key: id);
+      return null;
+    } on DioException catch (e) {
+      print('deleteApiKey: ${e.message}');
+      return e;
+    }
+  }
+
+  Future<DioException?> createApiKey(String appName) async {
+    try {
+      final _data = await appClient.getApiKeyApi().createKey(app: appName);
+      return null;
+    } on DioException catch (e) {
+      print('createApiKey: ${e.message}');
+      return e;
+    }
+  }
 }

@@ -10,6 +10,8 @@ export 'branding_page.dart';
 export 'user_page.dart';
 export 'user_editing_page.dart';
 export 'devices_page.dart';
+export 'apikeys_page.dart';
+
 
 Widget tabWrapper({required Widget child}) {
   return SingleChildScrollView(

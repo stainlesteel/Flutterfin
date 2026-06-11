@@ -385,7 +385,6 @@ extension DataStreams on JellyfinAPI {
       await Future.delayed(Duration(seconds: 15));
     }
   }
-
   Future<BrandingOptionsDto?> getBrandingOptions() async {
     final Response<BrandingOptionsDto?> data = await appClient.getBrandingApi().getBrandingOptions();
     return data.data;
@@ -410,6 +409,16 @@ extension DataStreams on JellyfinAPI {
       final Response<DeviceInfoDtoQueryResult> data = await appClient.getDevicesApi().getDevices(
         userId: userID,
       );
+      return data.data?.items;
+    } on DioException catch (e) {
+      print('getDevices: $e');
+      return null;
+    }
+  }
+
+  Future<List<AuthenticationInfo>?> getApiKeys() async {
+    try {
+      final Response<AuthenticationInfoQueryResult> data = await appClient.getApiKeyApi().getKeys();
       return data.data?.items;
     } on DioException catch (e) {
       print('getDevices: $e');
