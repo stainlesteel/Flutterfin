@@ -421,7 +421,29 @@ extension DataStreams on JellyfinAPI {
       final Response<AuthenticationInfoQueryResult> data = await appClient.getApiKeyApi().getKeys();
       return data.data?.items;
     } on DioException catch (e) {
-      print('getDevices: $e');
+      print('getApiKeys: $e');
+      return null;
+    }
+  }
+
+  Future<List<LogFile>?> getServerLogs() async {
+    try {
+      final Response<List<LogFile>> data = await appClient.getSystemApi().getServerLogs();
+      return data.data;
+    } on DioException catch (e) {
+      print('getServerLogs: $e');
+      return null;
+    }
+  }
+
+  Future<Uint8List?> getLogFile(String name) async {
+    try {
+      final Response<Uint8List> data = await appClient.getSystemApi().getLogFile(
+        name: name,
+      );
+      return data.data;
+    } on DioException catch (e) {
+      print('getLogFile: $e');
       return null;
     }
   }

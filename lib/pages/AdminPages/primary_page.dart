@@ -226,6 +226,7 @@ enum DrawerPages {
   userPage(name: 'Users', icon: Icons.supervised_user_circle, advanced: false),
   devicesPage(name: 'Devices', icon: Icons.devices_sharp, advanced: false),
   apiKeysPage(name: 'API Keys', icon: Icons.key, advanced: true),
+  logsPage(name: 'Logs', icon: Icons.newspaper, advanced: true),
   ;
 
   const DrawerPages({
@@ -275,6 +276,7 @@ class _PrimaryAdminPageState extends State<PrimaryAdminPage> {
       UserPage(),
       DevicesPage(),
       ApikeysPage(),
+      LogsPage(),
     ];
 
     return Scaffold(
